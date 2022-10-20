@@ -1,6 +1,6 @@
 import Head from 'next/head'
 
-import { Layout, HomeHero, FlexContainer } from '../components'
+import { Layout, HomeHero, NavBar } from '../components'
 
 export default function Home() {
   return (
@@ -15,7 +15,7 @@ export default function Home() {
           Hello 👋, I'm <span className='highlight'>Luis Cruz</span>!<br/>A full stack software engineer.
         </h1>
       </HomeHero>
-      <NavBar></NavBar>
+      <NavBar items={['home', 'about', 'portfolio', 'contact']} />
       <Layout>
       </Layout>
     </>

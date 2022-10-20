@@ -1,4 +1,4 @@
-import FlexContainer from './FlexContainer';
+import FlexContainer from '../common/FlexContainer';
 import styles from './HomeHero.module.scss';
 
 export const HomeHero = ({ children, flexClasses }) => {

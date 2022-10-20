@@ -1,3 +1,4 @@
-export * from './Layout';
-export * from './HomeHero'
-export * from './FlexContainer'
+export * from './common/FlexContainer';
+export * from './common/Layout';
+export * from './common/NavBar';
+export * from './home/HomeHero';
