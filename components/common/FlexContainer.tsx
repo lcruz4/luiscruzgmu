@@ -8,6 +8,7 @@ interface FlexContainerProps extends PropsWithChildren {
   center?: boolean;
   justifyContent?: string;
   alignItems?: string;
+  flexDirection?: string;
 }
 
 const StylishFlexConatiner = styled.div<FlexContainerProps>`
@@ -15,11 +16,13 @@ const StylishFlexConatiner = styled.div<FlexContainerProps>`
   ${({
     justifyContent,
     alignItems,
+    flexDirection,
   }) => {
     let style = '';
 
     justifyContent && (style += `justify-content: ${justifyContent};`);
     alignItems && (style += `align-items: ${alignItems};`);
+    flexDirection && (style += `flex-direction: ${flexDirection};`);
     return style;
   }}
 `;

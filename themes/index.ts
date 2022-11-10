@@ -5,8 +5,9 @@ const theme: BaseTheme = {
     white: '#e9e9e9',
     black: '#040404',
     highlight: '#ff9898',
-    brandPrimary: '#04c2c9',
-    brandSpicy: '#ec3e85',
+    primary: '#04c2c9',
+    spicy: '#ec3e85',
+    halfSpicy: '#ea93b7',
     primaryBackground: '#1b242f'
   },
   breakpoints: {

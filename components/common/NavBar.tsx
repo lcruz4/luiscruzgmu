@@ -13,7 +13,7 @@ const NavMenu = styled.nav`
   width: 100%;
   height: ${({ theme }) => theme.rems[400]};
   background: ${({ theme }) => theme.colors.primaryBackground};
-  border-bottom: 3px solid ${({ theme }) => theme.colors.brandPrimary};
+  border-bottom: 3px solid ${({ theme }) => theme.colors.primary};
   text-align: left;
   z-index: 1;
 
@@ -24,10 +24,10 @@ const MenuItemWrapper = styled.div<MenuItemWrapperProps>`
   display: flex;
   align-items: center;
   height: 100%;
-  border-right: 1px solid ${({ active, theme }) => active ? theme.colors.brandSpicy : theme.colors.brandPrimary};
+  border-right: 1px solid ${({ active, theme }) => active ? theme.colors.spicy : theme.colors.primary};
   border-radius: 3px;
   ${({ active }) => active && 'box-shadow: inset -3px -2px 2px'};
-  ${({ active, theme }) => active && `color: ${theme.colors.brandSpicy}`}
+  ${({ active, theme }) => active && `color: ${theme.colors.spicy}`}
 `;
 
 const MenuItems = styled.div`

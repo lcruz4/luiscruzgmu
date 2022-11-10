@@ -3,8 +3,9 @@ export interface BaseTheme {
     white: string;
     black: string;
     highlight: string;
-    brandPrimary: string;
-    brandSpicy: string;
+    primary: string;
+    spicy: string;
+    halfSpicy: string;
     primaryBackground: string;
   },
   breakpoints: {
