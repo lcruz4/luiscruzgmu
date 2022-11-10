@@ -1,8 +1,16 @@
+import styled from '@emotion/styled';
 import FlexContainer from '../common/FlexContainer';
-import styles from './HomeHero.module.scss';
+
+const StylishContainer = styled(FlexContainer)`
+  width: 100%;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-image: url('/images/background.jpg');
+`;
 
 export const HomeHero = ({ children, flexClasses }) => {
-  return <FlexContainer className={styles.hero} flexClasses={flexClasses}>{children}</FlexContainer>;
+  return <StylishContainer flexClasses={flexClasses}>{children}</StylishContainer>;
 };
 
 export default HomeHero;
