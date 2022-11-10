@@ -10,7 +10,7 @@ const StylishContainer = styled(FlexContainer)`
 `;
 
 export const HomeHero = ({ children }) => {
-  return <StylishContainer center={true}>{children}</StylishContainer>;
+  return <StylishContainer justifyContent='center' alignItems='center'>{children}</StylishContainer>;
 };
 
 export default HomeHero;

@@ -6,22 +6,26 @@ import styled from '@emotion/styled';
 interface FlexContainerProps extends PropsWithChildren {
   className?: string;
   center?: boolean;
+  justifyContent?: string;
+  alignItems?: string;
 }
 
 const StylishFlexConatiner = styled.div<FlexContainerProps>`
   display: flex;
-  ${center => {
-    if (center) {
-      return `
-        align-items: center;
-        justify-content: center;
-      `;
-    }
+  ${({
+    justifyContent,
+    alignItems,
+  }) => {
+    let style = '';
+
+    justifyContent && (style += `justify-content: ${justifyContent};`);
+    alignItems && (style += `align-items: ${alignItems};`);
+    return style;
   }}
 `;
 
-export const FlexContainer = ({children, center, className}: FlexContainerProps) => {
-  return <StylishFlexConatiner className={className} center={center}>
+export const FlexContainer = ({children, className, ...styleProps}: FlexContainerProps) => {
+  return <StylishFlexConatiner className={className} {...styleProps}>
     {children}
   </StylishFlexConatiner>
 };

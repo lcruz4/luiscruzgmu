@@ -1,7 +1,12 @@
-import styles from './About.module.scss';
+import styled from "@emotion/styled";
+
+const StylishAbout = styled.h1`
+`;
 
 export const About = () => {
-  return <h1>About</h1>
+  return (
+    <StylishAbout>ABOUT</StylishAbout>
+  )
 };
 
 export default About;

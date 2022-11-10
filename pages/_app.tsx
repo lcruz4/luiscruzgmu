@@ -5,9 +5,13 @@ import theme from '../themes';
 const globalStyles = css`
 body {
   font-family: 'Raleway';
+  font-size: 16px;
   margin: 0;
   background-color: ${theme.colors.black};
   color: ${theme.colors.white};
+}
+h1 {
+  font-size: ${theme.rems[250]};
 }
 `;
 
