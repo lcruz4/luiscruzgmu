@@ -18,7 +18,7 @@ export default function Home() {
         <link rel="icon" href="/images/favicon.ico" type="image/gif"/>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway" />
       </Head>
-      <HomeHero flexClasses={['flexCenter']}>
+      <HomeHero>
         <Title>
           Hello 👋, I'm <Highlight>Luis Cruz</Highlight>!<br/>A full stack software engineer.
         </Title>

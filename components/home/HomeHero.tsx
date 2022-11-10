@@ -9,8 +9,8 @@ const StylishContainer = styled(FlexContainer)`
   background-image: url('/images/background.jpg');
 `;
 
-export const HomeHero = ({ children, flexClasses }) => {
-  return <StylishContainer flexClasses={flexClasses}>{children}</StylishContainer>;
+export const HomeHero = ({ children }) => {
+  return <StylishContainer center={true}>{children}</StylishContainer>;
 };
 
 export default HomeHero;
