@@ -8,10 +8,11 @@ const theme: BaseTheme = {
     primary: '#04c2c9',
     spicy: '#ec3e85',
     halfSpicy: '#ea93b7',
-    primaryBackground: '#1b242f'
+    primaryBackground: '#1b242f',
   },
   breakpoints: {
-    mobileMax: '768px'
+    mobileMax: '768px',
+    tabletMax: '1024px',
   },
   rems: {
     25: '0.25rem',
@@ -29,6 +30,8 @@ const theme: BaseTheme = {
     350: '3.5rem',
     400: '4rem',
     500: '5rem',
+    1000: '100px',
+    2000: '200px',
   }
 };
 

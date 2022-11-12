@@ -9,6 +9,7 @@ interface FlexContainerProps extends PropsWithChildren {
   justifyContent?: string;
   alignItems?: string;
   flexDirection?: string;
+  fullWidth?: boolean;
 }
 
 const StylishFlexConatiner = styled.div<FlexContainerProps>`
@@ -17,12 +18,14 @@ const StylishFlexConatiner = styled.div<FlexContainerProps>`
     justifyContent,
     alignItems,
     flexDirection,
+    fullWidth
   }) => {
     let style = '';
 
     justifyContent && (style += `justify-content: ${justifyContent};`);
     alignItems && (style += `align-items: ${alignItems};`);
     flexDirection && (style += `flex-direction: ${flexDirection};`);
+    fullWidth && (style += `width: 100%;`);
     return style;
   }}
 `;

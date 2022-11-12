@@ -10,6 +10,7 @@ export interface BaseTheme {
   },
   breakpoints: {
     mobileMax: string;
+    tabletMax: string;
   },
   rems: {
     25: string;
@@ -27,6 +28,8 @@ export interface BaseTheme {
     350: string;
     400: string;
     500: string;
+    1000: string;
+    2000: string;
   }
 };
 
