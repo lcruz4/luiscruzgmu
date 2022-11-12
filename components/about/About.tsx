@@ -1,21 +1,26 @@
 import { Theme } from "@emotion/react";
 import styled from "@emotion/styled";
 import FlexContainer from "../common/FlexContainer";
+import FlexItem from "../common/FlexItem";
 
+const PHOTOHEXHEIGHT = 400;
+
+// find longest point between hexagon points given a flat top hexagon of a given height
 const calcHexagonPointToPointWidth = height => {
   return height / Math.sin(1.0472)
 };
 
+// given the base of a flat top hexagon which is the widest width rectangle with full height
+// and a point being the left or right most point, this gives you the width betwen them.
 const calcHexagonPointToBaseWidth = height => {
   return (calcHexagonPointToPointWidth(height) - height) / 2;
 };
 
+// given the base of a flat top hexagon which is the widest width rectangle with full height
+// this gives you it's width
 const calcHexagonColumnWidth = height => {
   return height / 2 / Math.cos(0.523598776);
 };
-
-const StylishAbout = styled.h1`
-`;
 
 const Underline = styled.div`
   width: 140px;
@@ -29,24 +34,28 @@ const Underline = styled.div`
   animation: glow 1.5s infinite alternate;
 `;
 
+const RowContainer = styled(FlexContainer)(({ theme }) => `
+  @media screen and (min-width: ${theme.breakpoints.mobileMax}) and (max-width: ${theme.breakpoints.tabletMax}) {
+    width: 50%;
+  }
+`);
+
+const AboutItemContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  width: ${calcHexagonPointToPointWidth(200)}px;
+  margin: 100px 90px;
+`;
+
 interface HexagonMixinProps {
   theme?: Theme;
   height?: number;
   background?: string;
 }
 
-const hexagonMixin = ({ theme, height, background }: HexagonMixinProps) => `
-  width: ${calcHexagonColumnWidth(height || 200)}px;
-  height: ${height || 200}px;
-  background: ${background || theme.colors.primary};
-`;
-
-const hexagonHelpersMixin = ({ theme, height, background }: HexagonMixinProps) => `
-  content: '';
-  position: absolute;
-  ${hexagonMixin({theme, height, background})}
-`;
-
+// spin animation
 const spinMixin = (from, to) => `
   @keyframes spin {
     from { transform: rotate(${from}deg); }
@@ -62,8 +71,23 @@ const SpinContainer = styled.div`
   ${spinMixin(0, 180)}
 `;
 
+// the hexagon base
+const hexagonColumnMixin = ({ theme, height, background }: HexagonMixinProps) => `
+  width: ${calcHexagonColumnWidth(height || 200)}px;
+  height: ${height || 200}px;
+  background: ${background || 'radial-gradient(circle at center, #D5F5F6, #CDF3F4, #D5F5F6)'};
+  box-shadow: inset 0px 2px #04c2c9, inset 0px -2px ${theme.colors.primary};
+`;
+
+// the angled rectangles which make the other edges of the hexagon using before and after
+const hexagonHelpersMixin = ({ theme, height, background }: HexagonMixinProps) => `
+  content: '';
+  position: absolute;
+  ${hexagonColumnMixin({theme, height, background})}
+`;
+
 const Hexagon = styled.div(({ theme }) => `
-  ${hexagonMixin({theme})}
+  ${hexagonColumnMixin({theme})}
 
   &::before {
     ${hexagonHelpersMixin({theme})}
@@ -76,50 +100,49 @@ const Hexagon = styled.div(({ theme }) => `
   }
 `);
 
-const AboutItem = styled.div(({ theme }) => `
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-  margin: 100px;
-`);
-
 const AboutItemText = styled.div(({ theme }) => `
-  width: 200px;
-  color: ${theme.colors.white};
-  text-shadow: 1px 1px ${theme.colors.black};
+  width: ${calcHexagonPointToPointWidth(200)}px;
+  color: ${theme.colors.black};
+  text-shadow: 1px 1px ${theme.colors.white};
   text-align: center;
 `);
 
-const AboutItemsContainer = styled(FlexContainer)`
-`;
-
-const Space = styled.div`
-  flex: 1 0;
-`;
-
+// -200px vertical margin to nestle in with other hexagons
 const PhotoFrame = styled.div`
   position: relative;
-  height: 400px;
-  width: ${calcHexagonPointToPointWidth(400)}px;
+  height: ${PHOTOHEXHEIGHT}px;
+  width: ${calcHexagonPointToPointWidth(PHOTOHEXHEIGHT)}px;
   margin: -200px 0;
   overflow: hidden;
+`;
 
-  div {
-    position: absolute;
-    height: 800px;
-    top: -50%;
-    left: ${calcHexagonPointToBaseWidth(400)}px;
-    overflow: hidden;
-    rotate: 30deg;
-    img {
-      height: 800px;
-      width: 400px;
-      object-fit: cover;
-      z-index: 2; ${/* may move */''}
-      rotate: -60deg;
-    }
-  }
+// overflow hidden used to mask photo
+const PhotoFrameHelper1 = styled.div`
+  position: absolute;
+  height: 800px;
+  top: -50%;
+  left: ${calcHexagonPointToBaseWidth(PHOTOHEXHEIGHT)}px;
+  overflow: hidden;
+  rotate: 30deg;
+`;
+
+// overflow hidden used to mask photo
+const PhotoFrameHelper2 = styled.div`
+  height: 800px;
+  width: ${PHOTOHEXHEIGHT}px;
+  overflow: hidden;
+  rotate: -60deg;
+`;
+
+// rotate and positioning fields in order to correct positioning changed by photo mask containers
+const Photo = styled.img`
+  position: absolute;
+  top: 25%;
+  left: -${calcHexagonPointToBaseWidth(PHOTOHEXHEIGHT)}px;
+  height: ${PHOTOHEXHEIGHT}px;
+  width: ${calcHexagonPointToPointWidth(PHOTOHEXHEIGHT)}px;
+  object-fit: cover;
+  rotate: 30deg;
 `;
 
 export const About = () => {
@@ -127,33 +150,43 @@ export const About = () => {
     <FlexContainer flexDirection={'column'} alignItems='center' fullWidth>
       <h1>ABOUT</h1>
       <Underline />
-      <AboutItemsContainer fullWidth>
-        <AboutItem>
-          <SpinContainer><Hexagon /></SpinContainer>
+      <RowContainer fullWidth>
+        <AboutItemContainer>
+          <SpinContainer>
+            <Hexagon />
+          </SpinContainer>
           <AboutItemText>QUALITY</AboutItemText>
-        </AboutItem>
-        <Space></Space>
-        <AboutItem>
-          <SpinContainer><Hexagon /></SpinContainer>
+        </AboutItemContainer>
+        <FlexItem flex='1 0 0'/>
+        <AboutItemContainer>
+          <SpinContainer>
+            <Hexagon />
+          </SpinContainer>
           <AboutItemText>DETAIL ORIENTED</AboutItemText>
-        </AboutItem>
-      </AboutItemsContainer>
+        </AboutItemContainer>
+      </RowContainer>
       <PhotoFrame>
-        <div>
-          <img src='/images/profile.jpg'/>
-        </div>
+        <PhotoFrameHelper1>
+          <PhotoFrameHelper2>
+              <Photo src='/images/profile.jpg'/>
+          </PhotoFrameHelper2>
+        </PhotoFrameHelper1>
       </PhotoFrame>
-      <AboutItemsContainer fullWidth>
-        <AboutItem>
-          <SpinContainer><Hexagon /></SpinContainer>
+      <RowContainer fullWidth>
+        <AboutItemContainer>
+          <SpinContainer>
+            <Hexagon />
+          </SpinContainer>
           <AboutItemText>COMMUNICATION</AboutItemText>
-        </AboutItem>
-        <Space></Space>
-        <AboutItem>
-          <SpinContainer><Hexagon /></SpinContainer>
+        </AboutItemContainer>
+        <FlexItem flex='1 0 0'/>
+        <AboutItemContainer>
+          <SpinContainer>
+            <Hexagon />
+          </SpinContainer>
           <AboutItemText>OWNERSHIP</AboutItemText>
-        </AboutItem>
-      </AboutItemsContainer>
+        </AboutItemContainer>
+      </RowContainer>
     </FlexContainer>
   )
 };

@@ -1,6 +1,4 @@
 import { PropsWithChildren } from 'react';
-import clsx from 'clsx';
-import styles from './FlexContainer.module.scss';
 import styled from '@emotion/styled';
 
 interface FlexContainerProps extends PropsWithChildren {
