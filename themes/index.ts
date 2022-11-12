@@ -1,8 +1,9 @@
-import BaseTheme from "../types";
+import BaseTheme from '../types';
 
 const theme: BaseTheme = {
   colors: {
     white: '#e9e9e9',
+    // gray100: '#dadada',
     black: '#040404',
     highlight: '#ff9898',
     primary: '#04c2c9',

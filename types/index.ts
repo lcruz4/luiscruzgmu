@@ -1,6 +1,7 @@
 export interface BaseTheme {
   colors: {
     white: string;
+    // gray100: string;
     black: string;
     highlight: string;
     primary: string;

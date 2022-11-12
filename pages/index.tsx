@@ -15,15 +15,15 @@ export default function Home() {
     <>
       <Head>
         <title>Luis Cruz | Software Engineer</title>
-        <link rel="icon" href="/images/favicon.ico" type="image/gif"/>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway" />
+        <link rel='icon' href='/images/favicon.ico' type='image/gif'/>
+        <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Raleway' />
       </Head>
       <HomeHero>
         <Title>
           Hello 👋, I'm <Highlight>Luis Cruz</Highlight>!<br/>A full stack software engineer.
         </Title>
       </HomeHero>
-      <NavBar items={['home', 'about', 'portfolio', 'contact']} />
+      <NavBar items={['home', 'about', 'projects', 'contact']} />
       <Layout>
         <About />
       </Layout>

@@ -1,7 +1,7 @@
-import { Theme } from "@emotion/react";
-import styled from "@emotion/styled";
-import FlexContainer from "../common/FlexContainer";
-import FlexItem from "../common/FlexItem";
+import { Theme } from '@emotion/react';
+import styled from '@emotion/styled';
+import FlexContainer from '../common/FlexContainer';
+import FlexItem from '../common/FlexItem';
 
 const PHOTOHEXHEIGHT = 400;
 
@@ -22,9 +22,23 @@ const calcHexagonColumnWidth = height => {
   return height / 2 / Math.cos(0.523598776);
 };
 
+const AboutMainContainer = styled(FlexContainer)`
+  margin: 50px 0;
+`;
+
 const RowContainer = styled(FlexContainer)(({ theme }) => `
   @media screen and (min-width: ${theme.breakpoints.mobileMax}) and (max-width: ${theme.breakpoints.tabletMax}) {
     width: 50%;
+  }
+
+  margin: 0 100px;
+
+  &:first-of-type {
+    margin-bottom: 100px;
+  }
+
+  &:last-of-type {
+    margin-top: 100px;
   }
 `);
 
@@ -34,7 +48,6 @@ const AboutItemContainer = styled.div`
   align-items: center;
   height: 200px;
   width: ${calcHexagonPointToPointWidth(200)}px;
-  margin: 100px 90px;
 `;
 
 interface HexagonMixinProps {
@@ -134,7 +147,7 @@ const Photo = styled.img`
 `;
 
 const AboutMain = () => (
-  <>
+  <AboutMainContainer flexDirection='column' alignItems='center' fullWidth>
     <RowContainer fullWidth>
       <AboutItemContainer>
         <SpinContainer>
@@ -172,7 +185,7 @@ const AboutMain = () => (
         <AboutItemText>OWNERSHIP</AboutItemText>
       </AboutItemContainer>
     </RowContainer>
-  </>
+  </AboutMainContainer>
 );
 
 export default AboutMain;
