@@ -32,7 +32,10 @@ const theme: BaseTheme = {
     500: '5rem',
     1000: '100px',
     2000: '200px',
-  }
+  },
+  other: {
+    aboutHexagonGradient: 'radial-gradient(circle at center, #D5F5F6, #CDF3F4, #D5F5F6)',
+  },
 };
 
 export default theme;

@@ -30,6 +30,9 @@ export interface BaseTheme {
     500: string;
     1000: string;
     2000: string;
+  },
+  other: {
+    aboutHexagonGradient: string;
   }
 };
 
