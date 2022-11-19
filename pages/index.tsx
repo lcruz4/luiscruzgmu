@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import Head from 'next/head'
-import { Layout, HomeHero, NavBar, About } from '../components'
+import { HomeHero, NavBar, About, Projects, FlexContainer } from '../components'
 
 const Title = styled.h1`
   text-align: center;
@@ -8,6 +8,14 @@ const Title = styled.h1`
 
 const Highlight = styled.span`
   color: ${({ theme }) => theme.colors.highlight};
+`;
+
+const StylishLayout = styled(FlexContainer)`
+  margin: ${({ theme }) => theme.rems[400]};
+
+  &> div {
+    margin: 64px 0;
+  }
 `;
 
 export default function Home() {
@@ -24,9 +32,10 @@ export default function Home() {
         </Title>
       </HomeHero>
       <NavBar items={['home', 'about', 'projects', 'contact']} />
-      <Layout>
+      <StylishLayout justifyContent='center' flexDirection='column'>
         <About />
-      </Layout>
+        <Projects />
+      </StylishLayout>
     </>
   );
 }

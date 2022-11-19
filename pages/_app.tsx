@@ -9,6 +9,7 @@ body {
   margin: 0;
   background-color: ${theme.colors.black};
   color: ${theme.colors.white};
+  overflow-x: hidden;
 }
 h1 {
   font-size: ${theme.rems[250]};
