@@ -2,6 +2,8 @@ import { ThemeProvider } from '@emotion/react';
 import { Global, css } from '@emotion/react'
 import theme from '../themes';
 
+import '../styles/globals.css';
+
 const globalStyles = css`
 body {
   font-family: 'Raleway';
