@@ -138,6 +138,7 @@ const PhotoFrameHelper2 = styled.div`
 // rotate and positioning fields in order to correct positioning changed by photo mask containers
 const Photo = styled.img`
   position: absolute;
+  max-width: unset !important;
   top: 25%;
   left: -${calcHexagonPointToBaseWidth(PHOTOHEXHEIGHT)}px;
   height: ${PHOTOHEXHEIGHT}px;

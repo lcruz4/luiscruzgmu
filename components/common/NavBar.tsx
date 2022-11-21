@@ -1,4 +1,3 @@
-import { Paper } from '@mui/material';
 import styled from '@emotion/styled';
 
 interface MenuItemWrapperProps {

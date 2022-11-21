@@ -31,7 +31,7 @@ const StylishSwiper = styled(Swiper)(({ theme }) => `
 export const Projects = () => {
   return (
     <>
-      <StylishSwiper
+      <StylishSwiper className='z-0'
         pagination={{
           dynamicBullets: true,
         }}

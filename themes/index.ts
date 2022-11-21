@@ -5,11 +5,11 @@ const theme: BaseTheme = {
     white: '#e9e9e9',
     // gray100: '#dadada',
     black: '#040404',
-    highlight: '#ff9898',
-    primary: '#04c2c9',
-    spicy: '#ec3e85',
-    halfSpicy: '#ea93b7',
-    primaryBackground: '#1b242f',
+    highlight: '#ff9898', // red-300
+    primary: '#04c2c9', // cyanL
+    spicy: '#ec3e85', // pink-500
+    halfSpicy: '#ea93b7', // rose-300?
+    primaryBackground: '#1b242f', // gray-800
   },
   breakpoints: {
     mobileMax: '768px',
