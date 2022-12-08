@@ -3,13 +3,31 @@
 @tailwind utilities;
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(180deg); }
+  from {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  to {
+    transform: rotate(540deg);
+  }
+}
+
+@keyframes spinReverse {
+  from {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  to {
+    transform: rotate(-540deg);
+  }
 }
 
 @layer utilities {
   .spinAnimation {
-    animation: spin 5s ease-out 2s infinite normal;
+    animation: spin 1s linear normal;
+  }
+  .spinAnimationReverse {
+    animation: spinReverse 1s linear normal;
   }
 
   ._hex {

@@ -23,6 +23,12 @@ module.exports = {
         white: colors.gray[200],
         cyanL: '#04c2c9'
       },
+      transitionDuration: {
+        '2': '2s'
+      },
+      transitionTimingFunction: {
+        'outL': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      },
       rotate: {
         '30': '30deg',
         '60': '60deg',
