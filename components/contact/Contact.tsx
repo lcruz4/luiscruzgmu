@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import useNavIntersection from '../../hooks/useNavIntersection';
+import { NavItems } from '../../types';
 
 
 
@@ -10,8 +12,10 @@ export const Contact = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
+  const ref = useNavIntersection(.2, NavItems.Contact);
+
   return (
-    <div className="w-full flex justify-center">
+    <div ref={ref} className="w-full flex justify-center">
       <form className="bg-cyan flex-1 max-w-2xl">
         <div className="mb-2">
           <label className={labelClass} htmlFor="name">

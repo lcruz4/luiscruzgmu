@@ -2,6 +2,11 @@ import styled from '@emotion/styled';
 import FlexContainer from '../common/FlexContainer';
 import AboutMain from './AboutMain';
 import AboutDescription from './AboutDescription';
+import { useInView } from 'react-intersection-observer';
+import { useEffect } from 'react';
+import useNavStore from '../../store/navStore';
+import { NavItems } from '../../types';
+import useNavIntersection from '../../hooks/useNavIntersection';
 
 const Underline = styled.div`
   width: 140px;
@@ -16,9 +21,11 @@ const Underline = styled.div`
 `;
 
 export const About = () => {
+  const ref = useNavIntersection(.2, NavItems.About);
+
   return (
-    <FlexContainer flexDirection='column' alignItems='center' fullWidth>
-      <h1>ABOUT</h1>
+    <FlexContainer ref={ref} flexDirection='column' alignItems='center' fullWidth>
+      <h1>{'ABOUT'}</h1>
       <Underline />
       <AboutMain />
       <AboutDescription />

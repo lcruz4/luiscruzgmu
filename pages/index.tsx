@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
 import Head from 'next/head'
+import styled from '@emotion/styled';
+import { NavItems } from '../types';
 import { HomeHero, NavBar, About, Projects, Contact, FlexContainer } from '../components'
 
 const Title = styled.h1`
@@ -31,7 +32,7 @@ export default function Home() {
           Hello 👋, I'm <Highlight>Luis Cruz</Highlight>!<br/>A full stack software engineer.
         </Title>
       </HomeHero>
-      <NavBar items={['home', 'about', 'projects', 'contact']} />
+      <NavBar items={Object.values(NavItems)} />
       <StylishLayout justifyContent='center' flexDirection='column'>
         <About />
         <Projects />

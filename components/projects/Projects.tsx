@@ -3,6 +3,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
+import useNavIntersection from '../../hooks/useNavIntersection';
+import { NavItems } from '../../types';
 
 const StylishSwiper = styled(Swiper)(({ theme }) => `
   height: 500px;
@@ -29,8 +31,10 @@ const StylishSwiper = styled(Swiper)(({ theme }) => `
 `);
 
 export const Projects = () => {
+  const ref = useNavIntersection(.5, NavItems.Projects);
+
   return (
-    <>
+    <div ref={ref}>
       <StylishSwiper className='z-0'
         pagination={{
           dynamicBullets: true,
@@ -47,7 +51,7 @@ export const Projects = () => {
         <SwiperSlide>Project 8</SwiperSlide>
         <SwiperSlide>Project 9</SwiperSlide>
       </StylishSwiper>
-    </>
+    </div>
   );
 };
 

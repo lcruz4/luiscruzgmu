@@ -1,4 +1,7 @@
 import styled from '@emotion/styled';
+import { useState } from 'react';
+import { NavItems } from '../../types';
+import useNavStore from '../../store/navStore';
 
 interface MenuItemWrapperProps {
   active: boolean
@@ -36,10 +39,20 @@ const MenuItems = styled.div`
 `;
 
 export const NavBar = ({items}) => {
+  const { navItem, navElements } = useNavStore();
+
   return (
     <NavMenu>
       {items.map(item => (
-        <MenuItemWrapper key={item} active={item === 'home'}>
+        <MenuItemWrapper onClick={() => {
+          const navElem = navElements.find(navElem => navElem.id === item);
+
+          window.scrollTo({
+            behavior: 'smooth',
+            top: navElem.ref.current.offsetTop - 128
+          });
+        }}
+        key={item} active={item === navItem} className='cursor-pointer'>
           <MenuItems>{item}</MenuItems>
         </MenuItemWrapper>
       ))}

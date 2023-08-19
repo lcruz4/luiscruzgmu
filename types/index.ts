@@ -1,7 +1,13 @@
+export enum NavItems {
+  Home = 'Home',
+  About = 'About',
+  Projects = 'Projects',
+  Contact = 'Contact',
+};
+
 export interface BaseTheme {
   colors: {
     white: string;
-    // gray100: string;
     black: string;
     highlight: string;
     primary: string;

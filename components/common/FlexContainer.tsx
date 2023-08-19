@@ -1,8 +1,8 @@
-import { PropsWithChildren } from 'react';
+import { DetailedHTMLProps, HTMLAttributes, forwardRef } from 'react';
 import styled from '@emotion/styled';
 
-interface FlexContainerProps extends PropsWithChildren {
-  className?: string;
+interface FlexContainerProps
+  extends DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement> {
   center?: boolean;
   justifyContent?: string;
   alignItems?: string;
@@ -10,14 +10,9 @@ interface FlexContainerProps extends PropsWithChildren {
   fullWidth?: boolean;
 }
 
-const StylishFlexConatiner = styled.div<FlexContainerProps>`
+const StylishFlexContainer = styled.div<FlexContainerProps>`
   display: flex;
-  ${({
-    justifyContent,
-    alignItems,
-    flexDirection,
-    fullWidth
-  }) => {
+  ${({ justifyContent, alignItems, flexDirection, fullWidth }) => {
     let style = '';
 
     justifyContent && (style += `justify-content: ${justifyContent};`);
@@ -28,10 +23,14 @@ const StylishFlexConatiner = styled.div<FlexContainerProps>`
   }}
 `;
 
-export const FlexContainer = ({children, className, ...styleProps}: FlexContainerProps) => {
-  return <StylishFlexConatiner className={className} {...styleProps}>
-    {children}
-  </StylishFlexConatiner>
-};
+export const FlexContainer = forwardRef<HTMLDivElement, FlexContainerProps>(
+  ({ children, ...styleProps }: FlexContainerProps, ref) => {
+    return (
+      <StylishFlexContainer ref={ref} {...styleProps}>
+        {children}
+      </StylishFlexContainer>
+    );
+  },
+);
 
 export default FlexContainer;
