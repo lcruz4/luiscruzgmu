@@ -19,16 +19,28 @@ export const Contact = () => {
   const ref = useNavIntersection(0.2, NavItems.Contact);
 
   return (
-    <div ref={ref} className='w-full flex flex-col justify-center'>
-      <div className={`overflow-hidden transition-all delay-500 duration-500 ${formSubmitted ? 'max-h-28' : 'max-h-0'}`}>
+    <div ref={ref} className='w-full flex flex-col items-center'>
+      <div
+        className={`overflow-hidden transition-all delay-500 duration-500 ${
+          formSubmitted ? 'max-h-28' : 'max-h-0'
+        }`}
+      >
         <div className='mb-2'>
-          <p className='text-white text-2xl mb-2'>{error ? 'Something went wrong! 🤕' : 'Thank you!'}</p>
+          <p className='text-white text-2xl mb-2'>
+            {error ? 'Something went wrong! 🤕' : 'Thank you! 🙂'}
+          </p>
           <p className='text-white text-base mb-2'>
-            {error ? error : 'Your message has been sent. I will get back to you as soon as possible.'}
+            {error
+              ? error
+              : 'Your message has been sent. I will get back to you as soon as possible!'}
           </p>
         </div>
       </div>
-      <form className={`bg-cyan flex-1 max-w-2xl overflow-hidden transition-all duration-500 ${formSubmitted ? 'max-h-0' : 'max-h-800'}`}>
+      <form
+        className={`w-full bg-cyan flex-1 max-w-2xl overflow-hidden transition-all duration-500 ${
+          formSubmitted ? 'max-h-0' : 'max-h-800'
+        }`}
+      >
         <div className='mb-2'>
           <label className={labelClass} htmlFor='name'>
             Name
@@ -67,14 +79,20 @@ export const Contact = () => {
         <button
           className='bg-gray-800 shadow-innerL-tl-cyanL-br-pink-500 hover:shadow-innerL-tl-pink-500-br-cyanL focus:shadow-innerL-tl-pink-500-br-cyanL text-pink-500 transition-shadow ease-in-out duration-500 py-2 px-4 rounded focus:outline-none disabled:text-gray-400 disabled:shadow-none'
           type='button'
-          disabled={!emailRegex.test(email) || !name || !message}
+          disabled={
+            !emailRegex.test(email) ||
+            !name ||
+            !message ||
+            submitting ||
+            formSubmitted
+          }
           onClick={async () => {
             setSubmitting(true);
             try {
               const res = await fetch('/api/mailjet', {
                 method: 'POST',
                 body: JSON.stringify({ name, email, message }),
-              })
+              });
               const respObj = await res.json();
 
               if (respObj.success) {
