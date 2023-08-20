@@ -1,11 +1,20 @@
 import Mailjet from 'node-mailjet';
 
 const handler = (req, res) => {
-  console.dir(req.body)
   const { name, email, message } = JSON.parse(req.body);
 
   if (!name || !email || !message) {
     res.status(400).json({ success: false, error: 'please provide name, email, and message' });
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ success: false, error: 'please use POST' });
+    return;
+  }
+
+  if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
+    res.status(500).json({ success: false, error: 'environment configuration error' });
     return;
   }
 
