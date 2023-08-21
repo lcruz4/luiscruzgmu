@@ -49,11 +49,11 @@ const handler = (req, res) => {
 
     request
     .then((result) => {
-        console.dir(result.body)
+        console.log(JSON.stringify(result.body, null, 2))
         res.status(200).json({ success: true });
     })
     .catch((err) => {
-        console.log(err.statusCode)
+        console.log(JSON.stringify(err, null, 2))
         res.status(err.statusCode).json({ success: false, error: err });
     })
 };
