@@ -32,12 +32,12 @@ const handler = (req, res) => {
       Messages: [
         {
           From: {
-            Email: "luis@lcruz4.dev",
-            Name: `Contact form - lcruz4.dev`
+            Email: "luis@lcruz.dev",
+            Name: `Contact form - lcruz.dev`
           },
           To: [
             {
-              Email: "luis@lcruz4.dev",
+              Email: "luis@lcruz.dev",
               Name: "Luis Cruz"
             }
           ],
