@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { useMediaQuery } from 'usehooks-ts';
 import styled from '@emotion/styled';
 import { NavItems } from '../types';
 import { HomeHero, NavBar, About, Projects, Contact, FlexContainer } from '../components'
@@ -19,7 +20,21 @@ const StylishLayout = styled(FlexContainer)`
   }
 `;
 
+const Underline = styled.div`
+  width: 100%;
+  height: 4px;
+  background-color: ${({ theme }) => theme.colors.white};
+
+  @keyframes glow {
+    from { background-color: ${({ theme }) => theme.colors.spicy}; }
+    to { background-color: ${({ theme }) => theme.colors.coolRanch}; }
+  }
+  animation: glow 1.5s infinite alternate;
+`;
+
 export default function Home() {
+  const isDesktop = useMediaQuery('(min-width: 850px)');
+
   return (
     <>
       <Head>
@@ -32,7 +47,7 @@ export default function Home() {
           Hello 👋, I'm <Highlight>Luis Cruz</Highlight>!<br/>A full stack software engineer.
         </Title>
       </HomeHero>
-      <NavBar items={Object.values(NavItems)} />
+      {isDesktop ? <NavBar items={Object.values(NavItems)} /> : <Underline />}
       <StylishLayout justifyContent='center' flexDirection='column'>
         <About />
         <Projects />

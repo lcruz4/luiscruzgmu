@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMediaQuery } from 'usehooks-ts';
 import FlexContainer from '../common/FlexContainer';
 import FlexItem from '../common/FlexItem';
 import { useInView } from 'react-intersection-observer';
@@ -13,11 +13,12 @@ const AboutMain = () => {
   const { ref, inView } = useInView({
     threshold: .5,
   });
+  const isDesktop = useMediaQuery('(min-width: 850px)');
 
   return (
     <AboutMainContainer ref={ref}>
       <FlexContainer className='my-12 mx-0' flexDirection='column' alignItems='center' fullWidth>
-        <FlexContainer className='relative h-200 my-0 mx-100 first-of-type:mb-100 last-of-type:mt-100' fullWidth>
+        {isDesktop && <FlexContainer className='relative h-200 my-0 mx-100 first-of-type:mb-100 last-of-type:mt-100' fullWidth>
           <div className={[
             'transition-all',
             'duration-1000',
@@ -73,8 +74,8 @@ const AboutMain = () => {
               DETAIL ORIENTED
             </div>
           </div>
-        </FlexContainer>
-        <div className='relative h-400 w-[calc(461.875px)] -my-200 mx-0 overflow-hidden'>
+        </FlexContainer>}
+        <div className={`relative h-400 w-[calc(461.875px)] ${isDesktop ? '-my-200' : ''} mx-0 overflow-hidden`}>
           <div className='absolute h-800 -top-1/2 left-[calc(61.875px/2)] overflow-hidden rotate-30'>
             <div className='h-800 w-400 overflow-hidden -rotate-60'>
                 <img
@@ -95,7 +96,7 @@ const AboutMain = () => {
             </div>
           </div>
         </div>
-        <FlexContainer className='relative h-200 my-0 mx-24 first-of-type:mb-24 last-of-type:mt-24' fullWidth>
+        {isDesktop && <FlexContainer className='relative h-200 my-0 mx-24 first-of-type:mb-24 last-of-type:mt-24' fullWidth>
           <div className={[
             'transition-all',
             'duration-1000',
@@ -151,7 +152,7 @@ const AboutMain = () => {
               OWNERSHIP
             </div>
           </div>
-        </FlexContainer>
+        </FlexContainer>}
       </FlexContainer>
     </AboutMainContainer>
   );

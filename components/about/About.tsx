@@ -2,9 +2,6 @@ import styled from '@emotion/styled';
 import FlexContainer from '../common/FlexContainer';
 import AboutMain from './AboutMain';
 import AboutDescription from './AboutDescription';
-import { useInView } from 'react-intersection-observer';
-import { useEffect } from 'react';
-import useNavStore from '../../store/navStore';
 import { NavItems } from '../../types';
 import useNavIntersection from '../../hooks/useNavIntersection';
 
