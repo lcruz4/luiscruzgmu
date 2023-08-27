@@ -2,20 +2,17 @@ import styled from '@emotion/styled';
 import FlexContainer from '../common/FlexContainer';
 import AboutMain from './AboutMain';
 import AboutDescription from './AboutDescription';
-import { useInView } from 'react-intersection-observer';
-import { useEffect } from 'react';
-import useNavStore from '../../store/navStore';
 import { NavItems } from '../../types';
 import useNavIntersection from '../../hooks/useNavIntersection';
 
 const Underline = styled.div`
   width: 140px;
   height: 4px;
-  background-color: ${({ theme }) => theme.colors.white};
+  background-color: ${({ theme }) => theme.colors.spicy};
 
   @keyframes glow {
-    from { background-color: ${({ theme }) => theme.colors.white}; }
-    to { background-color: ${({ theme }) => theme.colors.halfSpicy}; }
+    from { background-color: ${({ theme }) => theme.colors.spicy}; }
+    to { background-color: ${({ theme }) => theme.colors.coolRanch}; }
   }
   animation: glow 1.5s infinite alternate;
 `;

@@ -9,6 +9,7 @@ const theme: BaseTheme = {
     primary: '#04c2c9', // cyanL
     spicy: '#ec3e85', // pink-500
     halfSpicy: '#ea93b7', // rose-300?
+    coolRanch: '#04c2c9', // cyanL
     primaryBackground: '#1b242f', // gray-800
   },
   breakpoints: {

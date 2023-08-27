@@ -13,6 +13,7 @@ export interface BaseTheme {
     primary: string;
     spicy: string;
     halfSpicy: string;
+    coolRanch: string;
     primaryBackground: string;
   },
   breakpoints: {
