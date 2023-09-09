@@ -3,42 +3,9 @@ import styled from '@emotion/styled';
 import { NavItems } from '../types';
 import { HomeHero, NavBar, About, Projects, Contact, FlexContainer, DesktopMobileSwitch } from '../components'
 
-const Title = styled.h1`
-  text-align: center;
-  margin: 2rem;
-`;
-
-const Highlight = styled.span`
-  color: ${({ theme }) => theme.colors.highlight};
-`;
-
-const StylishLayout = styled(FlexContainer)`
-  margin: 0 2rem;
-  @media (min-width: 450px) {
-    margin: 0 4rem;
-  }
-  @media (min-width: 1024px) {
-    margin: 0 6rem;
-  }
-
-  &> div {
-    margin: 64px 0;
-  }
-`;
-
 const Underline = styled.div`
-  width: 100%;
-  height: 4px;
+  @apply h-1;
   background-color: ${({ theme }) => theme.colors.spicy};
-
-  @keyframes glow {
-    from { background-color: ${({ theme }) => theme.colors.spicy}; }
-    to { background-color: ${({ theme }) => theme.colors.coolRanch}; }
-  }
-  @keyframes reverseGlow {
-    from { background-color: ${({ theme }) => theme.colors.coolRanch}; }
-    to { background-color: ${({ theme }) => theme.colors.spicy}; }
-  }
   animation: glow 1.5s infinite alternate;
   &:last-child {
     background-color: ${({ theme }) => theme.colors.coolRanch};
@@ -55,9 +22,9 @@ export default function Home() {
         <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Raleway' />
       </Head>
       <HomeHero>
-        <Title>
-          Hello 👋, I'm <Highlight>Luis Cruz</Highlight>!<br/>A full stack software engineer.
-        </Title>
+        <h1 className='m-8 text-center'>
+          Hello 👋, I'm <span className='text-red-300'>Luis Cruz</span>!<br/>A full stack software engineer.
+        </h1>
       </HomeHero>
       <DesktopMobileSwitch>
         <NavBar items={Object.values(NavItems)} />
@@ -66,11 +33,11 @@ export default function Home() {
           <Underline />
         </div>
       </DesktopMobileSwitch>
-      <StylishLayout justifyContent='center' flexDirection='column'>
+      <FlexContainer className='mx-8 tall:mx-16 venti:mx-24 my-0 child:my-16 child:mx-0' justifyContent='center' flexDirection='column'>
         <About />
         <Projects />
         <Contact />
-      </StylishLayout>
+      </FlexContainer>
     </>
   );
 }

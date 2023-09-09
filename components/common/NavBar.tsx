@@ -1,6 +1,4 @@
 import styled from '@emotion/styled';
-import { useState } from 'react';
-import { NavItems } from '../../types';
 import useNavStore from '../../store/navStore';
 
 interface MenuItemWrapperProps {

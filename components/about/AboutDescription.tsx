@@ -4,7 +4,7 @@ const Li = (props) => <li className='mb-4' {...props}>{props.children}</li>;
 
 const AboutDescription = () => (
   <FlexContainer fullWidth className='w-screen bg-white text-black'>
-    <div className='text-xl m-24 max-desktop:m-16 max-mini:m-8'>
+    <div className='text-xl m-24 max-grande:m-16 max-tall:m-8'>
       <ul>
         <Li>
           Quality is of the utmost importance to me. I don't cut corners and I strive to

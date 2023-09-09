@@ -76,19 +76,19 @@ const AboutMain = () => {
             </div>
           </FlexContainer>
         </DesktopOnly>
-        <div className='relative mini:h-400 h-200 mini:w-[calc(461.875px)] w-[calc(461.875px/2)] desktop:-my-200 mx-0 overflow-hidden'>
-          <div className='absolute mini:h-800 h-400 -top-1/2 mini:left-[calc(61.875px/2)] left-[calc(61.875px/4)] overflow-hidden rotate-30'>
-            <div className='mini:h-800 h-400 mini:w-400 w-200 overflow-hidden -rotate-60'>
+        <div className='relative tall:h-400 h-200 tall:w-[calc(461.875px)] w-[calc(461.875px/2)] grande:-my-200 mx-0 overflow-hidden'>
+          <div className='absolute tall:h-800 h-400 -top-1/2 tall:left-[calc(61.875px/2)] left-[calc(61.875px/4)] overflow-hidden rotate-30'>
+            <div className='tall:h-800 h-400 tall:w-400 w-200 overflow-hidden -rotate-60'>
                 <img
                   className={[
                     'absolute',
                     'max-w-[unset]',
                     'top-1/4',
                     // edge width. point to point - 400
-                    'mini:-left-[calc(61.875px/2)] -left-[calc(61.875px/4)]',
-                    'mini:h-400 h-200',
+                    'tall:-left-[calc(61.875px/2)] -left-[calc(61.875px/4)]',
+                    'tall:h-400 h-200',
                     // 400 / sin(60) to calculate hex point to point width
-                    'mini:w-[calc(461.875px)] w-[calc(461.875px/2)]',
+                    'tall:w-[calc(461.875px)] w-[calc(461.875px/2)]',
                     'object-cover',
                     'rotate-30',
                   ].join(' ')}

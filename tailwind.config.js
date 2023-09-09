@@ -8,8 +8,9 @@ module.exports = {
   ],
   theme: {
     screens: {
-      'mini': '450px',
-      'desktop': '850px',
+      'tall': '500px',
+      'grande': '850px',
+      'venti': '1024px',
     },
     extend: {
       backgroundImage: {
@@ -49,6 +50,10 @@ module.exports = {
       }
     },
   },
-  plugins: [],
+  plugins: [
+    ({ addVariant }) => {
+      addVariant('child', '& > *');
+    }
+  ],
   important: true,
 }

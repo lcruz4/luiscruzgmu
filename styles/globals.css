@@ -22,6 +22,15 @@
   }
 }
 
+@keyframes glow {
+  from { @apply bg-pink-500 }
+  to { @apply bg-cyanL }
+}
+@keyframes reverseGlow {
+  from { @apply bg-cyanL }
+  to { @apply bg-pink-500 }
+}
+
 @layer utilities {
   .spinAnimation {
     animation: spin 1s linear normal;

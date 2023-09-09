@@ -10,10 +10,6 @@ const Underline = styled.div`
   height: 4px;
   background-color: ${({ theme }) => theme.colors.spicy};
 
-  @keyframes glow {
-    from { background-color: ${({ theme }) => theme.colors.spicy}; }
-    to { background-color: ${({ theme }) => theme.colors.coolRanch}; }
-  }
   animation: glow 1.5s infinite alternate;
 `;
 
