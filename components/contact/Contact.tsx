@@ -89,7 +89,7 @@ export const Contact = () => {
           onClick={async () => {
             setSubmitting(true);
             try {
-              const res = await fetch('/api/mailjet', {
+              const res = await fetch('/api/contactMe', {
                 method: 'POST',
                 body: JSON.stringify({ name, email, message }),
               });
