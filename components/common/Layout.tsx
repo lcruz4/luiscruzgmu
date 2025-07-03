@@ -6,7 +6,7 @@ const StylishLayout = styled(FlexContainer)`
   height: 2000px;
 `;
 
-export const Layout = ({ children }) => {
+export const Layout = ({ children }: { children: any }) => {
   return <StylishLayout justifyContent='center'>{children}</StylishLayout>;
 };
 

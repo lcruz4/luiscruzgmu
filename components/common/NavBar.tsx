@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import useNavStore from '../../store/navStore';
 
 interface MenuItemWrapperProps {
-  active: boolean
+  active: boolean;
 }
 
 const NavMenu = styled.nav`
@@ -24,7 +24,9 @@ const MenuItemWrapper = styled.div<MenuItemWrapperProps>`
   display: flex;
   align-items: center;
   height: 100%;
-  border-right: 1px solid ${({ active, theme }) => active ? theme.colors.spicy : theme.colors.primary};
+  border-right: 1px solid
+    ${({ active, theme }) =>
+      active ? theme.colors.spicy : theme.colors.primary};
   border-radius: 3px;
   ${({ active }) => active && 'box-shadow: inset -3px -2px 2px'};
   ${({ active, theme }) => active && `color: ${theme.colors.spicy}`}
@@ -36,21 +38,28 @@ const MenuItems = styled.div`
   cursor: pointer;
 `;
 
-export const NavBar = ({items}) => {
+export const NavBar = ({ items }: { items: any }) => {
   const { navItem, navElements } = useNavStore();
 
   return (
     <NavMenu>
-      {items.map(item => (
-        <MenuItemWrapper onClick={() => {
-          const navElem = navElements.find(navElem => navElem.id === item);
+      {items.map((item: any) => (
+        <MenuItemWrapper
+          onClick={() => {
+            const navElem = navElements.find((navElem) => navElem.id === item);
+            if (!navElem) {
+              return;
+            }
 
-          window.scrollTo({
-            behavior: 'smooth',
-            top: navElem.ref.current.offsetTop - 128
-          });
-        }}
-        key={item} active={item === navItem} className='cursor-pointer'>
+            window.scrollTo({
+              behavior: 'smooth',
+              top: navElem.ref.current.offsetTop - 128,
+            });
+          }}
+          key={item}
+          active={item === navItem}
+          className='cursor-pointer'
+        >
           <MenuItems>{item}</MenuItems>
         </MenuItemWrapper>
       ))}
