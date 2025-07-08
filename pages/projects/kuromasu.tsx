@@ -529,6 +529,7 @@ const Kuromasu = () => {
       e.currentTarget.setAttribute('data-class-was', e.currentTarget.className);
     }
     e.currentTarget.innerHTML = dragVal?.toString() ?? '';
+    e.currentTarget.classList.remove('bg-stone-600', 'bg-white', 'bg-black');
     e.currentTarget.classList.add(...dragClassname.split(' '));
   };
 
