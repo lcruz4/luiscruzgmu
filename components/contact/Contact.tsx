@@ -100,7 +100,7 @@ export const Contact = () => {
               } else {
                 throw new Error(respObj.error);
               }
-            } catch (error) {
+            } catch (error: any) {
               console.error(error);
               setError(error.message);
               setFormSubmitted(true);
