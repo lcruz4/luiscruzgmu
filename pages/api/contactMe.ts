@@ -1,6 +1,6 @@
-import fetch from 'node-fetch';
+import { NextApiHandler } from 'next';
 
-const handler = async (req, res) => {
+const handler: NextApiHandler = async (req, res) => {
   const { name, email, message } = JSON.parse(req.body);
 
   if (!name || !email || !message) {
