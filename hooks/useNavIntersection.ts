@@ -16,7 +16,7 @@ export const useNavIntersection = (
 
   // Use `useCallback` so we don't recreate the function on each render
   const setRefs = useCallback(
-    (node) => {
+    (node: HTMLDivElement) => {
       // Ref's from useRef needs to have the node assigned to `current`
       ref.current = node;
       // Callback refs, like the one from `useInView`, is a function that takes the node as an argument
@@ -28,7 +28,7 @@ export const useNavIntersection = (
   if (!navElements.find(navElem => navElem.id === currentNavSection)) {
     addElement({
       id: currentNavSection,
-      ref,
+      ref: ref as React.MutableRefObject<HTMLDivElement>,
     });
   }
 

@@ -11,7 +11,7 @@ const StylishContainer = styled(FlexContainer)`
   background-image: url('/images/background.jpg');
 `;
 
-export const HomeHero = ({ children }) => {
+export const HomeHero = ({ children }: { children: React.ReactNode }) => {
   const ref = useNavIntersection(.1, NavItems.Home);
 
   return <StylishContainer ref={ref} justifyContent='center' alignItems='center'>{children}</StylishContainer>;
