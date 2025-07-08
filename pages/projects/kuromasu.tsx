@@ -1,4 +1,8 @@
-import { Dispatch, SetStateAction, useState } from 'react';
+import Head from 'next/head';
+import { DragEventHandler, useState } from 'react';
+
+let recurseCount = 0;
+const debug = false;
 
 type Puzzle = (number | string)[][];
 type PuzzleMeta = {
@@ -11,7 +15,14 @@ type PuzzleMeta = {
     bottom: number;
     left: number;
   };
+  availableSpace: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
 }[][];
+type Direction = 'top' | 'right' | 'bottom' | 'left';
 
 const MAX_DIM = 9;
 
@@ -37,6 +48,7 @@ const setNumericCellMeta = (
   let yDelta = -1;
   let xDelta = 0;
 
+  // find edges and mass
   while (true) {
     let yWithDelta = y + yDelta;
     let xWithDelta = x + xDelta;
@@ -71,9 +83,58 @@ const setNumericCellMeta = (
     mass++;
   }
 
+  yDelta = -1;
+  xDelta = 0;
+  let edgeY = edges.top;
+  let edgeX = x;
+  let space = y - edgeY;
+  const availableSpace = {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  };
+  while (true) {
+    let yWithDelta = edgeY + yDelta;
+    let xWithDelta = edgeX + xDelta;
+
+    if (isWall(puzzle, yWithDelta, xWithDelta)) {
+      if (yDelta < 0) {
+        yDelta = 1;
+        edgeY = edges.bottom;
+        availableSpace.top = space;
+        space = edgeY - y;
+        continue;
+      }
+      if (yDelta > 0) {
+        yDelta = 0;
+        xDelta = -1;
+        edgeY = y;
+        edgeX = edges.left;
+        availableSpace.bottom = space;
+        space = x - edgeX;
+        continue;
+      }
+      if (xDelta < 0) {
+        xDelta = 1;
+        edgeX = edges.right;
+        availableSpace.left = space;
+        space = edgeX - x;
+        continue;
+      }
+      availableSpace.right = space;
+      break;
+    }
+
+    yDelta === 0 ? 0 : yDelta < 0 ? yDelta-- : yDelta++;
+    xDelta === 0 ? 0 : xDelta < 0 ? xDelta-- : xDelta++;
+    space++;
+  }
+
   meta[y][x].mass = mass;
-  meta[y][x].edges = edges;
   meta[y][x].complete = mass === puzzle[y][x];
+  meta[y][x].edges = edges;
+  meta[y][x].availableSpace = availableSpace;
 };
 
 const isWhite = (val: number | string | null) =>
@@ -211,10 +272,10 @@ const isTooFar = (puzzle: Puzzle, y: number, x: number, meta: PuzzleMeta) => {
 };
 
 /**
- * should be called after meta has edges and mass.
+ * should be called after setNumericCellMeta.
  * should only be called on numeric cells.
  * Will modify puzzle if completable.
- * */
+ */
 const finishCompletableNumber = (
   puzzle: Puzzle,
   y: number,
@@ -258,14 +319,14 @@ const finishCompletableNumber = (
       }
 
       meta[y][x].mass++;
+      if (!isValidIndex(yIndex) || !isValidIndex(xIndex)) {
+        return 'error';
+      }
       if (!isWhite(puzzle[yIndex][xIndex])) {
         puzzle[yIndex][xIndex] = 'w';
       }
     }
-    if (
-      isValidIndex(lastWallY) &&
-      isValidIndex(lastWallX)
-    ) {
+    if (isValidIndex(lastWallY) && isValidIndex(lastWallX)) {
       const cell = puzzle[lastWallY][lastWallX];
       if (cell === '') {
         puzzle[lastWallY][lastWallX] = 'b';
@@ -282,7 +343,61 @@ const finishCompletableNumber = (
   return 'incomplete';
 };
 
-const solvePuzzle = (puzzle: Puzzle, meta: PuzzleMeta, updatePuzzle: () => void): boolean | null => {
+/**
+ * should be called after meta is setNumericCellMeta.
+ * should only be called on numeric cells.
+ * should only be called if the cell is not complete.
+ * Will modify puzzle if solvable space is found.
+ */
+const fillSolvableSpace = (
+  puzzle: Puzzle,
+  y: number,
+  x: number,
+  meta: PuzzleMeta,
+): 'error' | 'updated' | 'noUpdate' => {
+  const cell = puzzle[y][x] as number;
+  const sortedSpaces = Object.entries(meta[y][x].availableSpace).sort(
+    ([, a], [, b]) => b - a,
+  );
+  const total = sortedSpaces.reduce((acc, [, space]) => acc + space, 0);
+  let updated = false;
+
+  for (const [dir, space] of sortedSpaces) {
+    const otherDirsTotal = total - space;
+    const diff = cell - otherDirsTotal - 1;
+
+    if (diff > 0) {
+      for (let i = 1; i <= diff; i++) {
+        let yWithDelta = dir === 'top' ? y - i : dir === 'bottom' ? y + i : y;
+        let xWithDelta = dir === 'left' ? x - i : dir === 'right' ? x + i : x;
+        if (
+          !isValidIndex(yWithDelta) ||
+          !isValidIndex(xWithDelta) ||
+          isWall(puzzle, yWithDelta, xWithDelta)
+        ) {
+          return 'error';
+        }
+
+        if (puzzle[yWithDelta][xWithDelta] === '') {
+          puzzle[yWithDelta][xWithDelta] = 'w';
+          meta[y][x].edges[dir as Direction]++;
+          meta[y][x].mass++;
+          updated = true;
+        }
+      }
+    }
+  }
+
+  meta[y][x].complete = meta[y][x].mass === cell;
+  return updated ? 'updated' : 'noUpdate';
+};
+
+const solvePuzzle = (
+  puzzle: Puzzle,
+  meta: PuzzleMeta,
+  updatePuzzle: () => void,
+): boolean | null => {
+  recurseCount++;
   let puzzleUpdated = true;
   while (puzzleUpdated) {
     puzzleUpdated = false;
@@ -306,8 +421,17 @@ const solvePuzzle = (puzzle: Puzzle, meta: PuzzleMeta, updatePuzzle: () => void)
               updatePuzzle();
             }
           }
-        }
-        if (cell === '') {
+          if (!meta[y][x].complete) {
+            const status = fillSolvableSpace(puzzle, y, x, meta);
+            if (status === 'error') {
+              return false;
+            }
+            if (status === 'updated') {
+              puzzleUpdated = true;
+              updatePuzzle();
+            }
+          }
+        } else if (cell === '') {
           const blackInvalid = isBlackInvalid(puzzle, y, x, meta);
           const whiteInvalid = isWhiteInvalid(puzzle, y, x, meta);
           if (blackInvalid && whiteInvalid) {
@@ -329,6 +453,9 @@ const solvePuzzle = (puzzle: Puzzle, meta: PuzzleMeta, updatePuzzle: () => void)
         }
       }
     }
+    if (debug && puzzleUpdated) {
+      return null;
+    }
   }
   if (!puzzle.flat().some((cell) => cell === '')) {
     return true;
@@ -338,19 +465,24 @@ const solvePuzzle = (puzzle: Puzzle, meta: PuzzleMeta, updatePuzzle: () => void)
       if (cell === '') {
         const wPuzzle = puzzle.map((row) => [...row]);
         const bPuzzle = puzzle.map((row) => [...row]);
-        const wMeta = meta.map((row) => [...row]);
-        const bMeta = meta.map((row) => [...row]);
+        const wMeta = meta.map((row) => row.map(() => ({}))) as PuzzleMeta;
+        const bMeta = meta.map((row) => row.map(() => ({}))) as PuzzleMeta;
         wPuzzle[y][x] = 'w';
         bPuzzle[y][x] = 'b';
 
-        const wSolved = solvePuzzle(wPuzzle, wMeta, () => {});
-        const bSolved = solvePuzzle(bPuzzle, bMeta, () => {});
-
+        let wSolved = null;
+        let bSolved = null;
+        while (wSolved === null) {
+          wSolved = solvePuzzle(wPuzzle, wMeta, () => {});
+        }
         if (wSolved) {
           puzzle.length = 0;
           puzzle.push(...wPuzzle);
           updatePuzzle();
           return true;
+        }
+        while (bSolved === null) {
+          bSolved = solvePuzzle(bPuzzle, bMeta, () => {});
         }
         if (bSolved) {
           puzzle.length = 0;
@@ -358,6 +490,7 @@ const solvePuzzle = (puzzle: Puzzle, meta: PuzzleMeta, updatePuzzle: () => void)
           updatePuzzle();
           return true;
         }
+        return false;
       }
     }
   }
@@ -367,110 +500,198 @@ const solvePuzzle = (puzzle: Puzzle, meta: PuzzleMeta, updatePuzzle: () => void)
 
 const Kuromasu = () => {
   const [error, setError] = useState('');
-  const [test, setTest] = useState<Puzzle>([
-    ['', '', '', '', '', '', 8, 5, 6],
-    [6, 11, '', 8, '', '', '', '', 2],
-    ['', '', '', 12, '', '', '', '', ''],
-    ['', '', '', '', '', '', 4, '', 5],
-    ['', 13, 6, 10, 8, 7, '', 2, ''],
-    ['', '', '', 5, '', '', '', '', 5],
-    [4, '', '', '', '', '', '', 3, ''],
-    ['', '', 8, '', 8, '', '', '', 5],
-    ['', '', '', 2, '', '', '', '', ''],
+  const [editMode, setEditMode] = useState(true);
+  const [puzzle, setPuzzle] = useState<Puzzle>([
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
   ]);
   const [meta, setMeta] = useState(
     Array.from({ length: MAX_DIM }, () =>
       Array.from({ length: MAX_DIM }, () => ({})),
     ) as PuzzleMeta,
   );
+  const [dragVal, setDragVal] = useState('');
+  const [dragClassname, setDragClassname] = useState('');
+
+  const handleDragOver: DragEventHandler<HTMLDivElement> = (e) => {
+    e.preventDefault();
+    if (e.currentTarget.getAttribute('data-was') === null) {
+      e.currentTarget.setAttribute('data-was', e.currentTarget.innerHTML);
+    }
+    if (e.currentTarget.getAttribute('data-class-was') === null) {
+      e.currentTarget.setAttribute('data-class-was', e.currentTarget.className);
+    }
+    e.currentTarget.innerHTML = dragVal?.toString() ?? '';
+    e.currentTarget.classList.add(...dragClassname.split(' '));
+  };
+
+  const handleDragLeave: DragEventHandler<HTMLDivElement> = (e) => {
+    e.preventDefault();
+    e.currentTarget.innerHTML = e.currentTarget.getAttribute('data-was') ?? '';
+    e.currentTarget.className =
+      e.currentTarget.getAttribute('data-class-was') ?? '';
+    e.currentTarget.removeAttribute('data-was');
+    e.currentTarget.removeAttribute('data-class-was');
+  };
+
+  const handleDrop: DragEventHandler<HTMLDivElement> = (e) => {
+    e.preventDefault();
+    e.currentTarget.removeAttribute('data-was');
+    e.currentTarget.removeAttribute('data-class-was');
+    const x = parseInt(e.currentTarget.getAttribute('data-x')!);
+    const y = parseInt(e.currentTarget.getAttribute('data-y')!);
+    puzzle[y][x] = parseInt(dragVal);
+    setPuzzle([...puzzle]);
+  };
 
   return (
-    <div className='flex items-center justify-center h-screen w-screen bg-black text-neutral-800 font-["Futura"]'>
-      <div className='flex flex-col items-center justify-center w-full max-w-3xl p-4'>
-        <div className='bg-red-300 border-2 border-neutral-500'>
-          {test.map((row, y) => (
-            <div key={y} className='flex'>
-              {row.map((cell, x) => (
-                <div
-                  key={x}
-                  onClick={() => {
-                    if (test[y][x] === 'w') {
-                      setTest((test) => {
-                        test[y][x] = 'b';
-                        return [...test];
-                      });
-                    } else if (test[y][x] === 'b') {
-                      setTest((test) => {
-                        test[y][x] = '';
-                        return [...test];
-                      });
-                    } else if (test[y][x] === '') {
-                      setTest((test) => {
-                        test[y][x] = 'w';
-                        return [...test];
-                      });
-                    }
-                  }}
-                  className={`flex items-center justify-center w-10 h-10 ${
-                    x === 0 ? '' : 'border-l'
-                  } ${y === 0 ? '' : 'border-t'} border-neutral-500 ${
-                    cell === ''
-                      ? 'bg-stone-600'
-                      : cell === 'b'
-                      ? 'bg-black'
-                      : 'bg-white'
-                  } ${meta[y][x].complete ? 'text-stone-400' : 'text-black'} ${
-                    typeof cell === 'number'
-                      ? 'cursor-default'
-                      : 'cursor-pointer'
-                  } select-none`}
-                >
-                  {cell !== 0 && cell !== 'w' && cell !== 'b' && cell}
-                </div>
-              ))}
+    <>
+      <Head>
+        <title>Luis Cruz | Kuromasu Solver</title>
+        <link rel='icon' href='/images/kuromasu.ico' type='image/gif' />
+      </Head>
+      <div className='flex items-center justify-center h-screen w-screen bg-black text-neutral-800 font-["Futura"]'>
+        <div className='flex flex-col items-center justify-center w-full max-w-3xl p-4'>
+          {editMode && (
+            <div className='flex border-2 border-neutral-500 mb-8 max-w-[364px] flex-wrap'>
+              {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(
+                (v, i) => (
+                  <div
+                    key={`blocks-${i}`}
+                    draggable
+                    onDragStart={() => {
+                      setDragVal(v.toString());
+                      setDragClassname('bg-white text-black');
+                    }}
+                    className={`flex items-center justify-center w-10 h-10 border border-neutral-500 bg-white text-black cursor-pointer select-none`}
+                  >
+                    {v}
+                  </div>
+                ),
+              )}
             </div>
-          ))}
+          )}
+          <div className='bg-red-300 border-2 border-neutral-500'>
+            {puzzle.map((row, y) => (
+              <div key={`y-${y}`} className='flex'>
+                {row.map((cell, x) => (
+                  <div
+                    key={`y-${y},x-${x}`}
+                    data-x={x}
+                    data-y={y}
+                    onClick={() => {
+                      if (!editMode) {
+                        return;
+                      }
+                      if (puzzle[y][x] === 'w') {
+                        setPuzzle((puzzle) => {
+                          puzzle[y][x] = 'b';
+                          return [...puzzle];
+                        });
+                      } else if (puzzle[y][x] === 'b') {
+                        setPuzzle((puzzle) => {
+                          puzzle[y][x] = '';
+                          return [...puzzle];
+                        });
+                      } else if (puzzle[y][x] === '') {
+                        setPuzzle((puzzle) => {
+                          puzzle[y][x] = 'w';
+                          return [...puzzle];
+                        });
+                      } else {
+                        setPuzzle((puzzle) => {
+                          puzzle[y][x] = '';
+                          return [...puzzle];
+                        });
+                      }
+                    }}
+                    className={`flex items-center justify-center w-10 h-10 ${
+                      x === 0 ? '' : 'border-l'
+                    } ${y === 0 ? '' : 'border-t'} border-neutral-500 ${
+                      cell === ''
+                        ? 'bg-stone-600'
+                        : cell === 'b'
+                        ? 'bg-black'
+                        : 'bg-white'
+                    } ${
+                      meta[y][x].complete ? 'text-stone-400' : 'text-black'
+                    } ${
+                      typeof cell === 'number'
+                        ? 'cursor-default'
+                        : 'cursor-pointer'
+                    } select-none`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    {cell !== '' && cell !== 'w' && cell !== 'b' && cell}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className='flex justify-around w-60 my-4'>
+            <button
+              onClick={() => {
+                if (editMode) {
+                  setEditMode(false);
+                  return;
+                }
+                const t = performance.now();
+                const isSolved = solvePuzzle(puzzle, meta, () =>
+                  setPuzzle([...puzzle]),
+                );
+                console.log('Elapsed time:', performance.now() - t);
+                console.log('Recurse count:', recurseCount);
+                recurseCount = 0;
+                if (isSolved === false) {
+                  setError('No solution found');
+                }
+              }}
+              className='bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
+            >
+              {editMode ? 'Save' : 'Solve'}
+            </button>
+            <button
+              onClick={() => {
+                if (!editMode) {
+                  setEditMode(true);
+                  return;
+                }
+                setPuzzle([
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                  ['', '', '', '', '', '', '', '', ''],
+                ]);
+                setMeta(
+                  Array.from({ length: MAX_DIM }, () =>
+                    Array.from({ length: MAX_DIM }, () => ({})),
+                  ) as PuzzleMeta,
+                );
+                setError('');
+              }}
+              className='bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
+            >
+              {editMode ? 'Reset' : 'Edit'}
+            </button>
+          </div>
+          <div className='text-red-500'>{error}</div>
         </div>
-        <div className='flex justify-around w-60 my-4'>
-          <button
-            onClick={() => {
-              const isSolved = solvePuzzle(test, meta, () => setTest([...test]));
-              if (isSolved === false) {
-                setError('No solution found');
-              }
-            }}
-            className='bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
-          >
-            Solve
-          </button>
-          <button
-            onClick={() => {
-              setTest([
-                ['', '', '', '', '', '', 8, 5, 6],
-                [6, 11, '', 8, '', '', '', '', 2],
-                ['', '', '', 12, '', '', '', '', ''],
-                ['', '', '', '', '', '', 4, '', 5],
-                ['', 13, 6, 10, 8, 7, '', 2, ''],
-                ['', '', '', 5, '', '', '', '', 5],
-                [4, '', '', '', '', '', '', 3, ''],
-                ['', '', 8, '', 8, '', '', '', 5],
-                ['', '', '', 2, '', '', '', '', ''],
-              ]);
-              setMeta(
-                Array.from({ length: MAX_DIM }, () =>
-                  Array.from({ length: MAX_DIM }, () => ({})),
-                ) as PuzzleMeta,
-              )
-              setError('')
-            }}
-            className='bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
-          >
-            Reset
-          </button>
-        </div>
-        <div className='text-red-500'>{error}</div>
       </div>
-    </div>
+    </>
   );
 };
 
