@@ -565,7 +565,7 @@ const Kuromasu = () => {
         `}
         </style>
       </Head>
-      <div className='flex items-center justify-center h-screen w-screen bg-black text-neutral-800 font-["Futura"]'>
+      <div className='flex items-center justify-center h-dvh w-screen bg-black text-neutral-800 font-["Futura"]'>
         <div className='flex flex-col items-center justify-center w-full max-w-3xl p-4'>
           {editMode && (
             <div className='flex border-2 border-neutral-500 mb-8 max-w-[364px] flex-wrap'>
