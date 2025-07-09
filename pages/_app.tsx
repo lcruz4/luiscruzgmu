@@ -3,6 +3,7 @@ import { Global, css } from '@emotion/react';
 import theme from '../themes';
 
 import '../styles/globals.css';
+import Script from 'next/script';
 
 const globalStyles = css`
   body {
@@ -27,6 +28,7 @@ export const App = ({
 }) => {
   return (
     <ThemeProvider theme={theme}>
+      <Script src="/lib/DragDropTouch.js" />
       <Global styles={globalStyles} />
       <Component {...pageProps} />
     </ThemeProvider>
