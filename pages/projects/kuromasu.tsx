@@ -557,6 +557,13 @@ const Kuromasu = () => {
       <Head>
         <title>Luis Cruz | Kuromasu Solver</title>
         <link rel='icon' href='/images/kuromasu.ico' type='image/gif' />
+        <style>
+          {`
+          html, body {
+            overscroll-behavior: none !important;
+          }
+        `}
+        </style>
       </Head>
       <div className='flex items-center justify-center h-screen w-screen bg-black text-neutral-800 font-["Futura"]'>
         <div className='flex flex-col items-center justify-center w-full max-w-3xl p-4'>
