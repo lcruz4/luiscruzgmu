@@ -42,7 +42,7 @@ const AboutMain = () => {
               <div className={`absolute -z-1 ${inView && 'spinAnimationReverse'}`}>
                 <div className='hexagon' />
               </div>
-              <div className='text-black text-shadowL shadow-white text-center w-[calc(230.938px)]'>
+              <div className='text-black shadow-white text-shadowL text-center w-[calc(230.938px)]'>
                 QUALITY
               </div>
             </div>

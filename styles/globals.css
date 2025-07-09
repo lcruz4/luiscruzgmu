@@ -1,6 +1,37 @@
-@tailwind base;
-@tailwind components;
 @tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --breakpoint-tall: 500px;
+  --breakpoint-grande: 850px;
+  --breakpoint-venti: 1024px;
+
+  --color-white: #e5e7eb;
+  --color-pink-l: #ec4899
+  --color-cyan-l: #04c2c9;
+
+  --spacing-100: 100px;
+  --spacing-200: 200px;
+  --spacing-400: 400px;
+  --spacing-800: 800px;
+
+  --border-width-3: 3px;
+
+  --shadow-innerL-tl-cyanL-br-pink-500: inset -3px -2px 2px #ec4899, inset 3px 2px 2px #04c2c9;
+  --shadow-innerL-tl-pink-500-br-cyanL: inset -3px -2px 2px #04c2c9, inset 3px 2px 2px #ec4899;
+  --shadow-innerL-lr-cyanL: inset 0px 2px #04c2c9, inset 0px -2px #04c2c9;
+
+  --transition-duration-2: 2s;
+  --transition-timing-function-out-l: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --rotate-30: 30deg;
+  --rotate-60: 60deg;
+  --rotate-120: 120deg;
+
+  --z-index-1: 1;
+}
+
+@variant child (&> *);
 
 @keyframes spin {
   from {
@@ -23,12 +54,12 @@
 }
 
 @keyframes glow {
-  from { @apply bg-pink-500 }
-  to { @apply bg-cyanL }
+  from { background-color: #ec4899; }
+  to { background-color: #04c2c9; }
 }
 @keyframes reverseGlow {
-  from { @apply bg-cyanL }
-  to { @apply bg-pink-500 }
+  from { background-color: #04c2c9; }
+  to { background-color: #ec4899; }
 }
 
 @layer utilities {
@@ -39,17 +70,11 @@
     animation: spinReverse 1s linear normal;
   }
 
-  ._hex {
-    /**
-    * given the base of a flat top hexagon which is the widest width rectangle with full height
-    * this gives you it's width. 0.86602540378 is cos(30deg)
-    */
+  .hexagon, .hexagon:before, .hexagon:after {
+    @apply from-cyan-100 via-teal-100 to-cyan-100 shadow-innerL-lr-cyanL before:rotate-60 before:absolute after:rotate-120 after:absolute;
     width: calc(100px / 0.86602540378);
-    @apply h-200 bg-gradient-radial from-cyan-100 via-teal-100 to-cyan-100 shadow-innerL-lr-cyanL;
-  }
-
-  .hexagon {
-    @apply _hex before:rotate-60 before:_hex before:absolute after:rotate-120 after:_hex after:absolute;
+    height: 200px;
+    background-image: radial-gradient(#cffafe, #ccfbf1, #cffafe);
   }
 
   .text-shadowL {

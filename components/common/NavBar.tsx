@@ -15,7 +15,7 @@ const NavMenu = styled.nav`
   background: ${({ theme }) => theme.colors.primaryBackground};
   border-bottom: 3px solid ${({ theme }) => theme.colors.primary};
   text-align: left;
-  z-index: 1;
+  z-index: 2;
 
   color: ${({ theme }) => theme.colors.white};
 `;
