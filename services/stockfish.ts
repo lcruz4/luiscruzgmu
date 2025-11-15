@@ -87,7 +87,7 @@ class Stockfish {
     if (!options) {
       options = {
         Threads: 6,
-        Hash: 10240,
+        Hash: 1024,
         UCI_ShowWDL: true,
         UCI_AnalyseMode: true,
         Contempt: 0,

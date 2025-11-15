@@ -81,3 +81,11 @@
     text-shadow: 1px 1px var(--tw-shadow-color);
   }
 }
+
+@font-face {
+    font-family: 'Chess Sans'; /* Choose a unique name for your font */
+    src: url('/fonts/chess-sans-800.woff2') format('woff2'); /* Specify the path to your WOFF2 file */
+    font-weight: normal; /* Optional: Define the font's weight */
+    font-style: normal;  /* Optional: Define the font's style (e.g., italic) */
+    font-display: swap; /* Optional: Controls how the font loads and renders */
+}
