@@ -467,7 +467,7 @@ export const ChessReview = () => {
             <div className='flex flex-col min-h-0 flex-1'>
               <h2 className='text-xl font-semibold mb-4'>Games</h2>
 
-              <div className='font-sans'>
+              <div className='font-sans flex-1 overflow-y-auto min-h-0'>
                 <div className='mb-4 flex gap-2'>
                   <input
                     type='text'
@@ -494,6 +494,7 @@ export const ChessReview = () => {
                       const data = (await response.json()) as {
                         games: ChessComGameReponse[];
                       };
+                      data.games.sort((a, b) => b.end_time - a.end_time);
                       setFetchedGames(data.games);
                       setInputValue(''); // Clear input after action
                     }}
@@ -505,7 +506,7 @@ export const ChessReview = () => {
                 {fetchGamesError && (
                   <div className='text-red-500 mb-4'>{fetchGamesError}</div>
                 )}
-                <div className='flex-1 overflow-y-auto min-h-0'>
+                <div>
                   {fetchedGames.map((game) => {
                     const eco = game.eco.split(/\d/)[0].split('/');
                     const opening = eco[eco.length - 1].replaceAll('-', ' ');
@@ -524,7 +525,7 @@ export const ChessReview = () => {
                             Game: {game.white.username} ({game.white.rating}) vs{' '}
                             {game.black.username} ({game.black.rating})
                           </div>
-                          <div>Time Control: {game.time_control}</div>
+                          <div>Time Control: {`${game.time_class} (${game.time_control})`}</div>
                           <div>
                             Result:{' '}
                             {game.white.result === 'win'
@@ -583,7 +584,7 @@ export const ChessReview = () => {
           {activeTab === 'analysis' && (
             <div className='flex flex-col min-h-0 flex-1'>
               <h2 className='text-xl font-semibold mb-4'>Chess Analysis</h2>
-              <div className='flex-1 overflow-y-auto min-h-0 font-sans text-[#81B64C]'>
+              <div className='flex-1 overflow-y-auto min-h-0 font-sans'>
                 {selectedGame ? (
                   <div>
                     {fullMoveHistory.map((historyItem, index) => {
@@ -735,6 +736,7 @@ export const ChessReview = () => {
                           'transition-all',
                           'duration-200',
                           'ease-out',
+                          'z-10',
                         );
                         imgRef.style.top = `${top}px`;
                         imgRef.style.left = `${left}px`;
@@ -743,6 +745,7 @@ export const ChessReview = () => {
                             'transition-all',
                             'duration-200',
                             'ease-out',
+                            'z-10',
                           );
                           setPieces(chess.board());
                         }, 200);
