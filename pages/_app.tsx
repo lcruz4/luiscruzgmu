@@ -4,6 +4,17 @@ import theme from '../themes';
 
 import '../styles/globals.css';
 import Script from 'next/script';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: Infinity,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const globalStyles = css`
   body {
@@ -27,11 +38,14 @@ export const App = ({
   pageProps: any;
 }) => {
   return (
-    <ThemeProvider theme={theme}>
-      <Script src="/lib/DragDropTouch.js" />
-      <Global styles={globalStyles} />
-      <Component {...pageProps} />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <Script src='/lib/DragDropTouch.js' />
+        <Global styles={globalStyles} />
+        <Component {...pageProps} />
+      </ThemeProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 };
 

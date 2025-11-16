@@ -1,4 +1,11 @@
-export { default as LeftStopChevron } from './LeftStopChevron';
+export { default as Best } from './Best';
+export { default as Blunder } from './Blunder';
+export { default as Book } from './Book';
+export { default as Excellent } from './Excellent';
+export { default as Good } from './Good';
+export { default as Inaccuracy } from './Inaccuracy';
 export { default as LeftChevron } from './LeftChevron';
+export { default as LeftStopChevron } from './LeftStopChevron';
+export { default as Mistake } from './Mistake';
 export { default as RightChevron } from './RightChevron';
 export { default as RightStopChevron } from './RightStopChevron';

@@ -1,68 +1,18 @@
-import { Chess, Color, WHITE } from 'chess.js';
+import { Chess, WHITE } from 'chess.js';
 import { type ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import {
+  _AnalysisWithoutClassification,
+  Analysis,
+  Evaluation,
+  MoveClassification,
+  ScoreType,
+  SearchOptions,
+  StockfishOptions,
+  ThinkResult,
+} from '../types/chess';
 
 const DEPTH = 18;
 const LICHESS_EXP = -0.00368208;
-
-interface StockfishOptions {
-  Contempt?: number;
-  Hash?: number;
-  Threads?: number;
-  UCI_AnalyseMode?: boolean;
-  UCI_ShowWDL?: boolean;
-}
-
-interface SearchOptions {
-  depth?: number;
-  nodes?: number;
-  mate?: number;
-  movetime?: number;
-  infinite?: boolean;
-}
-
-enum ScoreType {
-  CENTIPAWN = 'cp',
-  MATE = 'mate',
-}
-
-interface Evaluation {
-  depth: number;
-  [ScoreType.CENTIPAWN]?: number;
-  [ScoreType.MATE]?: number;
-  win: number;
-  draw: number;
-  lose: number;
-  time: number;
-  principalVariation: string[];
-}
-
-interface ThinkResult {
-  bestMove: string;
-  evaluation: Evaluation;
-}
-
-enum MoveClassification {
-  BEST = 'Best',
-  EXCELLENT = 'Excellent',
-  GOOD = 'Good',
-  INACCURACY = 'Inaccuracy',
-  MISTAKE = 'Mistake',
-  BLUNDER = 'Blunder',
-}
-
-export interface _AnalysisWithoutClassification {
-  move: string;
-  turn: Color;
-  bestMove: string;
-  evalBefore: Evaluation;
-  evalAfter: Evaluation;
-}
-
-export interface Analysis extends _AnalysisWithoutClassification {
-  classificationStockfishWDL: MoveClassification;
-  classificationLichessFormula: MoveClassification;
-  classificationStandardLogisticFormula: MoveClassification;
-}
 
 class Stockfish {
   private _chess: Chess = new Chess();
@@ -190,7 +140,10 @@ class Stockfish {
             if (line.startsWith('bestmove')) {
               const bestMove = line.split(' ')[1];
 
-              if (!/^([a-h][1-8])([a-h][1-8])[qrbn]?$/.test(bestMove)) {
+              if (
+                !/^([a-h][1-8])([a-h][1-8])[qrbn]?$/.test(bestMove) &&
+                bestMove !== '(none)'
+              ) {
                 throw new Error(`Unrecognized bestmove format: ${bestMove}`);
               }
 
@@ -222,11 +175,10 @@ class Stockfish {
     return san;
   };
 
-  _getStockfishWDLClassification = ({
-    turn,
-    evalBefore,
-    evalAfter,
-  }: _AnalysisWithoutClassification, isBestMove?: boolean): MoveClassification => {
+  _getStockfishWDLClassification = (
+    { turn, evalBefore, evalAfter }: _AnalysisWithoutClassification,
+    isBestMove?: boolean,
+  ): MoveClassification => {
     const pointsLost =
       turn === WHITE
         ? evalBefore.win +
@@ -239,11 +191,10 @@ class Stockfish {
     return this.classifyMove(pointsLost / 10, isBestMove);
   };
 
-  _getLichessFormulaClassification = ({
-    turn,
-    evalBefore,
-    evalAfter,
-  }: _AnalysisWithoutClassification, isBestMove?: boolean): MoveClassification => {
+  _getLichessFormulaClassification = (
+    { turn, evalBefore, evalAfter }: _AnalysisWithoutClassification,
+    isBestMove?: boolean,
+  ): MoveClassification => {
     const centiPawnBefore =
       evalBefore[ScoreType.CENTIPAWN] ??
       10000 * (evalBefore[ScoreType.MATE] ?? 0);
@@ -260,26 +211,23 @@ class Stockfish {
     return this.classifyMove(pointsLost, isBestMove);
   };
 
-  _getStandardLogisticFormulaClassification = ({
-    turn,
-    evalBefore,
-    evalAfter,
-  }: _AnalysisWithoutClassification, isBestMove?: boolean): MoveClassification => {
+  _getStandardLogisticFormulaClassification = (
+    { turn, evalBefore, evalAfter }: _AnalysisWithoutClassification,
+    isBestMove?: boolean,
+  ): MoveClassification => {
     const centiPawnBefore =
       evalBefore[ScoreType.CENTIPAWN] ??
       10000 * (evalBefore[ScoreType.MATE] ?? 0);
     const centiPawnAfter =
       evalAfter[ScoreType.CENTIPAWN] ??
       10000 * (evalAfter[ScoreType.MATE] ?? 0);
-    const winPBefore =
-      100 / (1 + Math.pow(10, (-centiPawnBefore / 4) / 100));
-    const winPAfter =
-      100 / (1 + Math.pow(10, (-centiPawnAfter / 4) / 100));
+    const winPBefore = 100 / (1 + Math.pow(10, -centiPawnBefore / 4 / 100));
+    const winPAfter = 100 / (1 + Math.pow(10, -centiPawnAfter / 4 / 100));
     const pointsLost =
       turn === WHITE ? winPBefore - winPAfter : winPAfter - winPBefore;
 
     return this.classifyMove(pointsLost, isBestMove);
-  }
+  };
 
   /**
    * classifies move based on expected points lost
@@ -287,7 +235,10 @@ class Stockfish {
    * @param isBestMove boolean whether the move is the best move
    * @returns string
    */
-  classifyMove = (expectedPointsLost: number, isBestMove?: boolean): MoveClassification => {
+  classifyMove = (
+    expectedPointsLost: number,
+    isBestMove?: boolean,
+  ): MoveClassification => {
     if (expectedPointsLost <= 0 || isBestMove) return MoveClassification.BEST;
     if (expectedPointsLost <= 2) return MoveClassification.EXCELLENT;
     if (expectedPointsLost <= 5) return MoveClassification.GOOD;
@@ -328,7 +279,10 @@ class Stockfish {
     }, lockID);
 
     return {
-      bestMove: this._lanToSan(this._lastBestMove!),
+      bestMove:
+        this._lastBestMove === '(none)'
+          ? ''
+          : this._lanToSan(this._lastBestMove!),
       evaluation: this._lastEvaluation!,
     };
   };
@@ -369,12 +323,19 @@ class Stockfish {
 
         gameAnalysis.push({
           ...partialGameAnalysis,
-          classificationStockfishWDL:
-            this._getStockfishWDLClassification(partialGameAnalysis, bestMove === move.san),
-          classificationLichessFormula:
-            this._getLichessFormulaClassification(partialGameAnalysis, bestMove === move.san),
+          classificationStockfishWDL: this._getStockfishWDLClassification(
+            partialGameAnalysis,
+            bestMove === move.san,
+          ),
+          classificationLichessFormula: this._getLichessFormulaClassification(
+            partialGameAnalysis,
+            bestMove === move.san,
+          ),
           classificationStandardLogisticFormula:
-            this._getStandardLogisticFormulaClassification(partialGameAnalysis, bestMove === move.san),
+            this._getStandardLogisticFormulaClassification(
+              partialGameAnalysis,
+              bestMove === move.san,
+            ),
         });
 
         bestMove = nextBestMove;
