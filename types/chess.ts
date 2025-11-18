@@ -1,4 +1,4 @@
-import { Color } from 'chess.js';
+import { Color, Move } from 'chess.js';
 
 export interface StockfishOptions {
   Contempt?: number;
@@ -59,4 +59,43 @@ export interface Analysis extends _AnalysisWithoutClassification {
   classificationStockfishWDL: MoveClassification;
   classificationLichessFormula: MoveClassification;
   classificationStandardLogisticFormula: MoveClassification;
+}
+
+enum ChessComGameResult {
+  Win = 'win',
+  Loss = 'loss',
+  Draw = 'draw',
+}
+
+interface ChessComPlayer {
+  rating: number;
+  result: ChessComGameResult;
+  '@id': string;
+  username: string;
+  uuid: string;
+}
+
+export interface ChessComGameReponse {
+  accuracies?: {
+    white: number;
+    black: number;
+  };
+  black: ChessComPlayer;
+  eco: string;
+  end_time: number;
+  fen: string;
+  initial_setup: string;
+  pgn: string;
+  rated: boolean;
+  rules: string;
+  tcn: string;
+  time_class: string;
+  time_control: string;
+  url: string;
+  uuid: string;
+  white: ChessComPlayer;
+}
+
+export interface AnalyzedMove extends Move {
+  analysis?: Analysis;
 }

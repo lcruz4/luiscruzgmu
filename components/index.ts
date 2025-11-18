@@ -1,4 +1,5 @@
 export * from './about/About';
+export * from './chessReview/Board';
 export * from './chessReview/Classification';
 export * from './common/FlexContainer';
 export * from './common/Layout';

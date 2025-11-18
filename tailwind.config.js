@@ -22,5 +22,7 @@ module.exports = {
     'text-mistake',
     'bg-blunder',
     'text-blunder',
+    'bg-yellow-300',
+    'text-yellow-300',
   ],
 }
