@@ -132,6 +132,9 @@ export const Square = ({
   const highlightColor = isHighlightSquare
     ? getClassificationColor(classification, 'bg')
     : '';
+  const from = bestMove?.slice(0, 2);
+  const to = bestMove?.slice(2, 4);
+
   return (
     <>
       {piece ? (
@@ -178,8 +181,8 @@ export const Square = ({
           </div>
         </div>
       )}
-      {bestMove?.from === square && (
-        <Arrow bestMove={bestMove} top={top} left={left} />
+      {from === square && to && (
+        <Arrow from={from} to={to} top={top} left={left} />
       )}
     </>
   );

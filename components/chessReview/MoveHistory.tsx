@@ -144,7 +144,7 @@ export const MoveHistory = ({
     setPieces(chess.board());
   };
   return (
-    <div className='flex-1 overflow-y-auto min-h-0 font-sans'>
+    <div className='MoveHistory.tsx flex-1 overflow-y-auto min-h-0 font-sans'>
       {selectedGame ? (
         <div>
           {fullMoveHistory.map((historyItem) => {

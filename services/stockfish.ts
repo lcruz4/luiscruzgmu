@@ -132,7 +132,7 @@ class Stockfish {
                   draw: parseInt(draw),
                   lose: turn === WHITE ? parseInt(lose) : parseInt(win),
                   time: parseInt(time),
-                  principalVariation: pv.split(' '),
+                  lines: [this._lanToSan(pv.split(' '))],
                 };
 
                 this._processedQueue.unshift(evaluation);
@@ -171,13 +171,18 @@ class Stockfish {
     }, lockID);
   };
 
-  _lanToMove = (lan: string): Move => {
-    const move = this._chess.move(lan);
-    if (!move) {
-      throw new Error(`Invalid LAN move: ${lan}`);
+  _lanToSan = (lanArr: string[]): string[] => {
+    const moves: string[] = [];
+    for (const lan of lanArr) {
+      const move = this._chess.move(lan);
+      if (!move) {
+        throw new Error(`Invalid LAN move: ${lan}`);
+      }
+      moves.push(move.san);
     }
-    this._chess.undo();
-    return move;
+    for (const _ of lanArr) this._chess.undo();
+
+    return moves;
   };
 
   _getStockfishWDLClassification = (
@@ -305,8 +310,8 @@ class Stockfish {
     return {
       bestMove:
         this._lastBestMove === '(none)'
-          ? null
-          : this._lanToMove(this._lastBestMove!),
+          ? ''
+          : this._lastBestMove!,
       evaluation: this._lastEvaluation!,
     };
   };
@@ -336,7 +341,7 @@ class Stockfish {
           return {
             move: 'startpos',
             turn: WHITE,
-            bestMove: null as Move | null,
+            bestMove: '',
             anticipatedMove: thinkRes.bestMove,
             evalBefore: thinkRes.evaluation,
             evalAfter: thinkRes.evaluation,
@@ -382,17 +387,17 @@ class Stockfish {
               ...partialGameAnalysis,
               classificationStockfishWDL: this._getStockfishWDLClassification(
                 partialGameAnalysis,
-                bestMove?.san === move.san,
+                bestMove === move.san,
               ),
               classificationLichessFormula:
                 this._getLichessFormulaClassification(
                   partialGameAnalysis,
-                  bestMove?.san === move.san,
+                  bestMove === move.san,
                 ),
               classificationStandardLogisticFormula:
                 this._getStandardLogisticFormulaClassification(
                   partialGameAnalysis,
-                  bestMove?.san === move.san,
+                  bestMove === move.san,
                 ),
             };
           },

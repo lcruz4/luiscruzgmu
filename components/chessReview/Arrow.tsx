@@ -1,15 +1,14 @@
-import { Move } from 'chess.js';
 import KnightArrow, { KnightArrowTransform } from '../icons/KnightArrow';
 import BasicArrow, { BasicArrowTransform } from '../icons/BasicArrow';
 
 interface ArrowProps {
-  bestMove: Move;
+  from: string;
+  to: string;
   top: number;
   left: number;
 }
 
-export const Arrow = ({ bestMove, top, left }: ArrowProps) => {
-  const { from, to } = bestMove;
+export const Arrow = ({ from, to, top, left }: ArrowProps) => {
   const h = to.charCodeAt(0) - from.charCodeAt(0);
   const v = parseInt(to[1]) - parseInt(from[1]);
   const hMag = Math.abs(h);

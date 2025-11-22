@@ -29,7 +29,7 @@ export interface Evaluation {
   draw: number;
   lose: number;
   time: number;
-  principalVariation: string[];
+  lines: string[][];
 }
 
 export enum MoveClassification {
@@ -45,8 +45,8 @@ export enum MoveClassification {
 export interface _AnalysisWithoutClassification {
   move: string;
   turn: Color;
-  bestMove: Move | null;
-  anticipatedMove: Move | null;
+  bestMove: string;
+  anticipatedMove: string;
   evalBefore: Evaluation;
   evalAfter: Evaluation;
 }

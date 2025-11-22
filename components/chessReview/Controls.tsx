@@ -56,7 +56,9 @@ export const Controls = ({
       <button
         className='px-6 py-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center cursor-pointer'
         onClick={() => {
+          chess.undo();
           lastMoveRef.current = chess.undo() || undefined;
+          if (lastMoveRef.current) chess.move(lastMoveRef.current.san);
           setPieces(chess.board());
         }}
       >

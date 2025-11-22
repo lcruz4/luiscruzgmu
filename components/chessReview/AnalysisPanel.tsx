@@ -24,7 +24,7 @@ export const AnalysisPanel = ({
   selectedGame,
 }: AnalysisPanelProps) => {
   return (
-    <div className='flex flex-col min-h-0 flex-1'>
+    <div className='AnalysisPanel.tsx flex flex-col min-h-0 flex-1'>
       <h2 className='text-xl font-semibold mb-4'>Chess Analysis</h2>
       <MoveHistory
         chess={chess}
