@@ -1,4 +1,4 @@
-import { Chess, WHITE } from 'chess.js';
+import { Chess, Move, WHITE } from 'chess.js';
 import { type ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import {
   _AnalysisWithoutClassification,
@@ -8,8 +8,9 @@ import {
   ScoreType,
   SearchOptions,
   StockfishOptions,
-  ThinkResult,
 } from '../types/chess';
+import { redis } from './redis';
+import { logger } from './logger';
 
 const DEPTH = 18;
 const LICHESS_EXP = -0.00368208;
@@ -31,7 +32,7 @@ class Stockfish {
     });
 
     this._process.stderr.on('data', (data) => {
-      console.error(`Stockfish stderr: ${data.toString()}`);
+      logger.error(`Stockfish stderr: ${data.toString()}`);
     });
 
     if (!options) {
@@ -57,18 +58,23 @@ class Stockfish {
     lockID?: number,
   ) => {
     const _lockID = lockID || Date.now();
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       const timeout = setTimeout(() => {
         clearInterval(interval);
         throw new Error('Timeout waiting for lock');
       }, 60000); // Timeout after 60 seconds
       const interval = setInterval(async () => {
-        if (!this._lock || this._lock === _lockID) {
+        const shouldReleaseLock = !this._lock;
+        if (shouldReleaseLock || this._lock === _lockID) {
+          if (shouldReleaseLock) logger.debug(`Acquiring lock with ID [${_lockID}]`);
           this._lock = _lockID;
           clearTimeout(timeout);
           clearInterval(interval);
           await callback(_lockID);
-          this._lock = 0;
+          if (shouldReleaseLock){
+            this._lock = 0;
+            logger.debug(`Released lock with ID [${_lockID}]`);
+          }
           resolve(null);
         }
       }, 100); // check for lock release every 100ms
@@ -132,7 +138,7 @@ class Stockfish {
                 this._processedQueue.unshift(evaluation);
                 this._lastEvaluation = evaluation;
               } else {
-                console.warn('Unrecognized info line:', line);
+                logger.warn(`Unrecognized info format [${line}]`);
                 this._processedQueue.unshift(line);
               }
             }
@@ -144,7 +150,7 @@ class Stockfish {
                 !/^([a-h][1-8])([a-h][1-8])[qrbn]?$/.test(bestMove) &&
                 bestMove !== '(none)'
               ) {
-                throw new Error(`Unrecognized bestmove format: ${bestMove}`);
+                throw new Error(`Unrecognized bestmove format: [${bestMove}]`);
               }
 
               this._processedQueue.unshift(line.split(' ')[1]);
@@ -165,14 +171,13 @@ class Stockfish {
     }, lockID);
   };
 
-  _lanToSan = (lan: string): string => {
+  _lanToMove = (lan: string): Move => {
     const move = this._chess.move(lan);
     if (!move) {
       throw new Error(`Invalid LAN move: ${lan}`);
     }
-    const san = move.san;
     this._chess.undo();
-    return san;
+    return move;
   };
 
   _getStockfishWDLClassification = (
@@ -229,6 +234,25 @@ class Stockfish {
     return this.classifyMove(pointsLost, isBestMove);
   };
 
+  _getMaxDepthCacheKey = async (stockfishMoves: string[]): Promise<string> => {
+    logger.debug(
+      `Getting max depth cache key for moves: [${stockfishMoves.join(' ')}]`,
+    );
+    const keys = await redis.keys(`chess:${stockfishMoves.join('_')}:*`);
+    if (keys.length)
+      logger.debug(`Found keys for max depth cache key: [${keys.join(', ')}]`);
+    const maxDepth = keys.reduce<number>((acc, key) => {
+      const keyDepth = parseInt(key.split(':').at(-1) ?? '0');
+      return keyDepth > acc ? keyDepth : acc;
+    }, DEPTH);
+    logger.debug(
+      `returning max depth key: [chess:${stockfishMoves.join(
+        '_',
+      )}:${maxDepth}]`,
+    );
+    return `chess:${stockfishMoves.join('_')}:${maxDepth}`;
+  };
+
   /**
    * classifies move based on expected points lost
    * @param expectedPointsLost number subtract win eval before - win eval after
@@ -259,15 +283,15 @@ class Stockfish {
   };
 
   /**
-   * thinks at DEPTH and returns ThinkResult when it's done
+   * thinks at DEPTH and returns results when it's done
    * @param options SearchOptions
    * @param lockID number
-   * @returns ThinkResult - bestMove is in SAN
+   * @returns {
+   *  bestMove: Move | null;
+   *  evaluation: Evaluation;
+   * }
    */
-  think = async (
-    options: SearchOptions = {},
-    lockID?: number,
-  ): Promise<ThinkResult> => {
+  think = async (options: SearchOptions = {}, lockID?: number) => {
     await this._withLock(async () => {
       let command = 'go';
       for (const [option, value] of Object.entries(options)) {
@@ -281,8 +305,8 @@ class Stockfish {
     return {
       bestMove:
         this._lastBestMove === '(none)'
-          ? ''
-          : this._lanToSan(this._lastBestMove!),
+          ? null
+          : this._lanToMove(this._lastBestMove!),
       evaluation: this._lastEvaluation!,
     };
   };
@@ -296,53 +320,92 @@ class Stockfish {
       const stockfishMoves: string[] = [];
 
       this._chess.reset();
-      await this.setPosition([], lockID);
-      let { bestMove, evaluation: evalBefore } = await this.think(
-        { depth: DEPTH },
-        lockID,
+      const cacheKey = await this._getMaxDepthCacheKey([]);
+      let { bestMove, evalBefore } = await redis.withCache(
+        {
+          key: cacheKey,
+          keyOnSet: `chess::${DEPTH}`,
+          extraData: {
+            createdAt: Date.now(),
+          },
+        },
+        async () => {
+          await this.setPosition([], lockID);
+          const thinkRes = await this.think({ depth: DEPTH }, lockID);
+
+          return {
+            move: 'startpos',
+            turn: WHITE,
+            bestMove: null as Move | null,
+            anticipatedMove: thinkRes.bestMove,
+            evalBefore: thinkRes.evaluation,
+            evalAfter: thinkRes.evaluation,
+            classificationStockfishWDL: MoveClassification.BOOK,
+            classificationLichessFormula: MoveClassification.BOOK,
+            classificationStandardLogisticFormula: MoveClassification.BOOK,
+          };
+        },
       );
       for (const move of history) {
         const moveFormatted = `${this._chess.moveNumber()}.${
           move.color === WHITE ? '' : '..'
         } ${move.san}`;
-        console.log(`Analyzing move: ${moveFormatted}`);
+        logger.info(`Analyzing move: ${moveFormatted}`);
         const turn = this._chess.turn();
         this._chess.move(move);
         stockfishMoves.push(move.lan);
-        await this.setPosition(stockfishMoves, lockID);
-        const { bestMove: nextBestMove, evaluation: evalAfter } =
-          await this.think({ depth: DEPTH }, lockID);
 
-        const partialGameAnalysis = {
-          move: moveFormatted,
-          turn,
-          bestMove,
-          evalBefore,
-          evalAfter,
-        };
+        const cacheKey = await this._getMaxDepthCacheKey(stockfishMoves);
+        const moveAnalysis = await redis.withCache(
+          {
+            key: cacheKey,
+            keyOnSet: `chess:${stockfishMoves.join('_')}:${DEPTH}`,
+            extraData: {
+              createdAt: Date.now(),
+            },
+          },
+          async () => {
+            await this.setPosition(stockfishMoves, lockID);
+            const { bestMove: anticipatedMove, evaluation: evalAfter } =
+              await this.think({ depth: DEPTH }, lockID);
 
-        gameAnalysis.push({
-          ...partialGameAnalysis,
-          classificationStockfishWDL: this._getStockfishWDLClassification(
-            partialGameAnalysis,
-            bestMove === move.san,
-          ),
-          classificationLichessFormula: this._getLichessFormulaClassification(
-            partialGameAnalysis,
-            bestMove === move.san,
-          ),
-          classificationStandardLogisticFormula:
-            this._getStandardLogisticFormulaClassification(
-              partialGameAnalysis,
-              bestMove === move.san,
-            ),
-        });
+            const partialGameAnalysis = {
+              move: moveFormatted,
+              turn,
+              bestMove,
+              anticipatedMove,
+              evalBefore,
+              evalAfter,
+            };
 
-        bestMove = nextBestMove;
-        evalBefore = evalAfter;
+            return {
+              ...partialGameAnalysis,
+              classificationStockfishWDL: this._getStockfishWDLClassification(
+                partialGameAnalysis,
+                bestMove?.san === move.san,
+              ),
+              classificationLichessFormula:
+                this._getLichessFormulaClassification(
+                  partialGameAnalysis,
+                  bestMove?.san === move.san,
+                ),
+              classificationStandardLogisticFormula:
+                this._getStandardLogisticFormulaClassification(
+                  partialGameAnalysis,
+                  bestMove?.san === move.san,
+                ),
+            };
+          },
+        );
+
+        gameAnalysis.push(moveAnalysis);
+
+        bestMove = moveAnalysis.anticipatedMove;
+        evalBefore = moveAnalysis.evalAfter;
       }
     });
 
+    logger.info(`Analyzis complete 🥳`);
     return gameAnalysis;
   };
 }

@@ -3,6 +3,7 @@ import { Chess, Move } from 'chess.js';
 import { AnalyzedMove, ChessComGameReponse } from '../../types/chess';
 import { PlayerBanner } from './PlayerBanner';
 import { Square } from './Square';
+import KnightArrow from '../icons/KnightArrow';
 
 let i = 0;
 interface BoardProps {

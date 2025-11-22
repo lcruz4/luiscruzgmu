@@ -32,11 +32,6 @@ export interface Evaluation {
   principalVariation: string[];
 }
 
-export interface ThinkResult {
-  bestMove: string;
-  evaluation: Evaluation;
-}
-
 export enum MoveClassification {
   BOOK = 'Book',
   BEST = 'Best',
@@ -50,7 +45,8 @@ export enum MoveClassification {
 export interface _AnalysisWithoutClassification {
   move: string;
   turn: Color;
-  bestMove: string;
+  bestMove: Move | null;
+  anticipatedMove: Move | null;
   evalBefore: Evaluation;
   evalAfter: Evaluation;
 }

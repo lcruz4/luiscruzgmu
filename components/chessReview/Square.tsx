@@ -1,8 +1,9 @@
-import { DragEvent, MutableRefObject, useCallback, useRef } from 'react';
+import { DragEvent, MutableRefObject, useCallback } from 'react';
 import { Chess, Move, Piece } from 'chess.js';
 import { Classification } from './Classification';
 import { AnalyzedMove } from '../../types/chess';
 import { getClassificationColor } from '../../helpers/chess';
+import { Arrow } from './Arrow';
 
 interface SquareProps {
   chess: Chess;
@@ -38,7 +39,7 @@ export const Square = ({
       event.dataTransfer.clearData();
       event.dataTransfer.setData('text/plain', square);
       event.dataTransfer.effectAllowed = 'move';
-      event.currentTarget.style.cursor = 'grabbing';
+      document.body.style.cursor = 'grabbing';
 
       dragLocationRef.current = {
         x: event.clientX,
@@ -58,7 +59,6 @@ export const Square = ({
       originalElement.parentElement?.appendChild(clone);
       originalElement.style.visibility = 'hidden';
       clone.id = `${clone.id}_clone`;
-      clone.style.cursor = 'grabbing';
       clone.style.pointerEvents = 'none';
       dragNodeRef.current = clone;
     }
@@ -90,7 +90,7 @@ export const Square = ({
     dragNodeRef.current.style.top = `${dragLocationRef.current.top}px`;
     dragNodeRef.current.style.left = `${dragLocationRef.current.left}px`;
     dragLocationRef.current = undefined;
-    originalElement.style.cursor = 'grab';
+    document.body.style.cursor = '';
   }, []);
 
   const handleDragEnter = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -110,6 +110,7 @@ export const Square = ({
         dragNodeRef.current.remove();
         dragNodeRef.current = undefined;
       }
+      document.body.style.cursor = '';
     },
     [handleChessMove],
   );
@@ -127,27 +128,10 @@ export const Square = ({
   const moveIndex = chess.moveIndex();
   const isHighlightSquare =
     lastMove?.from === square || lastMove?.to === square;
-  const classification =
-    history[moveIndex]?.analysis?.classificationLichessFormula;
+  const { classificationLichessFormula: classification, bestMove } = history[moveIndex]?.analysis || {};
   const highlightColor = isHighlightSquare
     ? getClassificationColor(classification, 'bg')
     : '';
-
-
-  //     useEffect(() => {
-  //   if (isDragging) {
-  //     document.body.style.cursor = 'grabbing';
-  //     document.body.style.userSelect = 'none';
-  //   } else {
-  //     document.body.style.cursor = '';
-  //     document.body.style.userSelect = '';
-  //   }
-
-  //   return () => {
-  //     document.body.style.cursor = '';
-  //     document.body.style.userSelect = '';
-  //   };
-  // }, [isDragging]);
   return (
     <>
       {piece ? (
@@ -193,6 +177,9 @@ export const Square = ({
             <Classification classification={classification} />
           </div>
         </div>
+      )}
+      {bestMove?.from === square && (
+        <Arrow bestMove={bestMove} top={top} left={left} />
       )}
     </>
   );
