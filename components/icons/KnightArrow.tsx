@@ -20,7 +20,7 @@ interface KnightArrowProps {
 const KnightArrow = ({ className, style, transform }: KnightArrowProps) => {
   return (
     <svg
-      className={className}
+      className={`KnightArrow.tsx ${className ?? ''}`}
       viewBox='0 0 20 30'
       xmlns='http://www.w3.org/2000/svg'
       version='1.1'

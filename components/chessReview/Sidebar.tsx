@@ -28,7 +28,7 @@ export const Sidebar = ({
   const [fetchedGames, setFetchedGames] = useState<ChessComGameReponse[]>([]);
 
   return (
-    <div className='flex-1 bg-gray-800 p-4 flex flex-col min-h-0'>
+    <div className='Sidebar.tsx flex-1 bg-gray-800 p-4 flex flex-col min-h-0'>
       <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {activeTab === 'games' && (

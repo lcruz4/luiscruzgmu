@@ -6,7 +6,7 @@ const Best = () => (
     height='100%'
     viewBox='0 0 18 19'
   >
-    <g id='best'>
+    <g>
       <path
         className='icon-shadow'
         opacity='0.3'

@@ -40,7 +40,7 @@ export const Controls = ({
   }, []);
 
   return (
-    <div className='flex justify-center gap-3 mt-4 p-4 w-full border-t border-gray-600'>
+    <div className='Controls.tsx flex justify-center gap-3 mt-4 p-4 w-full border-t border-gray-600'>
       {/* First Move */}
       <button
         className='px-6 py-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center cursor-pointer'

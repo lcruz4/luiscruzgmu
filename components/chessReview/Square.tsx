@@ -136,7 +136,7 @@ export const Square = ({
   const to = bestMove?.slice(2, 4);
 
   return (
-    <>
+    <div className='Square.tsx'>
       {piece ? (
         <img
           id={`${square}_${imageName}`}
@@ -184,6 +184,6 @@ export const Square = ({
       {from === square && to && (
         <Arrow from={from} to={to} top={top} left={left} />
       )}
-    </>
+    </div>
   );
 };

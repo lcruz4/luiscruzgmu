@@ -3,7 +3,6 @@ import { Chess, Move } from 'chess.js';
 import { AnalyzedMove, ChessComGameReponse } from '../../types/chess';
 import { PlayerBanner } from './PlayerBanner';
 import { Square } from './Square';
-import KnightArrow from '../icons/KnightArrow';
 
 let i = 0;
 interface BoardProps {
@@ -32,7 +31,7 @@ export const Board = ({
   }>();
 
   return (
-    <div className='flex relative items-center justify-center my-12 ml-12 mr-6 min-h-0 min-w-0 flex-shrink-0'>
+    <div className='Board.tsx flex relative items-center justify-center my-12 ml-12 mr-6 min-h-0 min-w-0 flex-shrink-0'>
       <PlayerBanner isWhite={true} selectedGame={selectedGame} />
       <PlayerBanner isWhite={false} selectedGame={selectedGame} />
       <img

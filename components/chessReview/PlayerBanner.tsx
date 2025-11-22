@@ -47,7 +47,7 @@ export const PlayerBanner = ({ isWhite, selectedGame }: PlayerBannerProps) => {
     ? selectedGame?.white.rating
     : selectedGame?.black.rating;
   return (
-    <div className={`absolute ${colorClasses} h-12 flex flex-row gap-2`}>
+    <div className={`PlayerBanner.tsx absolute ${colorClasses} h-12 flex flex-row gap-2`}>
       {isWhite && (
         <p className='text-white text-sm text-center mt-1'>
           {playerName}{' '}

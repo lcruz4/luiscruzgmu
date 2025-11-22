@@ -64,7 +64,7 @@ export const Arrow = ({ from, to, top, left }: ArrowProps) => {
   }
 
   return (
-    <>
+    <div className='Arrow.tsx'>
       {isKnightMove ? (
         <KnightArrow
           className='absolute h-[37.5%] w-[25%] z-2'
@@ -85,6 +85,6 @@ export const Arrow = ({ from, to, top, left }: ArrowProps) => {
           }}
         />
       )}
-    </>
+    </div>
   );
 };

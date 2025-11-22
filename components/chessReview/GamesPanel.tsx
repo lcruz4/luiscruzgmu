@@ -19,7 +19,7 @@ export const GamesPanel = ({
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <div className='flex flex-col min-h-0 flex-1'>
+    <div className='GamesPanel.tsx flex flex-col min-h-0 flex-1'>
       <h2 className='text-xl font-semibold mb-4'>Games</h2>
 
       <div className='font-sans flex-1 overflow-y-auto min-h-0'>

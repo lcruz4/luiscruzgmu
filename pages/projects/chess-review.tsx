@@ -25,7 +25,7 @@ export const ChessReview = () => {
 
   return (
     <div
-      className='h-screen w-full flex flex-col font-[Chess_Sans]'
+      className='chess-review.tsx h-screen w-full flex flex-col font-[Chess_Sans]'
       onDragOver={(event) => {
         event.preventDefault();
       }}
