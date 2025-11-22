@@ -95,3 +95,9 @@ export interface ChessComGameReponse {
 export interface AnalyzedMove extends Move {
   analysis?: Analysis;
 }
+
+export interface FullMoveHistory {
+  moveNumber: number;
+  whiteMove: Move;
+  blackMove?: Move;
+}

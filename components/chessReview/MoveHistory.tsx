@@ -13,7 +13,14 @@ import {
   getClassificationColor,
 } from '../../helpers/chess';
 import { Classification } from './Classification';
-import { Analysis, AnalyzedMove, ChessComGameReponse } from '../../types/chess';
+import {
+  Analysis,
+  AnalyzedMove,
+  ChessComGameReponse,
+  FullMoveHistory,
+} from '../../types/chess';
+import { MoveHistoryPair } from './MoveHistoryPair';
+import { Line } from './Line';
 
 interface MoveHistoryProps {
   chess: Chess;
@@ -23,12 +30,6 @@ interface MoveHistoryProps {
   setHistory: Dispatch<SetStateAction<AnalyzedMove[]>>;
   setPieces: Dispatch<SetStateAction<ReturnType<Chess['board']>>>;
   selectedGame?: ChessComGameReponse;
-}
-
-interface FullMoveHistory {
-  moveNumber: number;
-  whiteMove: AnalyzedMove;
-  blackMove?: AnalyzedMove;
 }
 
 export const MoveHistory = ({
@@ -41,7 +42,12 @@ export const MoveHistory = ({
   selectedGame,
 }: MoveHistoryProps) => {
   const [fullMoveHistory, setFullMoveHistory] = useState<FullMoveHistory[]>([]);
-  const moveRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const isWhiteNext = chess.turn() === WHITE;
+  const halfMoveNumber = chess.moveNumber();
+  const fullMoveNumber = halfMoveNumber - (isWhiteNext ? 1 : 0);
+  const lines =
+    history[halfMoveNumber - (isWhiteNext ? 1 : 0)]?.analysis?.evalBefore
+      .lines || [];
 
   let analysisQuery = useQuery<{ success: boolean; analysis: Analysis[] }>({
     queryKey: ['chess-review', selectedGame?.pgn],
@@ -111,16 +117,6 @@ export const MoveHistory = ({
         return analyzedMove;
       });
       setHistory(analyzedHistory);
-
-      const _history = history.reduce<FullMoveHistory[]>((acc, move, index) => {
-        if (index % 2 === 0) {
-          const moveNumber = Math.ceil((index + 1) / 2);
-          const blackMove = history.at(index + 1);
-          acc.push({ moveNumber, whiteMove: move, blackMove });
-        }
-        return acc;
-      }, []);
-      setFullMoveHistory(_history);
     }
   }, [analysisQuery.data, history]);
 
@@ -143,73 +139,25 @@ export const MoveHistory = ({
 
     setPieces(chess.board());
   };
+
   return (
     <div className='MoveHistory.tsx flex-1 overflow-y-auto min-h-0 font-sans'>
+      {lines.map((line, idx) => (
+        <Line key={idx} line={line} fullMoveNumber={fullMoveNumber} isWhiteNext={isWhiteNext} />
+      ))}
       {selectedGame ? (
         <div>
-          {fullMoveHistory.map((historyItem) => {
-            const isWhiteTurn = chess.turn() === WHITE;
-            const moveNumber = chess.moveNumber() - (isWhiteTurn ? 1 : 0);
-            const curMove = lastMoveRef.current;
-            const whiteClassification =
-              historyItem.whiteMove.analysis?.classificationLichessFormula;
-            const blackClassification =
-              historyItem.blackMove?.analysis?.classificationLichessFormula;
-            const hightlightWhiteMove =
-              !isWhiteTurn &&
-              moveNumber === historyItem.moveNumber &&
-              curMove?.san === historyItem.whiteMove.san
-                ? getClassificationColor(whiteClassification)
-                : '';
-            const highlightBlackMove =
-              isWhiteTurn &&
-              moveNumber === historyItem.moveNumber &&
-              curMove?.san === historyItem.blackMove?.san
-                ? getClassificationColor(blackClassification)
-                : '';
-
-            moveRefs.current[`move-${moveNumber || 1}`]?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
-            });
-
-            return (
-              <div
-                key={JSON.stringify(historyItem)}
-                className='text-gray-300 mb-1'
-                ref={(el) => {
-                  moveRefs.current[`move-${historyItem.moveNumber}`] = el;
-                }}
-              >
-                {historyItem.moveNumber}
-                {')'}
-                <span
-                  className={`hover:underline cursor-pointer ml-2 font-bold ${hightlightWhiteMove}`}
-                  onClick={() => handleHistoryItemClick(historyItem, WHITE)}
-                >
-                  {historyItem.whiteMove.san}{' '}
-                  {whiteClassification && (
-                    <div className='max-h-4 max-w-4 inline-block'>
-                      <Classification classification={whiteClassification} />
-                    </div>
-                  )}
-                </span>{' '}
-                {historyItem.blackMove && (
-                  <span
-                    className={`hover:underline cursor-pointer ml-2 font-bold ${highlightBlackMove}`}
-                    onClick={() => handleHistoryItemClick(historyItem, BLACK)}
-                  >
-                    {historyItem.blackMove.san}{' '}
-                    {blackClassification && (
-                      <div className='max-h-4 max-w-4 inline-block'>
-                        <Classification classification={blackClassification} />
-                      </div>
-                    )}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+          {fullMoveHistory.map((historyItem) => (
+            <MoveHistoryPair
+              key={JSON.stringify(historyItem)}
+              historyItem={historyItem}
+              history={history}
+              isWhiteNext={isWhiteNext}
+              fullMoveNumber={fullMoveNumber}
+              lastMoveRef={lastMoveRef}
+              handleHistoryItemClick={handleHistoryItemClick}
+            />
+          ))}
         </div>
       ) : (
         <p className='text-gray-300'>
