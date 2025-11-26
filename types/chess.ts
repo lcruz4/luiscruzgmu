@@ -51,7 +51,11 @@ export interface _AnalysisWithoutClassification {
   evalAfter: Evaluation;
 }
 
-export interface Analysis extends _AnalysisWithoutClassification {
+export interface Analysis {
+  move: string;
+  turn: Color;
+  bestMove: string;
+  eval: Evaluation;
   classificationStockfishWDL: MoveClassification;
   classificationLichessFormula: MoveClassification;
   classificationStandardLogisticFormula: MoveClassification;

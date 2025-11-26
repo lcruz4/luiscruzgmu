@@ -1,4 +1,4 @@
-import { Chess, Move, WHITE } from 'chess.js';
+import { Chess, WHITE } from 'chess.js';
 import { type ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import {
   _AnalysisWithoutClassification,
@@ -15,18 +15,38 @@ import { logger } from './logger';
 const DEPTH = 18;
 const LICHESS_EXP = -0.00368208;
 
+/**
+ * classifies move based on expected points lost
+ * @param expectedPointsLost number subtract win eval before - win eval after
+ * @param isBestMove boolean whether the move is the best move
+ * @returns string
+ */
+export const classifyMove = (
+  expectedPointsLost: number,
+  isBestMove?: boolean,
+): MoveClassification => {
+  if (expectedPointsLost <= 0 || isBestMove) return MoveClassification.BEST;
+  if (expectedPointsLost <= 2) return MoveClassification.EXCELLENT;
+  if (expectedPointsLost <= 5) return MoveClassification.GOOD;
+  if (expectedPointsLost <= 10) return MoveClassification.INACCURACY;
+  if (expectedPointsLost <= 20) return MoveClassification.MISTAKE;
+  return MoveClassification.BLUNDER;
+};
+
 class Stockfish {
   private _chess: Chess = new Chess();
   private _process: ChildProcessWithoutNullStreams = spawn(
     '/opt/homebrew/bin/stockfish',
   );
-  private _lock: number = 1;
+  private _lock: Promise<void> = Promise.resolve();
   private _stdoutQueue: string[] = [];
   private _processedQueue: (string | Evaluation)[] = [];
   private _lastBestMove?: string;
   private _lastEvaluation?: Evaluation;
+  isLockFree = true;
 
   constructor(options?: StockfishOptions) {
+    this.reserveLock();
     this._process.stdout.on('data', (data) => {
       this._stdoutQueue.push(...data.toString().split('\n'));
     });
@@ -49,129 +69,111 @@ class Stockfish {
     }
 
     this._stdoutQueue = [];
-
-    this._lock = 0;
   }
 
-  private _withLock = async (
-    callback: (lockID: number) => Promise<void>,
-    lockID?: number,
-  ) => {
-    const _lockID = lockID || Date.now();
-    await new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        clearInterval(interval);
-        throw new Error('Timeout waiting for lock');
-      }, 60000); // Timeout after 60 seconds
-      const interval = setInterval(async () => {
-        const shouldReleaseLock = !this._lock;
-        if (shouldReleaseLock || this._lock === _lockID) {
-          if (shouldReleaseLock) logger.debug(`Acquiring lock with ID [${_lockID}]`);
-          this._lock = _lockID;
-          clearTimeout(timeout);
-          clearInterval(interval);
-          await callback(_lockID);
-          if (shouldReleaseLock){
-            this._lock = 0;
-            logger.debug(`Released lock with ID [${_lockID}]`);
-          }
-          resolve(null);
-        }
-      }, 100); // check for lock release every 100ms
+  private async _acquireLock() {
+    await this._lock;
+
+    this.isLockFree = false;
+    let _resolve: () => void;
+    this._lock = new Promise((resolve) => {
+      _resolve = resolve;
     });
-    return;
-  };
 
-  private _processQueue = async (stopKeyword: string, lockID?: number) => {
-    return await this._withLock(async () => {
-      return new Promise((resolve) => {
-        const interval = setInterval(() => {
-          let quit = false;
+    return () => {
+      this.isLockFree = true;
+      _resolve();
+    };
+  }
 
-          const queue = [...this._stdoutQueue];
-          this._stdoutQueue = [];
-          for (const line of queue) {
-            if (line.trim() === '') continue;
+  private _processQueue = async (stopKeyword: string) => {
+    return new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        let quit = false;
 
-            if (line.startsWith('info') && !line.startsWith('info string')) {
-              const match = line.match(
-                /.* depth (\d+).* score (cp|mate) (-?\d+).* wdl (\d+) (\d+) (\d+).* time (\d+).* pv (.*)/,
-              );
+        const queue = [...this._stdoutQueue];
+        this._stdoutQueue = [];
+        for (const line of queue) {
+          if (line.trim() === '') continue;
 
-              if (match) {
-                const turn = this._chess.turn();
-                const [
-                  ,
-                  depth,
-                  scoreType,
-                  scoreValue,
-                  win,
-                  draw,
-                  lose,
-                  time,
-                  pv,
-                ] = match;
-                if (
-                  scoreType !== ScoreType.CENTIPAWN &&
-                  scoreType !== ScoreType.MATE
-                ) {
-                  throw new Error(`Unrecognized score type: ${scoreType}`);
-                }
-                const evaluation: Evaluation = {
-                  depth: parseInt(depth),
-                  ...(scoreType === ScoreType.CENTIPAWN
-                    ? {
-                        [ScoreType.CENTIPAWN]:
-                          parseInt(scoreValue) * (turn === WHITE ? 1 : -1),
-                      }
-                    : {
-                        [ScoreType.MATE]:
-                          parseInt(scoreValue) * (turn === WHITE ? 1 : -1),
-                      }),
-                  win: turn === WHITE ? parseInt(win) : parseInt(lose),
-                  draw: parseInt(draw),
-                  lose: turn === WHITE ? parseInt(lose) : parseInt(win),
-                  time: parseInt(time),
-                  lines: [this._lanToSan(pv.split(' '))],
-                };
+          if (line.startsWith('info') && !line.startsWith('info string')) {
+            const match = line.match(
+              /.* depth (\d+).* score (cp|mate) (-?\d+).* wdl (\d+) (\d+) (\d+).* time (\d+).* pv (.*)/,
+            );
 
-                this._processedQueue.unshift(evaluation);
-                this._lastEvaluation = evaluation;
-              } else {
-                logger.warn(`Unrecognized info format [${line}]`);
-                this._processedQueue.unshift(line);
-              }
-            }
-
-            if (line.startsWith('bestmove')) {
-              const bestMove = line.split(' ')[1];
-
+            if (match) {
+              const turn = this._chess.turn();
+              const [
+                ,
+                depth,
+                scoreType,
+                scoreValue,
+                win,
+                draw,
+                lose,
+                time,
+                pv,
+              ] = match;
               if (
-                !/^([a-h][1-8])([a-h][1-8])[qrbn]?$/.test(bestMove) &&
-                bestMove !== '(none)'
+                scoreType !== ScoreType.CENTIPAWN &&
+                scoreType !== ScoreType.MATE
               ) {
-                throw new Error(`Unrecognized bestmove format: [${bestMove}]`);
+                throw new Error(`Unrecognized score type: ${scoreType}`);
               }
+              const evaluation: Evaluation = {
+                depth: parseInt(depth),
+                ...(scoreType === ScoreType.CENTIPAWN
+                  ? {
+                      [ScoreType.CENTIPAWN]:
+                        parseInt(scoreValue) * (turn === WHITE ? 1 : -1),
+                    }
+                  : {
+                      [ScoreType.MATE]:
+                        parseInt(scoreValue) * (turn === WHITE ? 1 : -1),
+                    }),
+                win: turn === WHITE ? parseInt(win) : parseInt(lose),
+                draw: parseInt(draw),
+                lose: turn === WHITE ? parseInt(lose) : parseInt(win),
+                time: parseInt(time),
+                lines: [this._lanToSan(pv.split(' '))],
+              };
 
-              this._processedQueue.unshift(line.split(' ')[1]);
-              this._lastBestMove = bestMove;
-            }
-            this._processedQueue = this._processedQueue.slice(0, 100); // keep last 100 lines
-            if (line.startsWith(stopKeyword)) {
-              quit = true;
+              this._processedQueue.unshift(evaluation);
+              this._lastEvaluation = evaluation;
+            } else {
+              logger.warn(`Unrecognized info format [${line}]`);
+              this._processedQueue.unshift(line);
             }
           }
 
-          if (quit) {
-            clearInterval(interval);
-            resolve();
+          if (line.startsWith('bestmove')) {
+            const bestMove = line.split(' ')[1];
+
+            if (
+              !/^([a-h][1-8])([a-h][1-8])[qrbn]?$/.test(bestMove) &&
+              bestMove !== '(none)'
+            ) {
+              throw new Error(`Unrecognized bestmove format: [${bestMove}]`);
+            }
+
+            this._processedQueue.unshift(line.split(' ')[1]);
+            this._lastBestMove = bestMove;
           }
-        }, 100);
-      });
-    }, lockID);
+          this._processedQueue = this._processedQueue.slice(0, 100); // keep last 100 lines
+          if (line.startsWith(stopKeyword)) {
+            quit = true;
+          }
+        }
+
+        if (quit) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 100);
+    });
   };
 
-  _lanToSan = (lanArr: string[]): string[] => {
+  private _lanToSan = (lanArr: string[]): string[] => {
     const moves: string[] = [];
     for (const lan of lanArr) {
       const move = this._chess.move(lan);
@@ -185,7 +187,7 @@ class Stockfish {
     return moves;
   };
 
-  _getStockfishWDLClassification = (
+  private _getStockfishWDLClassification = (
     { turn, evalBefore, evalAfter }: _AnalysisWithoutClassification,
     isBestMove?: boolean,
   ): MoveClassification => {
@@ -198,10 +200,10 @@ class Stockfish {
           evalBefore.draw / 2 -
           (evalAfter.lose + evalAfter.draw / 2);
     // points are out of 1000 so we need to divide by 10 to make it out of 100
-    return this.classifyMove(pointsLost / 10, isBestMove);
+    return classifyMove(pointsLost / 10, isBestMove);
   };
 
-  _getLichessFormulaClassification = (
+  private _getLichessFormulaClassification = (
     { turn, evalBefore, evalAfter }: _AnalysisWithoutClassification,
     isBestMove?: boolean,
   ): MoveClassification => {
@@ -218,10 +220,10 @@ class Stockfish {
     const pointsLost =
       turn === WHITE ? winPBefore - winPAfter : winPAfter - winPBefore;
 
-    return this.classifyMove(pointsLost, isBestMove);
+    return classifyMove(pointsLost, isBestMove);
   };
 
-  _getStandardLogisticFormulaClassification = (
+  private _getStandardLogisticFormulaClassification = (
     { turn, evalBefore, evalAfter }: _AnalysisWithoutClassification,
     isBestMove?: boolean,
   ): MoveClassification => {
@@ -236,10 +238,12 @@ class Stockfish {
     const pointsLost =
       turn === WHITE ? winPBefore - winPAfter : winPAfter - winPBefore;
 
-    return this.classifyMove(pointsLost, isBestMove);
+    return classifyMove(pointsLost, isBestMove);
   };
 
-  _getMaxDepthCacheKey = async (stockfishMoves: string[]): Promise<string> => {
+  private _getMaxDepthCacheKey = async (
+    stockfishMoves: string[],
+  ): Promise<string> => {
     logger.debug(
       `Getting max depth cache key for moves: [${stockfishMoves.join(' ')}]`,
     );
@@ -259,67 +263,55 @@ class Stockfish {
   };
 
   /**
-   * classifies move based on expected points lost
-   * @param expectedPointsLost number subtract win eval before - win eval after
-   * @param isBestMove boolean whether the move is the best move
-   * @returns string
-   */
-  classifyMove = (
-    expectedPointsLost: number,
-    isBestMove?: boolean,
-  ): MoveClassification => {
-    if (expectedPointsLost <= 0 || isBestMove) return MoveClassification.BEST;
-    if (expectedPointsLost <= 2) return MoveClassification.EXCELLENT;
-    if (expectedPointsLost <= 5) return MoveClassification.GOOD;
-    if (expectedPointsLost <= 10) return MoveClassification.INACCURACY;
-    if (expectedPointsLost <= 20) return MoveClassification.MISTAKE;
-    return MoveClassification.BLUNDER;
-  };
-
-  /**
    * sets position given an array of moves in LAN format
    * @param moves string[]
    * @param lockID number
    */
-  setPosition = async (moves: string[] = [], lockID?: number) => {
-    await this._withLock(async () => {
-      this._process.stdin.write(`position startpos moves ${moves.join(' ')}\n`);
-    }, lockID);
+  private _setPosition = async (moves: string[] = []) => {
+    this._process.stdin.write(`position startpos moves ${moves.join(' ')}\n`);
   };
 
   /**
    * thinks at DEPTH and returns results when it's done
    * @param options SearchOptions
    * @param lockID number
-   * @returns {
-   *  bestMove: Move | null;
+   * @returns \{
+   *  bestMove: string;
    *  evaluation: Evaluation;
    * }
    */
-  think = async (options: SearchOptions = {}, lockID?: number) => {
-    await this._withLock(async () => {
-      let command = 'go';
-      for (const [option, value] of Object.entries(options)) {
-        command += ` ${option} ${value}`;
-      }
-      this._process.stdin.write(`${command}\n`);
+  private _think = async (options: SearchOptions = {}) => {
+    let command = 'go';
+    for (const [option, value] of Object.entries(options)) {
+      command += ` ${option} ${value}`;
+    }
+    this._process.stdin.write(`${command}\n`);
 
-      await this._processQueue('bestmove', lockID);
-    }, lockID);
+    await this._processQueue('bestmove');
 
     return {
-      bestMove:
-        this._lastBestMove === '(none)'
-          ? ''
-          : this._lastBestMove!,
+      bestMove: this._lastBestMove === '(none)' ? '' : this._lastBestMove!,
       evaluation: this._lastEvaluation!,
     };
   };
 
+  reserveLock = () => {
+    if (!this.isLockFree) {
+      return false;
+    }
+    this.isLockFree = false;
+    setTimeout(async () => {
+      (await this._acquireLock())();
+    }, 100); // release lock after 100ms if it hasn't been locked via _acquireLock
+    return true;
+  };
+
   analyzeGame = async (pgn: string): Promise<Analysis[]> => {
-    this._chess = new Chess();
-    const gameAnalysis: Analysis[] = [];
-    await this._withLock(async (lockID: number) => {
+    const release = await this._acquireLock();
+    try {
+      this._chess = new Chess();
+      const gameAnalysis: Analysis[] = [];
+      logger.trace(`Starting analysis for game:\n${pgn.slice(0, 100)}...`);
       this._chess.loadPgn(pgn);
       const history = this._chess.history({ verbose: true });
       const stockfishMoves: string[] = [];
@@ -335,8 +327,8 @@ class Stockfish {
           },
         },
         async () => {
-          await this.setPosition([], lockID);
-          const thinkRes = await this.think({ depth: DEPTH }, lockID);
+          await this._setPosition([]);
+          const thinkRes = await this._think({ depth: DEPTH });
 
           return {
             move: 'startpos',
@@ -357,7 +349,7 @@ class Stockfish {
         } ${move.san}`;
         logger.info(`Analyzing move: ${moveFormatted}`);
         const turn = this._chess.turn();
-        this._chess.move(move);
+        this._chess.move(move.san);
         stockfishMoves.push(move.lan);
 
         const cacheKey = await this._getMaxDepthCacheKey(stockfishMoves);
@@ -370,9 +362,9 @@ class Stockfish {
             },
           },
           async () => {
-            await this.setPosition(stockfishMoves, lockID);
+            await this._setPosition(stockfishMoves);
             const { bestMove: anticipatedMove, evaluation: evalAfter } =
-              await this.think({ depth: DEPTH }, lockID);
+              await this._think({ depth: DEPTH });
 
             const partialGameAnalysis = {
               move: moveFormatted,
@@ -389,11 +381,10 @@ class Stockfish {
                 partialGameAnalysis,
                 bestMove === move.san,
               ),
-              classificationLichessFormula:
-                this._getLichessFormulaClassification(
-                  partialGameAnalysis,
-                  bestMove === move.san,
-                ),
+              classificationLichessFormula: this._getLichessFormulaClassification(
+                partialGameAnalysis,
+                bestMove === move.san,
+              ),
               classificationStandardLogisticFormula:
                 this._getStandardLogisticFormulaClassification(
                   partialGameAnalysis,
@@ -403,16 +394,90 @@ class Stockfish {
           },
         );
 
-        gameAnalysis.push(moveAnalysis);
+        const {
+          evalBefore: _,
+          anticipatedMove: __,
+          evalAfter,
+          ...analysisToPush
+        } = moveAnalysis;
+
+        gameAnalysis.push({ ...analysisToPush, eval: evalAfter });
 
         bestMove = moveAnalysis.anticipatedMove;
         evalBefore = moveAnalysis.evalAfter;
       }
-    });
 
-    logger.info(`Analyzis complete 🥳`);
-    return gameAnalysis;
+      return gameAnalysis;
+    } finally {
+      release();
+      logger.info(`Analyzis complete 🥳`);
+    }
+  };
+
+  kill = () => {
+    this._process.kill();
   };
 }
 
-export const stockfishService = new Stockfish();
+class StockfishService {
+  static _singleton: StockfishService = new StockfishService();
+  private _instances: Stockfish[] = [];
+  private POOLSIZE = 5;
+
+  private _getNextAvailableInstance = async (): Promise<Stockfish> => {
+    let waitTimeout = 1000;
+
+    while (true) {
+      if (this._instances.length < this.POOLSIZE) {
+        const i = this._instances.push(new Stockfish()) - 1;
+
+        if (i === this.POOLSIZE) {
+          const overflowedInstance = this._instances.pop()!;
+          overflowedInstance.kill();
+          continue;
+        }
+        logger.info(
+          `Created new Stockfish instance. Total instances: ${this._instances.length}`,
+        );
+        return this._instances.at(i)!;
+      }
+
+      const availableInstance = this._instances.find((instance) =>
+        instance.reserveLock(),
+      );
+      if (availableInstance) {
+        return availableInstance;
+      }
+
+      logger.info(
+        `All Stockfish instances are busy. Waiting ${waitTimeout / 1000}s...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, waitTimeout));
+      waitTimeout *= 1.5;
+    }
+  };
+
+  analyzeGame = async (pgn: string): Promise<Analysis[]> => {
+    const instance = await this._getNextAvailableInstance();
+    return instance.analyzeGame(pgn);
+  };
+
+  // Method for testing - kill all instances
+  killAllInstances = () => {
+    this._instances.forEach(instance => {
+      try {
+        instance.kill();
+      } catch (error) {
+        logger.warn('Error killing Stockfish instance:', error);
+      }
+    });
+    this._instances = [];
+  };
+
+  // Get number of active instances (for testing)
+  getInstanceCount = () => {
+    return this._instances.length;
+  };
+}
+
+export const stockfishService = StockfishService._singleton;

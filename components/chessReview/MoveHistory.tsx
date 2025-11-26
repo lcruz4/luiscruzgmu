@@ -43,10 +43,9 @@ export const MoveHistory = ({
 }: MoveHistoryProps) => {
   const [fullMoveHistory, setFullMoveHistory] = useState<FullMoveHistory[]>([]);
   const isWhiteNext = chess.turn() === WHITE;
-  const halfMoveNumber = chess.moveNumber();
-  const fullMoveNumber = halfMoveNumber - (isWhiteNext ? 1 : 0);
+  const moveNumber = chess.moveNumber() - (isWhiteNext ? 1 : 0);
   const lines =
-    history[halfMoveNumber - (isWhiteNext ? 1 : 0)]?.analysis?.evalBefore
+    history[moveNumber - 1 - (isWhiteNext ? 1 : 0)]?.analysis?.eval
       .lines || [];
 
   let analysisQuery = useQuery<{ success: boolean; analysis: Analysis[] }>({
@@ -143,7 +142,12 @@ export const MoveHistory = ({
   return (
     <div className='MoveHistory.tsx flex-1 overflow-y-auto min-h-0 font-sans'>
       {lines.map((line, idx) => (
-        <Line key={idx} line={line} fullMoveNumber={fullMoveNumber} isWhiteNext={isWhiteNext} />
+        <Line
+          key={idx}
+          line={line}
+          moveNumber={moveNumber}
+          isWhiteNext={isWhiteNext}
+        />
       ))}
       {selectedGame ? (
         <div>
@@ -153,7 +157,7 @@ export const MoveHistory = ({
               historyItem={historyItem}
               history={history}
               isWhiteNext={isWhiteNext}
-              fullMoveNumber={fullMoveNumber}
+              fullMoveNumber={moveNumber}
               lastMoveRef={lastMoveRef}
               handleHistoryItemClick={handleHistoryItemClick}
             />
