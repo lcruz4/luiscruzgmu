@@ -35,7 +35,7 @@ export const classifyMove = (
 
 class Stockfish {
   private _chess: Chess = new Chess();
-  private _process: ChildProcessWithoutNullStreams = spawn(
+  private readonly _process: ChildProcessWithoutNullStreams = spawn(
     '/opt/homebrew/bin/stockfish',
   );
   private _lock: Promise<void> = Promise.resolve();
@@ -80,9 +80,18 @@ class Stockfish {
       _resolve = resolve;
     });
 
+    return this._getLockRelease(_resolve!);
+  }
+
+  private _getLockRelease(resolve: () => void) {
     return () => {
       this.isLockFree = true;
-      _resolve();
+      this._chess = new Chess();
+      this._stdoutQueue = [];
+      this._processedQueue = [];
+      this._lastBestMove = undefined;
+      this._lastEvaluation = undefined;
+      resolve();
     };
   }
 
@@ -309,7 +318,6 @@ class Stockfish {
   analyzeGame = async (pgn: string): Promise<Analysis[]> => {
     const release = await this._acquireLock();
     try {
-      this._chess = new Chess();
       const gameAnalysis: Analysis[] = [];
       logger.trace(`Starting analysis for game:\n${pgn.slice(0, 100)}...`);
       this._chess.loadPgn(pgn);
@@ -381,10 +389,11 @@ class Stockfish {
                 partialGameAnalysis,
                 bestMove === move.san,
               ),
-              classificationLichessFormula: this._getLichessFormulaClassification(
-                partialGameAnalysis,
-                bestMove === move.san,
-              ),
+              classificationLichessFormula:
+                this._getLichessFormulaClassification(
+                  partialGameAnalysis,
+                  bestMove === move.san,
+                ),
               classificationStandardLogisticFormula:
                 this._getStandardLogisticFormulaClassification(
                   partialGameAnalysis,
@@ -464,7 +473,7 @@ class StockfishService {
 
   // Method for testing - kill all instances
   killAllInstances = () => {
-    this._instances.forEach(instance => {
+    this._instances.forEach((instance) => {
       try {
         instance.kill();
       } catch (error) {
