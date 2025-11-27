@@ -41,6 +41,9 @@ class RedisService {
       try {
         this._client = createClient({
           url: process.env.REDIS_URL,
+          socket: {
+            reconnectStrategy: false,
+          },
         });
 
         this._client.on('error', (err) =>
@@ -49,6 +52,7 @@ class RedisService {
         await this._client.connect();
       } catch (error) {
         logger.error('Failed to create Redis client:', error);
+        this._client = undefined;
       }
     }
 
@@ -57,7 +61,7 @@ class RedisService {
 
   keys(pattern: string) {
     if (!this._client) {
-      logger.warn('Redis client not initialized, cannot fetch keys.');
+      logger.debug('Redis client is not connected, cannot fetch keys.');
       return Promise.resolve([]);
     }
     return this._client.keys(pattern);
@@ -77,7 +81,7 @@ class RedisService {
     callback: () => Promise<T>,
   ): Promise<T> {
     if (!this._client) {
-      logger.warn('Redis client not initialized, skipping cache.');
+      logger.debug('Redis client is not connected, skipping cache.');
       return callback();
     }
     const options = isOptions(keyOrOpts) ? keyOrOpts : { key: keyOrOpts };

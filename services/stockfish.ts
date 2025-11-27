@@ -341,7 +341,7 @@ class Stockfish {
           return {
             move: 'startpos',
             turn: WHITE,
-            bestMove: '',
+            bestMove: 'e2e4',
             anticipatedMove: thinkRes.bestMove,
             evalBefore: thinkRes.evaluation,
             evalAfter: thinkRes.evaluation,
@@ -387,17 +387,17 @@ class Stockfish {
               ...partialGameAnalysis,
               classificationStockfishWDL: this._getStockfishWDLClassification(
                 partialGameAnalysis,
-                bestMove === move.san,
+                bestMove === `${move.from}${move.to}`,
               ),
               classificationLichessFormula:
                 this._getLichessFormulaClassification(
                   partialGameAnalysis,
-                  bestMove === move.san,
+                  bestMove === `${move.from}${move.to}`,
                 ),
               classificationStandardLogisticFormula:
                 this._getStandardLogisticFormulaClassification(
                   partialGameAnalysis,
-                  bestMove === move.san,
+                  bestMove === `${move.from}${move.to}`,
                 ),
             };
           },
