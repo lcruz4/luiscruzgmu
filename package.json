@@ -1,33 +1,44 @@
 {
   "private": true,
+  "version": "v1.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:debug": "LOG_LEVEL=DEBUG jest"
   },
   "dependencies": {
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@tailwindcss/postcss": "^4.1.11",
-    "next": "latest",
+    "@tanstack/react-query": "^5.90.9",
+    "@tanstack/react-query-devtools": "^5.90.2",
+    "chess.js": "^1.4.0",
+    "next": "^16.0.1",
     "node-mailjet": "^6.0.8",
     "postcss": "^8.5.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-intersection-observer": "^9.5.2",
+    "redis": "^5.9.0",
     "swiper": "^8.4.4",
-    "typescript": "^4.8.3",
+    "typescript": "^5.9.3",
     "zustand": "^4.4.1"
   },
   "devDependencies": {
-    "@sentry/nextjs": "^7.68.0",
-    "@types/jest": "^29.0.3",
+    "@sentry/nextjs": "^10.23.0",
+    "@types/jest": "^29.5.14",
     "@types/node": "^18.7.18",
     "@types/react": "^18.0.20",
     "@types/react-dom": "^18.0.6",
     "autoprefixer": "^10.4.13",
+    "jest": "^29.7.0",
     "prettier": "^3.0.2",
     "sass": "^1.54.9",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "ts-jest": "^29.4.5"
   }
 }

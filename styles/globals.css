@@ -9,6 +9,13 @@
   --color-white: #e5e7eb;
   --color-pink-l: #ec4899
   --color-cyan-l: #04c2c9;
+  --color-book: #d5a47d;
+  --color-best: #81B64C;
+  --color-excellent: #81B64C;
+  --color-good: #95B776;
+  --color-inaccuracy: #F7C631;
+  --color-mistake: #FFA459;
+  --color-blunder: #FA412D;
 
   --spacing-100: 100px;
   --spacing-200: 200px;
@@ -80,4 +87,12 @@
   .text-shadowL {
     text-shadow: 1px 1px var(--tw-shadow-color);
   }
+}
+
+@font-face {
+    font-family: 'Chess Sans'; /* Choose a unique name for your font */
+    src: url('/fonts/chess-sans-700.woff2') format('woff2'); /* Specify the path to your WOFF2 file */
+    font-weight: 700; /* Optional: Define the font's weight */
+    font-style: normal;  /* Optional: Define the font's style (e.g., italic) */
+    font-display: swap; /* Optional: Controls how the font loads and renders */
 }
