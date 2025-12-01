@@ -5,9 +5,7 @@ import { Board } from '../../components/chessReview/Board';
 import { Sidebar } from '../../components/chessReview/Sidebar';
 
 const chess = new Chess();
-
-// Add moveIndex method to chess instance (avoid modifying prototype)
-(chess as any).moveIndex = () => (chess.moveNumber() - 1) * 2 - (chess.turn() === WHITE ? 1 : 0);
+Chess.prototype.moveIndex = () => (chess.moveNumber() - 1) * 2 - (chess.turn() === WHITE ? 1 : 0);
 
 export const ChessReview = () => {
   const [pieces, setPieces] = useState(chess.board());
