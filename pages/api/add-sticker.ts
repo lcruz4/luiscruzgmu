@@ -2,10 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
 
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'luis',
-  port: 5432,
+  connectionString: process.env.DB_URL,
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -50,8 +47,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     client.release();
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: 'Sticker added successfully',
       stickers: updatedStickers
     });

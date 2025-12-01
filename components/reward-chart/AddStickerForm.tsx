@@ -22,14 +22,29 @@ const AddStickerForm: React.FC<AddStickerFormProps> = ({
     return emojiRegex.test(char);
   };
 
-  // Function to filter input to only allow emojis
-  const filterEmojisOnly = (input: string) => {
-    return Array.from(input).filter(char => isEmoji(char)).join('').slice(0, 3); // Limit to 3 emojis
+  // Function to extract the first complete emoji (handling multi-character emojis)
+  const getFirstEmoji = (input: string) => {
+    // Use Intl.Segmenter to properly handle multi-character emojis like 👨‍👩‍👧‍👦 or 🏳️‍🌈
+    if ('Segmenter' in Intl) {
+      const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+      const segments = [...segmenter.segment(input)];
+
+      for (const segment of segments) {
+        if (isEmoji(segment.segment)) {
+          return segment.segment;
+        }
+      }
+    } else {
+      // Fallback for older browsers
+      const emojiMatch = input.match(/(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u);
+      return emojiMatch ? emojiMatch[0] : '';
+    }
+    return '';
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const filteredValue = filterEmojisOnly(e.target.value);
-    setNewSticker(filteredValue);
+    const firstEmoji = getFirstEmoji(e.target.value);
+    setNewSticker(firstEmoji);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -44,24 +59,25 @@ const AddStickerForm: React.FC<AddStickerFormProps> = ({
         🎨 Add a New Sticker! 🎨
       </h3>
       <p className="text-center text-orange-600 mb-3 sm:mb-4 text-xs sm:text-sm">
-        💡 Tip: Only emojis allowed! Max 3 emojis per sticker. Click stickers above to remove them!
+        💡 Tip: Only one emoji per sticker! Click stickers above to remove them!
       </p>
-      <div className="flex flex-col gap-3 sm:gap-4">
-        <div className="flex gap-2 w-full">
+      <div className="flex flex-col gap-3 sm:gap-4 items-center">
+        <div className="flex gap-3 sm:gap-4 items-center justify-center">
           <input
             type="text"
             value={newSticker}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="⭐ 🎉 🌈 🦄"
-            className="flex-1 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 text-lg sm:text-xl md:text-2xl border-2 sm:border-4 border-purple-300 rounded-xl sm:rounded-2xl focus:ring-2 sm:focus:ring-4 focus:ring-purple-400 focus:border-purple-500 outline-none bg-white shadow-lg transition-all"
+            placeholder="⭐"
+            className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-3xl sm:text-4xl md:text-5xl border-2 sm:border-4 border-purple-300 rounded-xl sm:rounded-2xl focus:ring-2 sm:focus:ring-4 focus:ring-purple-400 focus:border-purple-500 outline-none bg-white shadow-lg transition-all text-center flex items-center justify-center p-1"
             disabled={isLoading}
-            title="Only emojis are allowed (max 3)"
+            title="Only one emoji allowed"
+            maxLength={10}
           />
           <button
             onClick={onRandomEmoji}
             disabled={isLoading}
-            className="px-3 sm:px-4 py-2.5 sm:py-3 md:py-4 text-lg sm:text-xl md:text-2xl bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-xl sm:rounded-2xl hover:from-yellow-500 hover:to-orange-500 transform hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg disabled:opacity-50"
+            className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 text-lg sm:text-xl md:text-2xl bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-xl sm:rounded-2xl hover:from-yellow-500 hover:to-orange-500 transform hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg disabled:opacity-50 flex items-center justify-center"
             title="Get random emoji!"
           >
             🎲
@@ -70,7 +86,7 @@ const AddStickerForm: React.FC<AddStickerFormProps> = ({
         <button
           onClick={onAddSticker}
           disabled={isLoading || !newSticker.trim()}
-          className={`w-full px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-base sm:text-lg md:text-xl font-bold rounded-xl sm:rounded-2xl transform transition-all duration-300 shadow-lg ${
+          className={`w-28 sm:w-36 md:w-44 h-12 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl font-bold rounded-xl sm:rounded-2xl transform transition-all duration-300 shadow-lg flex items-center justify-center cursor-pointer ${
             isLoading || !newSticker.trim()
               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
               : 'bg-gradient-to-r from-green-400 to-blue-500 text-white hover:from-green-500 hover:to-blue-600 hover:scale-105 active:scale-95'
@@ -78,10 +94,10 @@ const AddStickerForm: React.FC<AddStickerFormProps> = ({
         >
           {isLoading ? (
             <span className="animate__animated animate__pulse animate__infinite">
-              🔄 Adding...
+              🔄
             </span>
           ) : (
-            <span>🎯 Add Sticker!</span>
+            <span className="text-lg sm:text-4xl md:text-4xl">+</span>
           )}
         </button>
       </div>

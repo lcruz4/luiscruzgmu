@@ -2,10 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
 
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'luis',
-  port: 5432,
+  connectionString: process.env.DB_URL,
 });
 
 export async function getStickers(email: string, category: string) {
