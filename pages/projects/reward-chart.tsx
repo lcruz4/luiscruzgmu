@@ -241,7 +241,24 @@ const RewardChart: React.FC<RewardChartProps> = ({
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const category = 'sight_words';
-  const email = context.req.headers['x-authenticated-email'] as string || "luiscruzgmu@gmail.com";
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/authorize`,
+    {
+      headers: {
+        cookie: context.req.headers.cookie || '',
+      },
+    },
+  );
+  const email = response.headers.get('x-authenticated-email') || null;
+
+  if (!email) {
+    return {
+      redirect: {
+        destination: '/projects/reward-chart-landing',
+        permanent: false,
+      },
+    };
+  }
 
   try {
     const result = await getStickers(email, category);
