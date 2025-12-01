@@ -66,5 +66,3 @@ export const NavBar = ({ items }: { items: any }) => {
     </NavMenu>
   );
 };
-
-export default NavBar;

@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import FlexContainer from './FlexContainer';
+import { FlexContainer } from './FlexContainer';
 
 const StylishLayout = styled(FlexContainer)`
   margin: ${({ theme }) => theme.rems[400]};

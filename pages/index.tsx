@@ -1,7 +1,13 @@
 import Head from 'next/head'
 import styled from '@emotion/styled';
 import { NavItems } from '../types';
-import { HomeHero, NavBar, About, Projects, Contact, FlexContainer, DesktopMobileSwitch } from '../components'
+import { HomeHero } from '../components/home/HomeHero';
+import { NavBar } from '../components/common/NavBar';
+import { About } from '../components/about/About';
+import { Projects } from '../components/projects/Projects';
+import { Contact } from '../components/contact/Contact';
+import { FlexContainer } from '../components/common/FlexContainer';
+import { DesktopMobileSwitch } from '../components/common/ResponsiveWrappers';
 
 const Underline = styled.div`
   @apply h-1;

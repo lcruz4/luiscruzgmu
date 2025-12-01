@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import FlexContainer from '../common/FlexContainer';
+import { FlexContainer } from '../common/FlexContainer';
 import { NavItems } from '../../types';
 import useNavIntersection from '../../hooks/useNavIntersection';
 
@@ -16,5 +16,3 @@ export const HomeHero = ({ children }: { children: React.ReactNode }) => {
 
   return <StylishContainer ref={ref} justifyContent='center' alignItems='center'>{children}</StylishContainer>;
 };
-
-export default HomeHero;

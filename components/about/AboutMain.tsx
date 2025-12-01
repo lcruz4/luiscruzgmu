@@ -1,4 +1,4 @@
-import FlexContainer from '../common/FlexContainer';
+import { FlexContainer } from '../common/FlexContainer';
 import FlexItem from '../common/FlexItem';
 import { useInView } from 'react-intersection-observer';
 import styled from '@emotion/styled';

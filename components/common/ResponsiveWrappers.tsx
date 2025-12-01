@@ -35,5 +35,3 @@ export const MobileOnly = styled.div`
     display: none;
   }
 `;
-
-export default DesktopMobileSwitch;

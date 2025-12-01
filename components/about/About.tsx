@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import FlexContainer from '../common/FlexContainer';
+import { FlexContainer } from '../common/FlexContainer';
 import AboutMain from './AboutMain';
 import AboutDescription from './AboutDescription';
 import { NavItems } from '../../types';
@@ -25,5 +25,3 @@ export const About = () => {
     </FlexContainer>
   )
 };
-
-export default About;

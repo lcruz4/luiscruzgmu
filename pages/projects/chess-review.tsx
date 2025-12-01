@@ -1,11 +1,13 @@
 import { Chess, Move, WHITE } from 'chess.js';
 import { useCallback, useRef, useState } from 'react';
 import { AnalyzedMove, ChessComGameReponse } from '../../types/chess';
-import { Board } from '../../components';
+import { Board } from '../../components/chessReview/Board';
 import { Sidebar } from '../../components/chessReview/Sidebar';
 
 const chess = new Chess();
-Chess.prototype.moveIndex = () => (chess.moveNumber() - 1) * 2 - (chess.turn() === WHITE ? 1 : 0);
+
+// Add moveIndex method to chess instance (avoid modifying prototype)
+(chess as any).moveIndex = () => (chess.moveNumber() - 1) * 2 - (chess.turn() === WHITE ? 1 : 0);
 
 export const ChessReview = () => {
   const [pieces, setPieces] = useState(chess.board());

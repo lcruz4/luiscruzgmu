@@ -32,5 +32,3 @@ export const FlexContainer = forwardRef<HTMLDivElement, FlexContainerProps>(
     );
   },
 );
-
-export default FlexContainer;

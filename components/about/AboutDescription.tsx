@@ -1,4 +1,4 @@
-import FlexContainer from '../common/FlexContainer';
+import { FlexContainer } from '../common/FlexContainer';
 
 const Li = (props: any) => (
   <li className='mb-4' {...props}>

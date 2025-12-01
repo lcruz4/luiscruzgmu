@@ -57,5 +57,3 @@ export const Board = ({
     </div>
   );
 };
-
-export default Board;
