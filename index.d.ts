@@ -5,3 +5,6 @@ declare module 'chess.js' {
     moveIndex(): number;
   }
 }
+
+declare module 'swiper/css' {}
+declare module 'swiper/css/pagination' {}
