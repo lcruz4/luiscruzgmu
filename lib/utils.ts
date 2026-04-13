@@ -10,6 +10,7 @@ export const verifyMacroDroid = (req: NextApiRequest, res: NextApiResponse) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith('Basic ')) {
+    console.error('Missing or invalid Authorization header');
     res.status(401).json({ error: 'Unauthorized' });
     return false;
   }
@@ -19,6 +20,7 @@ export const verifyMacroDroid = (req: NextApiRequest, res: NextApiResponse) => {
   const [username, password] = decoded.split(':');
 
   if (username !== process.env.MACRODROID_USERNAME || password !== process.env.MACRODROID_PASSWORD) {
+    console.error('Invalid username or password');
     res.status(403).json({ error: 'Forbidden' });
     return false;
   }

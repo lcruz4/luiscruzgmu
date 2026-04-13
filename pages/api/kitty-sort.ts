@@ -7,27 +7,42 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   if (!process.env.KITTY_SORT_SOLVER_PATH) {
+    console.error('KITTY_SORT_SOLVER_PATH environment variable is not set');
     return res
       .status(500)
-      .json({ error: 'Kitty sort solver path not configured' });
+      .json({ error: 'Internal Server Error' });
   }
   if (req.method !== 'POST') {
+    console.error('Invalid request method:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
   if (!verifyMacroDroid(req, res)) {
     return;
   }
-
-  const { input } = req.body as { input: string };
-  const fInput = input.trim().toLowerCase().split(' ');
-  if (fInput[0] !== 'size') {
-    return res.status(400).json({ error: 'Invalid input format' });
-  }
-  const size = fInput[1];
   const args: string[] = [];
   args.push('--experimental-transform-types');
-  args.push(process.env.KITTY_SORT_SOLVER_PATH!);
-  args.push('-a', '-s', size, '-i', fInput.slice(2).join(' '));
+  args.push(process.env.KITTY_SORT_SOLVER_PATH);
+  const { input } = req.body as { input: string };
+  const fInput = input.trim().toLowerCase().split(' ');
+  const size = fInput[0];
+  fInput.shift();
+  if (!size || isNaN(Number(size))) {
+    console.error('input must start with size');
+    return res.status(400).json({ error: 'Invalid input format' });
+  }
+  args.push('-a', '-s', size);
+  if (fInput[0] === 'm' || fInput[0] === 'meta') {
+    fInput.shift();
+    const meta = Number(fInput[0]);
+    fInput.shift();
+    if (isNaN(meta)) {
+      console.error('meta indicated but number not provided');
+      return res.status(400).json({ error: 'Invalid input format' });
+    }
+    args.push('-m', meta.toString());
+  }
+
+  args.push('-i', fInput.join(' '));
   spawn('node', args);
   res.status(200).json({ message: 'Kitty sort solver started' });
 }
