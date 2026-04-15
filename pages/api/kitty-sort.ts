@@ -33,13 +33,9 @@ export default async function handler(
   args.push('-a', '-s', size);
   if (fInput[0] === 'm' || fInput[0] === 'meta') {
     fInput.shift();
-    const meta = Number(fInput[0]);
+    const meta = fInput[0];
     fInput.shift();
-    if (isNaN(meta)) {
-      console.error('meta indicated but number not provided');
-      return res.status(400).json({ error: 'Invalid input format' });
-    }
-    args.push('-m', meta.toString());
+    args.push('-m', meta);
   }
 
   args.push('-i', fInput.join(' '));
