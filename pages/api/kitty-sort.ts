@@ -23,7 +23,11 @@ export default async function handler(
   args.push('--experimental-transform-types');
   args.push(process.env.KITTY_SORT_SOLVER_PATH);
   const { input } = req.body as { input: string };
-  const fInput = input.trim().toLowerCase().split(' ');
+  const unknownFlag = input.includes('-u');
+  if (unknownFlag) {
+    args.push('-u');
+  }
+  let fInput = input.replace('-u', '').trim().toLowerCase().split(' ');
   const size = fInput[0];
   fInput.shift();
   if (!size || isNaN(Number(size))) {
@@ -36,6 +40,23 @@ export default async function handler(
     const meta = fInput[0];
     fInput.shift();
     args.push('-m', meta);
+  }
+
+  if (fInput.length < 16) {
+    fInput = fInput.join(' ').replace(/ /g, '').split('');
+    for (const [i, char] of fInput.entries()) {
+      switch (char) {
+        case 'l':
+          fInput[i] = 'bl';
+          break;
+        case 'f':
+          fInput[i] = 'br';
+          break;
+        case 'm':
+          fInput[i] = 'pu';
+          break;
+      }
+    }
   }
 
   args.push('-i', fInput.join(' '));
