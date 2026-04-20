@@ -42,7 +42,7 @@ export default async function handler(
     args.push('-m', meta);
   }
 
-  if (fInput.length < 16) {
+  if (fInput.length < 20) {
     fInput = fInput.join(' ').replace(/ /g, '').split('');
     for (const [i, char] of fInput.entries()) {
       switch (char) {
