@@ -44,19 +44,6 @@ export default async function handler(
 
   if (fInput.length < 25) {
     fInput = fInput.join(' ').replace(/ /g, '').split('');
-    for (const [i, char] of fInput.entries()) {
-      switch (char) {
-        case 'l':
-          fInput[i] = 'bl';
-          break;
-        case 'f':
-          fInput[i] = 'br';
-          break;
-        case 'm':
-          fInput[i] = 'pu';
-          break;
-      }
-    }
   }
 
   args.push('-i', fInput.join(' '));
