@@ -1,52 +1,3 @@
-enum Color {
-  r = '❤️',
-  b = '💙',
-  p = '🩷',
-  br = '🤎',
-  bl = '🖤',
-  y = '💛',
-  o = '🧡',
-  pu = '💜',
-  g = '💚',
-  w = '🤍',
-  X = '❔',
-  UNCOVERED = 'UNCOVERED',
-}
-
-const seen = new Set<string>();
-let tryEnabled = false;
-let debug = false;
-let uncover = false;
-let SIZE = 0;
-let moves = 0;
-let recurse = 1;
-let tryNum = 0;
-let maxRecurse = 0;
-let autoSolution: number[][] = [];
-let solution: string[] = [];
-let _input: Input[] = [];
-
-const roloc = {
-  '❤️': 'r',
-  '💙': 'b',
-  '🩷': 'p',
-  '🤎': 'f',
-  '🖤': 'l',
-  '💛': 'y',
-  '🧡': 'o',
-  '💜': 'm',
-  '💚': 'g',
-  '🤍': 'w',
-  '❔': 'X',
-  UNCOVERED: '❌',
-};
-
-interface Input {
-  arr: Color[];
-  color?: Color;
-  size?: number;
-}
-
 type KittySortResponse =
   | {
       coords: { X: number; Y: number }[];
@@ -59,376 +10,424 @@ type KittySortResponse =
       error: string;
     };
 
-const { r, b, p, br, bl, y, o, pu, g, w, X } = Color;
-const COLORHASH = {
-  red: r,
-  blue: b,
-  pink: p,
-  brown: br,
-  black: bl,
-  yellow: y,
-  orange: o,
-  purple: pu,
-  green: g,
-  white: w,
-  unknown: X,
-  r: r,
-  b: b,
-  p: p,
-  br: br,
-  bl: bl,
-  y: y,
-  o: o,
-  pu: pu,
-  g: g,
-  w: w,
-  x: X,
-};
-
-const handleError: (...args: any[]) => KittySortResponse = (...args) => {
-  console.log(...args);
-  return { error: args.join(' ') };
-};
-
-const stringNumberToNumber = (str: string) => {
-  switch (str) {
-    case 'one':
-      return 1;
-    case 'two':
-      return 2;
-    case 'three':
-      return 3;
-    case 'four':
-      return 4;
-    case 'five':
-      return 5;
-    case 'six':
-      return 6;
-    case 'seven':
-      return 7;
-    case 'eight':
-      return 8;
-    case 'nine':
-      return 9;
-    case 'ten':
-      return 10;
-    case 'eleven':
-      return 11;
-    case 'twelve':
-      return 12;
-    case 'thirteen':
-      return 13;
-    case 'fourteen':
-      return 14;
-    case 'fifteen':
-      return 15;
-    case 'sixteen':
-      return 16;
-    case 'seventeen':
-      return 17;
-    case 'eighteen':
-      return 18;
-    case 'nineteen':
-      return 19;
-    case 'twenty':
-      return 20;
-    default:
-      return NaN;
+export const kittySortSolver = (input: string[]): KittySortResponse => {
+  enum Color {
+    r = '❤️',
+    b = '💙',
+    p = '🩷',
+    br = '🤎',
+    bl = '🖤',
+    y = '💛',
+    o = '🧡',
+    pu = '💜',
+    g = '💚',
+    w = '🤍',
+    X = '❔',
+    UNCOVERED = 'UNCOVERED',
   }
-};
 
-const getCoords = (id: string) => {
-  switch (id) {
-    case '6cols': // 3tall3empty
-      return [
-        { X: 120, Y: 750 },
-        { X: 337, Y: 750 },
-        { X: 555, Y: 750 },
-        { X: 772, Y: 750 },
-        { X: 990, Y: 750 },
-        { X: 772, Y: 1500 },
-      ];
-    case '7cols':
-      return [
-        { X: 120, Y: 1000 },
-        { X: 337, Y: 1000 },
-        { X: 555, Y: 1000 },
-        { X: 772, Y: 1000 },
-        { X: 990, Y: 1000 },
-        { X: 350, Y: 1500 },
-        { X: 555, Y: 1500 },
-      ];
-    case '7colszigzag':
-      return [
-        { X: 150, Y: 1000 },
-        { X: 350, Y: 1000 },
-        { X: 550, Y: 1000 },
-        { X: 750, Y: 1000 },
-        { X: 950, Y: 1000 },
-        { X: 350, Y: 1500 },
-        { X: 750, Y: 1500 },
-      ];
-    case '7colstall':
-      return [
-        { X: 105, Y: 1150 },
-        { X: 540, Y: 1150 },
-        { X: 990, Y: 1150 },
-        { X: 770, Y: 680 },
-        { X: 330, Y: 940 },
-        { X: 770, Y: 1150 },
-        { X: 330, Y: 1350 },
-      ];
-    case '8cols':
-      return [
-        { X: 160, Y: 750 },
-        { X: 352, Y: 750 },
-        { X: 545, Y: 750 },
-        { X: 737, Y: 750 },
-        { X: 930, Y: 750 },
-        { X: 240, Y: 1500 },
-        { X: 443, Y: 1500 },
-        { X: 646, Y: 1500 },
-      ];
-    case '9cols':
-      return [
-        { X: 120, Y: 750 },
-        { X: 337, Y: 750 },
-        { X: 555, Y: 750 },
-        { X: 772, Y: 750 },
-        { X: 990, Y: 750 },
-        { X: 120, Y: 1500 },
-        { X: 337, Y: 1500 },
-        { X: 555, Y: 1500 },
-        { X: 772, Y: 1500 },
-      ];
-    case '10cols':
-      return [
-        { X: 120, Y: 750 },
-        { X: 292, Y: 750 },
-        { X: 464, Y: 750 },
-        { X: 636, Y: 750 },
-        { X: 808, Y: 750 },
-        { X: 980, Y: 750 },
-        { X: 160, Y: 1500 },
-        { X: 352, Y: 1500 },
-        { X: 545, Y: 1500 },
-        { X: 737, Y: 1500 },
-      ];
-    case '10colsx':
-      return [
-        { X: 90, Y: 750 },
-        { X: 290, Y: 750 },
-        { X: 800, Y: 750 },
-        { X: 1000, Y: 750 },
-        { X: 450, Y: 1200 },
-        { X: 650, Y: 1200 },
-        { X: 90, Y: 1500 },
-        { X: 290, Y: 1500 },
-        { X: 800, Y: 1500 },
-        { X: 1000, Y: 1500 },
-      ];
-    case '13cols':
-      return [
-        { X: 120, Y: 750 },
-        { X: 292, Y: 750 },
-        { X: 464, Y: 750 },
-        { X: 636, Y: 750 },
-        { X: 808, Y: 750 },
-        { X: 980, Y: 750 },
-        { X: 464, Y: 1200 },
-        { X: 120, Y: 1580 },
-        { X: 292, Y: 1650 },
-        { X: 464, Y: 1710 },
-        { X: 636, Y: 1710 },
-        { X: 808, Y: 1650 },
-        { X: 980, Y: 1580 },
-      ];
-    case '11cols':
-    default:
-      return [
-        { X: 120, Y: 750 },
-        { X: 292, Y: 750 },
-        { X: 464, Y: 750 },
-        { X: 636, Y: 750 },
-        { X: 808, Y: 750 },
-        { X: 980, Y: 750 },
-        { X: 120, Y: 1500 },
-        { X: 292, Y: 1500 },
-        { X: 464, Y: 1500 },
-        { X: 636, Y: 1500 },
-        { X: 808, Y: 1500 },
-      ];
+  let seen = new Set<string>();
+  let tryEnabled = false;
+  let debug = false;
+  let uncover = false;
+  let SIZE = 0;
+  let moves = 0;
+  let recurse = 1;
+  let tryNum = 0;
+  let maxRecurse = 0;
+  let autoSolution: number[][] = [];
+  let solution: string[] = [];
+  let _input: Input[] = [];
+
+  const roloc = {
+    '❤️': 'r',
+    '💙': 'b',
+    '🩷': 'p',
+    '🤎': 'f',
+    '🖤': 'l',
+    '💛': 'y',
+    '🧡': 'o',
+    '💜': 'm',
+    '💚': 'g',
+    '🤍': 'w',
+    '❔': 'X',
+    UNCOVERED: '❌',
+  };
+
+  interface Input {
+    arr: Color[];
+    color?: Color;
+    size?: number;
   }
-};
 
-const isSolved = (input: Input[]) => {
-  for (const { arr } of input) {
-    if (arr.length && (arr.length !== SIZE || !arr.every((color) => color === arr[0]))) {
+  const { r, b, p, br, bl, y, o, pu, g, w, X } = Color;
+  const COLORHASH = {
+    red: r,
+    blue: b,
+    pink: p,
+    brown: br,
+    black: bl,
+    yellow: y,
+    orange: o,
+    purple: pu,
+    green: g,
+    white: w,
+    unknown: X,
+    r: r,
+    b: b,
+    p: p,
+    br: br,
+    bl: bl,
+    y: y,
+    o: o,
+    pu: pu,
+    g: g,
+    w: w,
+    x: X,
+  };
+
+  const handleError: (...args: any[]) => KittySortResponse = (...args) => {
+    console.log(...args);
+    return { error: args.join(' ') };
+  };
+
+  const stringNumberToNumber = (str: string) => {
+    switch (str) {
+      case 'one':
+        return 1;
+      case 'two':
+        return 2;
+      case 'three':
+        return 3;
+      case 'four':
+        return 4;
+      case 'five':
+        return 5;
+      case 'six':
+        return 6;
+      case 'seven':
+        return 7;
+      case 'eight':
+        return 8;
+      case 'nine':
+        return 9;
+      case 'ten':
+        return 10;
+      case 'eleven':
+        return 11;
+      case 'twelve':
+        return 12;
+      case 'thirteen':
+        return 13;
+      case 'fourteen':
+        return 14;
+      case 'fifteen':
+        return 15;
+      case 'sixteen':
+        return 16;
+      case 'seventeen':
+        return 17;
+      case 'eighteen':
+        return 18;
+      case 'nineteen':
+        return 19;
+      case 'twenty':
+        return 20;
+      default:
+        return NaN;
+    }
+  };
+
+  const getCoords = (id: string) => {
+    switch (id) {
+      case '6cols': // 3tall3empty
+        return [
+          { X: 120, Y: 750 },
+          { X: 337, Y: 750 },
+          { X: 555, Y: 750 },
+          { X: 772, Y: 750 },
+          { X: 990, Y: 750 },
+          { X: 772, Y: 1500 },
+        ];
+      case '7cols':
+        return [
+          { X: 120, Y: 1000 },
+          { X: 337, Y: 1000 },
+          { X: 555, Y: 1000 },
+          { X: 772, Y: 1000 },
+          { X: 990, Y: 1000 },
+          { X: 350, Y: 1500 },
+          { X: 555, Y: 1500 },
+        ];
+      case '7colszigzag':
+        return [
+          { X: 150, Y: 1000 },
+          { X: 350, Y: 1000 },
+          { X: 550, Y: 1000 },
+          { X: 750, Y: 1000 },
+          { X: 950, Y: 1000 },
+          { X: 350, Y: 1500 },
+          { X: 750, Y: 1500 },
+        ];
+      case '7colstall':
+        return [
+          { X: 105, Y: 1150 },
+          { X: 540, Y: 1150 },
+          { X: 990, Y: 1150 },
+          { X: 770, Y: 680 },
+          { X: 330, Y: 940 },
+          { X: 770, Y: 1150 },
+          { X: 330, Y: 1350 },
+        ];
+      case '8cols':
+        return [
+          { X: 160, Y: 750 },
+          { X: 352, Y: 750 },
+          { X: 545, Y: 750 },
+          { X: 737, Y: 750 },
+          { X: 930, Y: 750 },
+          { X: 240, Y: 1500 },
+          { X: 443, Y: 1500 },
+          { X: 646, Y: 1500 },
+        ];
+      case '9cols':
+        return [
+          { X: 120, Y: 750 },
+          { X: 337, Y: 750 },
+          { X: 555, Y: 750 },
+          { X: 772, Y: 750 },
+          { X: 990, Y: 750 },
+          { X: 120, Y: 1500 },
+          { X: 337, Y: 1500 },
+          { X: 555, Y: 1500 },
+          { X: 772, Y: 1500 },
+        ];
+      case '10cols':
+        return [
+          { X: 120, Y: 750 },
+          { X: 292, Y: 750 },
+          { X: 464, Y: 750 },
+          { X: 636, Y: 750 },
+          { X: 808, Y: 750 },
+          { X: 980, Y: 750 },
+          { X: 160, Y: 1500 },
+          { X: 352, Y: 1500 },
+          { X: 545, Y: 1500 },
+          { X: 737, Y: 1500 },
+        ];
+      case '10colsx':
+        return [
+          { X: 90, Y: 750 },
+          { X: 290, Y: 750 },
+          { X: 800, Y: 750 },
+          { X: 1000, Y: 750 },
+          { X: 450, Y: 1200 },
+          { X: 650, Y: 1200 },
+          { X: 90, Y: 1500 },
+          { X: 290, Y: 1500 },
+          { X: 800, Y: 1500 },
+          { X: 1000, Y: 1500 },
+        ];
+      case '13cols':
+        return [
+          { X: 120, Y: 750 },
+          { X: 292, Y: 750 },
+          { X: 464, Y: 750 },
+          { X: 636, Y: 750 },
+          { X: 808, Y: 750 },
+          { X: 980, Y: 750 },
+          { X: 464, Y: 1200 },
+          { X: 120, Y: 1580 },
+          { X: 292, Y: 1650 },
+          { X: 464, Y: 1710 },
+          { X: 636, Y: 1710 },
+          { X: 808, Y: 1650 },
+          { X: 980, Y: 1580 },
+        ];
+      case '11cols':
+      default:
+        return [
+          { X: 120, Y: 750 },
+          { X: 292, Y: 750 },
+          { X: 464, Y: 750 },
+          { X: 636, Y: 750 },
+          { X: 808, Y: 750 },
+          { X: 980, Y: 750 },
+          { X: 120, Y: 1500 },
+          { X: 292, Y: 1500 },
+          { X: 464, Y: 1500 },
+          { X: 636, Y: 1500 },
+          { X: 808, Y: 1500 },
+        ];
+    }
+  };
+
+  const isSolved = (input: Input[]) => {
+    for (const { arr } of input) {
+      if (arr.length && (arr.length !== SIZE || !arr.every((color) => color === arr[0]))) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const stringifyInput = (input: Input[]) => {
+    let out = '\n';
+    for (let x = 0; x < SIZE; x++) {
+      for (let y = 0; y < input.length; y++) {
+        const emptySize = SIZE - input[y].arr.length;
+        out += `${emptySize - x > 0 ? '◻️' : input[y].arr[x - emptySize] || 'X'}\t`;
+      }
+      out += '\n';
+    }
+
+    return out;
+  };
+
+  const tryMove = (index: number, input: Input[], localRecurse: number) => {
+    const { arr: fromCol, size: fromColSize = SIZE } = input[index];
+    const fromTop = fromCol[0];
+    if (fromCol.every((color) => color === fromTop) && colorMap[fromTop] === index) {
+      // don't allow moving from full color column
       return false;
     }
-  }
-  return true;
-};
-
-const stringifyInput = (input: Input[]) => {
-  let out = '\n';
-  for (let x = 0; x < SIZE; x++) {
-    for (let y = 0; y < input.length; y++) {
-      const emptySize = SIZE - input[y].arr.length;
-      out += `${emptySize - x > 0 ? '◻️' : input[y].arr[x - emptySize] || 'X'}\t`;
+    const moveWithLen = (i: number, len: number) => {
+      const toArr = input[i].arr
+      if (toArr.filter((color) => color !== fromTop).length === 0) {
+        colorMap[fromTop] = i;
+      }
+      const move = `${index + 1} -> ${i + 1}\t${fromCol.slice(0, len)}\t${len > 2 ? '' : '\t'}-> ${toArr}`;
+      if (tryEnabled) {
+        solution.push(move);
+      } else {
+        solution[localRecurse] = move;
+        autoSolution[localRecurse] = [index, i];
+      }
+      if (debug) console.log('DEBUG:', stringifyInput(input));
+      while (len > 0) {
+        toArr.unshift(fromCol.shift()!);
+        len--;
+      }
+      if (debug) console.log('DEBUG:', stringifyInput(input));
+      moves++;
+    };
+    let len = 0;
+    while (fromCol[len] === fromTop) {
+      len++;
     }
-    out += '\n';
-  }
-
-  return out;
-};
-
-const tryMove = (index: number, input: Input[], localRecurse: number) => {
-  const { arr: fromCol, size: fromColSize = SIZE } = input[index];
-  const fromTop = fromCol[0];
-  if (fromCol.every((color) => color === fromTop) && colorMap[fromTop] === index) {
-    // don't allow moving from full color column
-    return false;
-  }
-  const moveWithLen = (i: number, len: number) => {
-    const toArr = input[i].arr
-    if (toArr.filter((color) => color !== fromTop).length === 0) {
-      colorMap[fromTop] = i;
+    if (uncover && !autoSolution.find(([from, _]) => from === index)) {
+      // if uncover mode and it's the first time we're moving this column,
+      // only move one piece to reveal the color underneath
+      len = 1;
     }
-    const move = `${index + 1} -> ${i + 1}\t${fromCol.slice(0, len)}\t${len > 2 ? '' : '\t'}-> ${toArr}`;
-    if (tryEnabled) {
-      solution.push(move);
-    } else {
-      solution[localRecurse] = move;
-      autoSolution[localRecurse] = [index, i];
+    const canMove = (toIndex: number, { arr, color, size = SIZE }: Input) => {
+      const sameCol = toIndex === index; // from and to are the same
+      const hasRoom = arr.length + len <= size; // to column has room for the moved pieces
+      const fullColumn = len === fromCol.length; // moving the whole column
+      const emptyColumn = arr.length === 0; // to column is empty
+      const uselessMove = fullColumn && emptyColumn && !color && fromColSize === size; // moving a full column to an empty column
+      // check that the to column matches the color we want to move.
+      // if empty check color field or allow any color if not specified
+      const colorAllowed = emptyColumn
+        ? !color || color === fromTop
+        : arr[0] === fromTop;
+      return !sameCol && colorAllowed && hasRoom && !uselessMove;
     }
-    if (debug) console.log('DEBUG:', stringifyInput(input));
-    while (len > 0) {
-      toArr.unshift(fromCol.shift()!);
-      len--;
-    }
-    if (debug) console.log('DEBUG:', stringifyInput(input));
-    moves++;
-  };
-  let len = 0;
-  while (fromCol[len] === fromTop) {
-    len++;
-  }
-  if (uncover && !autoSolution.find(([from, _]) => from === index)) {
-    // if uncover mode and it's the first time we're moving this column,
-    // only move one piece to reveal the color underneath
-    len = 1;
-  }
-  const canMove = (toIndex: number, { arr, color, size = SIZE }: Input) => {
-    const sameCol = toIndex === index; // from and to are the same
-    const hasRoom = arr.length + len <= size; // to column has room for the moved pieces
-    const fullColumn = len === fromCol.length; // moving the whole column
-    const emptyColumn = arr.length === 0; // to column is empty
-    const uselessMove = fullColumn && emptyColumn && !color && fromColSize === size; // moving a full column to an empty column
-    // check that the to column matches the color we want to move.
-    // if empty check color field or allow any color if not specified
-    const colorAllowed = emptyColumn
-      ? !color || color === fromTop
-      : arr[0] === fromTop;
-    return !sameCol && colorAllowed && hasRoom && !uselessMove;
-  }
-  const colorInd = colorMap[fromTop];
-  if (colorInd !== -1 && canMove(colorInd, input[colorInd])) {
-    moveWithLen(colorInd, len);
-    return true;
-  }
-  for (const [i, inp] of input.entries()) {
-    if (canMove(i, inp)) {
-      moveWithLen(i, len);
+    const colorInd = colorMap[fromTop];
+    if (colorInd !== -1 && canMove(colorInd, input[colorInd])) {
+      moveWithLen(colorInd, len);
       return true;
     }
-  }
-  return false;
-};
-
-const solve = (input: Input[]): Input[] | null => {
-  if (uncover) {
-    for (const [i, { arr }] of input.entries()) {
-      if (arr[0] === X) {
-        _input[i].arr[SIZE - arr.length] = Color.UNCOVERED;
-        autoSolution = autoSolution.slice(0, recurse);
-        return input;
+    for (const [i, inp] of input.entries()) {
+      if (canMove(i, inp)) {
+        moveWithLen(i, len);
+        return true;
       }
     }
-  }
-  const strArrs = JSON.stringify(input);
-  if (seen.has(strArrs)) return null;
-  seen.add(strArrs);
-  const localRecurse = recurse;
-  if (localRecurse > 100) {
-    console.log('REACHED MAX MOVES!');
-    return null;
-  }
-  if (isSolved(input)) {
-    return input;
-  }
+    return false;
+  };
 
-  for (const [i, { arr }] of input.entries()) {
-    if (maxRecurse > 500) {
+  const solve = (input: Input[]): Input[] | null => {
+    if (uncover) {
+      for (const [i, { arr }] of input.entries()) {
+        if (arr[0] === X) {
+          _input[i].arr[SIZE - arr.length] = Color.UNCOVERED;
+          autoSolution = autoSolution.slice(0, recurse);
+          return input;
+        }
+      }
+    }
+    const strArrs = JSON.stringify(input);
+    if (seen.has(strArrs)) return null;
+    seen.add(strArrs);
+    const localRecurse = recurse;
+    if (localRecurse > 100) {
+      console.log('REACHED MAX MOVES!');
       return null;
     }
-    if (debug) console.log(`Trying moves for arr ${i + 1} at recurse level ${localRecurse}...`);
-    const clone = JSON.parse(strArrs);
+    if (isSolved(input)) {
+      return input;
+    }
 
-    if (arr.length) {
-      if (!tryEnabled && solution.length < localRecurse) {
-        solution.push('');
-        autoSolution.push([]);
+    for (const [i, { arr }] of input.entries()) {
+      if (maxRecurse > 500) {
+        return null;
       }
-      if (tryMove(i, clone, localRecurse)) {
-        if (localRecurse === 1) tryNum++;
-        if (tryEnabled) solution.push(`id: ${tryNum} - ${localRecurse}`);
-        recurse++;
-        maxRecurse = Math.max(maxRecurse, recurse);
-        const output = solve(clone);
-        if (output) {
-          return output;
+      if (debug) console.log(`Trying moves for arr ${i + 1} at recurse level ${localRecurse}...`);
+      const clone = JSON.parse(strArrs);
+
+      if (arr.length) {
+        if (!tryEnabled && solution.length < localRecurse) {
+          solution.push('');
+          autoSolution.push([]);
         }
-        recurse = localRecurse;
+        if (tryMove(i, clone, localRecurse)) {
+          if (localRecurse === 1) tryNum++;
+          if (tryEnabled) solution.push(`id: ${tryNum} - ${localRecurse}`);
+          recurse++;
+          maxRecurse = Math.max(maxRecurse, recurse);
+          const output = solve(clone);
+          if (output) {
+            return output;
+          }
+          recurse = localRecurse;
+        }
       }
     }
-  }
 
-  return null;
-};
+    return null;
+  };
 
-const countMap: Record<Color, number> = {
-  [r]: 0,
-  [b]: 0,
-  [p]: 0,
-  [br]: 0,
-  [bl]: 0,
-  [y]: 0,
-  [o]: 0,
-  [pu]: 0,
-  [g]: 0,
-  [w]: 0,
-  [X]: 0,
-  UNCOVERED: 0,
-};
+  const countMap: Record<Color, number> = {
+    [r]: 0,
+    [b]: 0,
+    [p]: 0,
+    [br]: 0,
+    [bl]: 0,
+    [y]: 0,
+    [o]: 0,
+    [pu]: 0,
+    [g]: 0,
+    [w]: 0,
+    [X]: 0,
+    UNCOVERED: 0,
+  };
 
-const colorMap: Record<Color, number> = {
-  [r]: -1,
-  [b]: -1,
-  [p]: -1,
-  [br]: -1,
-  [bl]: -1,
-  [y]: -1,
-  [o]: -1,
-  [pu]: -1,
-  [g]: -1,
-  [w]: -1,
-  [X]: -1,
-  UNCOVERED: -1,
-};
+  const colorMap: Record<Color, number> = {
+    [r]: -1,
+    [b]: -1,
+    [p]: -1,
+    [br]: -1,
+    [bl]: -1,
+    [y]: -1,
+    [o]: -1,
+    [pu]: -1,
+    [g]: -1,
+    [w]: -1,
+    [X]: -1,
+    UNCOVERED: -1,
+  };
 
-export const kittySortSolver = (input: string[]): KittySortResponse => {
-  const solution: string[] = [];
   tryEnabled = input.includes('-t') || input.includes('--try');
   debug = input.includes('--debug');
   const sizeArgIndex = input.findIndex((arg) => ['-s', '--size'].includes(arg));
