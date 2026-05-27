@@ -2,16 +2,18 @@ import { kittySortSolver } from '@/lib/kittySort';
 import { verifyMacroDroid } from '@/lib/utils';
 import { NextApiRequest, NextApiResponse } from 'next';
 
+const FLAGS = [
+  '-t',
+  '--try',
+  '--debug',
+  '-u',
+  '--uncover',
+];
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  if (!process.env.KITTY_SORT_SOLVER_PATH) {
-    console.error('KITTY_SORT_SOLVER_PATH environment variable is not set');
-    return res
-      .status(500)
-      .json({ error: 'Internal Server Error' });
-  }
   if (req.method !== 'POST') {
     console.error('Invalid request method:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
@@ -20,21 +22,23 @@ export default async function handler(
     return;
   }
   const args: string[] = [];
-  args.push('--experimental-transform-types');
-  args.push(process.env.KITTY_SORT_SOLVER_PATH);
   const { input } = req.body as { input: string };
-  const unknownFlag = input.includes('-u');
-  if (unknownFlag) {
-    args.push('-u');
+  let _input = input.trim().toLowerCase();
+  for (const flag of FLAGS) {
+    const flagPresent = _input.includes(flag);
+    if (flagPresent) {
+      args.push(flag);
+    }
+    _input = _input.replace(flag, '');
   }
-  let fInput = input.replace('-u', '').trim().toLowerCase().split(' ');
+  let fInput = _input.split(' ');
   const size = fInput[0];
   fInput.shift();
   if (!size || isNaN(Number(size))) {
     console.error('input must start with size');
     return res.status(400).json({ error: 'Invalid input format' });
   }
-  args.push('-a', '-s', size);
+  args.push('-s', size);
   if (fInput[0] === 'm' || fInput[0] === 'meta') {
     fInput.shift();
     const meta = fInput[0];
