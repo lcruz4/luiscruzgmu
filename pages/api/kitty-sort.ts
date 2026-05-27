@@ -1,5 +1,5 @@
+import { kittySortSolver } from '@/lib/kittySort';
 import { verifyMacroDroid } from '@/lib/utils';
-import { spawn } from 'child_process';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(
@@ -47,6 +47,6 @@ export default async function handler(
   }
 
   args.push('-i', fInput.join(' '));
-  spawn('node', args);
-  res.status(200).json({ message: 'Kitty sort solver started' });
+  const response = kittySortSolver(args);
+  res.status(200).json(response);
 }
