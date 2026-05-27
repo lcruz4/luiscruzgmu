@@ -5,7 +5,7 @@ export default async function handler(
 ) {
   const GIPHY_API_KEY = process.env.GIPHY_API_KEY;
   const {
-    query: { tag, rating },
+    query: { tag, rating = 'g' },
   } = req;
 
   if (!tag) {
