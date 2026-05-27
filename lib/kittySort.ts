@@ -11,6 +11,8 @@ type KittySortResponse =
     };
 
 export const kittySortSolver = (input: string[]): KittySortResponse => {
+  console.log('input:', input);
+
   enum Color {
     r = '❤️',
     b = '💙',
@@ -293,7 +295,7 @@ export const kittySortSolver = (input: string[]): KittySortResponse => {
     }
     const moveWithLen = (i: number, len: number) => {
       const toArr = input[i].arr
-      if (toArr.filter((color) => color !== fromTop).length === 0) {
+      if (colorMap[fromTop] === -1 && toArr.filter((color) => color !== fromTop).length === 0) {
         colorMap[fromTop] = i;
       }
       const move = `${index + 1} -> ${i + 1}\t${fromCol.slice(0, len)}\t${len > 2 ? '' : '\t'}-> ${toArr}`;
