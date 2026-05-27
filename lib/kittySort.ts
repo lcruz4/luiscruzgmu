@@ -369,6 +369,9 @@ const solve = (input: Input[]): Input[] | null => {
   }
 
   for (const [i, { arr }] of input.entries()) {
+    if (maxRecurse > 500) {
+      return null;
+    }
     if (debug) console.log(`Trying moves for arr ${i + 1} at recurse level ${localRecurse}...`);
     const clone = JSON.parse(strArrs);
 
