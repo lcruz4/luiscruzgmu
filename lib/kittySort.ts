@@ -294,10 +294,7 @@ export const kittySortSolver = (input: string[]): KittySortResponse => {
       return false;
     }
     const moveWithLen = (i: number, len: number) => {
-      const toArr = input[i].arr
-      if (colorMap[fromTop] === -1 && toArr.filter((color) => color !== fromTop).length === 0) {
-        colorMap[fromTop] = i;
-      }
+      const toArr = input[i].arr;
       const move = `${index + 1} -> ${i + 1}\t${fromCol.slice(0, len)}\t${len > 2 ? '' : '\t'}-> ${toArr}`;
       if (tryEnabled) {
         solution.push(move);
@@ -517,8 +514,6 @@ export const kittySortSolver = (input: string[]): KittySortResponse => {
       i++;
     }
   }
-
-  console.log(process.argv.join(' '));
 
   for (const [i, { arr, color, size }] of _input.entries()) {
     if (uncover && sizeArg && arr.length && arr.length < sizeArg) {
