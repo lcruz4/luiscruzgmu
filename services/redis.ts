@@ -67,6 +67,22 @@ class RedisService {
     return this._client.keys(pattern);
   }
 
+  set(key: string, value: string) {
+    if (!this._client) {
+      logger.debug('Redis client is not connected, skipping set operation.');
+      return Promise.resolve();
+    }
+    return this._client.set(key, value);
+  }
+
+  get(key: string) {
+    if (!this._client) {
+      logger.debug('Redis client is not connected, skipping get operation.');
+      return Promise.resolve(null);
+    }
+    return this._client.get(key);
+  }
+
   // OVERLOADS When extraData is provided, T must extend Record<string, unknown>
   withCache<T, U extends Record<string, unknown>>(
     keyOrOpts: WithCacheWithExtraDataOptions<U>,
