@@ -25,7 +25,9 @@ export function rowsToSync<T extends PlanRowKey>(
       return rows.filter(sameExercise);
     case 'sets':
     case 'reps':
-      return rows.filter((row) => sameExercise(row) && row.week === edited.week);
+      return rows.filter(
+        (row) => sameExercise(row) && row.week === edited.week,
+      );
     case 'notes':
       return rows.filter((row) => row.id === edited.id);
   }

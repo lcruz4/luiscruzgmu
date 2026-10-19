@@ -32,9 +32,10 @@ describe('autoNext', () => {
   });
 
   it('wraps from W2D4 to W1D1', () => {
-    expect(autoNext([{ date: '2026-10-12', week: 2, day: 4 }], TODAY)).toEqual(
-      { week: 1, day: 1 },
-    );
+    expect(autoNext([{ date: '2026-10-12', week: 2, day: 4 }], TODAY)).toEqual({
+      week: 1,
+      day: 1,
+    });
   });
 
   it('uses the most recent date, not the order of the input', () => {
