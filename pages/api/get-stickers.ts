@@ -1,9 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DB_URL,
-});
+import { pool } from '@/services/db';
+import { getAuthenticatedEmail } from '@/services/auth';
 
 export async function getStickers(email: string, category: string) {
   const client = await pool.connect();
@@ -40,10 +37,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, category } = req.query;
+  const email = await getAuthenticatedEmail(req.headers.cookie);
+  if (!email) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
-  if (!email || !category || typeof email !== 'string' || typeof category !== 'string') {
-    return res.status(400).json({ error: 'Email and category are required' });
+  const { category } = req.query;
+
+  if (!category || typeof category !== 'string') {
+    return res.status(400).json({ error: 'Category is required' });
   }
 
   try {

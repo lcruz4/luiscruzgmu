@@ -1,19 +1,21 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DB_URL,
-});
+import { pool } from '@/services/db';
+import { getAuthenticatedEmail } from '@/services/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'DELETE') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, category, index } = req.body;
+  const email = await getAuthenticatedEmail(req.headers.cookie);
+  if (!email) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
-  if (!email || !category || index === undefined) {
-    return res.status(400).json({ error: 'Email, category, and index are required' });
+  const { category, index } = req.body;
+
+  if (!category || index === undefined) {
+    return res.status(400).json({ error: 'Category and index are required' });
   }
 
   try {

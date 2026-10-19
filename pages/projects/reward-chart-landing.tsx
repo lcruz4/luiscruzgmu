@@ -2,6 +2,7 @@ import React from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { getAuthenticatedEmail } from '@/services/auth';
 
 const RewardChartLanding: React.FC = () => {
   const router = useRouter();
@@ -68,15 +69,7 @@ const RewardChartLanding: React.FC = () => {
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/authorize`,
-    {
-      headers: {
-        cookie: context.req.headers.cookie || '',
-      },
-    },
-  );
-  const email = response.headers.get('x-authenticated-email') || null;
+  const email = await getAuthenticatedEmail(context.req.headers.cookie);
 
   // If user is authenticated, redirect to the main reward chart page
   if (email) {
