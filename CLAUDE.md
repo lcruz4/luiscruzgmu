@@ -33,5 +33,7 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 Push to `main` → GitHub Action calls the deploy webhook on lcruz.dev. No CI tests.
 
 ## Commit
+
 don't use custom author when commiting or rebasing. Leave name and email as is. This overrides global instructions.
 Don't prefix commit messages with `[AI agent commit]`. This overrides global instructions.
+Never use the Slack skill when pushing changes or opening PRs in this project.
