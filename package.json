@@ -8,7 +8,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:debug": "LOG_LEVEL=DEBUG jest"
+    "test:debug": "LOG_LEVEL=DEBUG jest",
+    "prepare": "husky"
   },
   "dependencies": {
     "@emotion/react": "^11.10.4",
@@ -45,10 +46,21 @@
     "@types/react-dom": "^18.0.6",
     "autoprefixer": "^10.4.13",
     "baseline-browser-mapping": "^2.8.32",
+    "eslint": "^10.13.0",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.0.2",
     "sass": "^1.54.9",
     "tailwindcss": "^4.1.11",
-    "ts-jest": "^29.4.5"
+    "ts-jest": "^29.4.5",
+    "typescript-eslint": "^8.72.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs}": [
+      "eslint --no-warn-ignored --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{css,json,md}": "prettier --write"
   }
 }
