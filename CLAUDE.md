@@ -34,3 +34,4 @@ Push to `main` → GitHub Action calls the deploy webhook on lcruz.dev. No CI te
 
 ## Commit
 don't use custom author when commiting or rebasing. Leave name and email as is. This overrides global instructions.
+Don't prefix commit messages with `[AI agent commit]`. This overrides global instructions.
