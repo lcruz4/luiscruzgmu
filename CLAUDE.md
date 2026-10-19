@@ -7,7 +7,7 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 - `npm run dev` / `npm run build` / `npm start`
 - `npm test` — Jest (ts-jest, node env). Only covers `services/`; Stockfish tests spawn the real `stockfish` binary (must be installed) and are slow.
 - Node version in `.nvmrc`. Prettier: single quotes (incl. JSX).
-- Pre-commit hook (husky + lint-staged): prettier on staged files, `tsc --noEmit`, Jest without Stockfish tests.
+- Pre-commit hook (husky + lint-staged): ESLint + prettier on staged files, `tsc --noEmit`, Jest without Stockfish tests.
 
 ## Structure
 
@@ -25,6 +25,7 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 ## Conventions
 
 - Path alias `@/*` → repo root.
+- Arrow functions only (`eslint.config.mjs`, checked on staged files). Older files still have `function` declarations; convert them when you touch the file.
 - Styling is mixed: older portfolio components use Emotion `styled` + theme; newer project pages use Tailwind v4 + shadcn. Match the surrounding file.
 - Data fetching on the client via TanStack Query.
 - Sentry configured in `sentry.*.config.ts` and `next.config.js`.
