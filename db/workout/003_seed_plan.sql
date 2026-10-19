@@ -1,12 +1,12 @@
 -- Starting plan, from the 2 Week Workout sheet's Week 1 / Week 2 tabs (2026-10-17)
-WITH program AS (
-  INSERT INTO programs (owner_email, name, is_active)
+WITH plan AS (
+  INSERT INTO plans (owner_email, name, is_active)
   VALUES ('luiscruzgmu@gmail.com', '2 Week Workout', true)
   RETURNING id
 )
-INSERT INTO program_exercises (program_id, week, day, position, exercise_id, sets, reps, weight)
-SELECT program.id, v.week, v.day, v.position, e.id, v.sets, v.reps, v.weight
-FROM program
+INSERT INTO plan_exercises (plan_id, week, day, position, exercise_id, sets, reps, weight)
+SELECT plan.id, v.week, v.day, v.position, e.id, v.sets, v.reps, v.weight
+FROM plan
 CROSS JOIN (VALUES
   (1, 1, 1, 'Incline dumbbell press', 3, 8, '50'),
   (1, 1, 2, 'Dumbbell bench press', 3, 8, '50'),
