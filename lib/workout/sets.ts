@@ -1,49 +1,47 @@
-export interface SetValues {
-  setNumber: number;
-  weight: string | null;
-  reps: string | null;
-  note: string | null;
-}
+// Not used yet; uncomment when the log view needs it.
 
-export interface SetRow extends SetValues {
-  saved: boolean;
-}
+// export interface SetValues {
+//   setNumber: number;
+//   weight: string | null;
+//   reps: number | null;
+//   notes: string | null;
+// }
 
-interface PlanTarget {
-  sets: number;
-  weight: string | null;
-}
+// export interface SetRow extends SetValues {
+//   saved: boolean;
+// }
 
-// First set defaults to the plan weight, every later set to the previous set's.
-const draftRow = (
-  setNumber: number,
-  previous: SetRow | undefined,
-  plan: PlanTarget,
-): SetRow => ({
-  setNumber,
-  weight: previous ? previous.weight : plan.weight,
-  reps: null,
-  note: null,
-  saved: false,
-});
+// interface PlanTarget {
+//   sets: number;
+//   weight: string | null;
+// }
 
-/** Saved sets plus drafts up to the plan's set count. */
-export function buildSetRows(plan: PlanTarget, saved: SetValues[]): SetRow[] {
-  const bySetNumber = new Map(saved.map((set) => [set.setNumber, set]));
-  const count = Math.max(plan.sets, ...saved.map((set) => set.setNumber));
-  const rows: SetRow[] = [];
-  for (let setNumber = 1; setNumber <= count; setNumber++) {
-    const existing = bySetNumber.get(setNumber);
-    rows.push(
-      existing
-        ? { ...existing, saved: true }
-        : draftRow(setNumber, rows.at(-1), plan),
-    );
-  }
-  return rows;
-}
+// const draftRow = (setNumber: number, plan: PlanTarget): SetRow => ({
+//   setNumber,
+//   weight: plan.weight,
+//   reps: null,
+//   notes: null,
+//   saved: false,
+// });
 
-export const addSetRow = (rows: SetRow[], plan: PlanTarget): SetRow[] => [
-  ...rows,
-  draftRow(rows.length + 1, rows.at(-1), plan),
-];
+// // Saved sets plus drafts up to the plan's set count.
+// export const buildSetRows = (
+//   plan: PlanTarget,
+//   saved: SetValues[],
+// ): SetRow[] => {
+//   const bySetNumber = new Map(saved.map((set) => [set.setNumber, set]));
+//   const count = Math.max(plan.sets, ...saved.map((set) => set.setNumber));
+//   const rows: SetRow[] = [];
+//   for (let setNumber = 1; setNumber <= count; setNumber++) {
+//     const existing = bySetNumber.get(setNumber);
+//     rows.push(
+//       existing ? { ...existing, saved: true } : draftRow(setNumber, plan),
+//     );
+//   }
+//   return rows;
+// };
+
+// export const addSetRow = (rows: SetRow[], plan: PlanTarget): SetRow[] => [
+//   ...rows,
+//   draftRow(rows.length + 1, plan),
+// ];

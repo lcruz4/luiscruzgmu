@@ -1,34 +1,34 @@
-export type PlanField = 'sets' | 'reps' | 'weight' | 'notes';
+// Not used yet; uncomment when the plan editor API needs it.
 
-export interface PlanRowKey {
-  id: number;
-  programId: number;
-  week: number;
-  exerciseId: number;
-}
+// export type PlanField = 'sets' | 'reps' | 'weight' | 'notes';
 
-/**
- * Rows a plan edit must update so shared targets stay in sync (D13/D14):
- * weight → same exercise in the program, sets/reps → same exercise and week,
- * notes → the edited row only.
- */
-export function rowsToSync<T extends PlanRowKey>(
-  rows: T[],
-  edited: PlanRowKey,
-  field: PlanField,
-): T[] {
-  const sameExercise = (row: T) =>
-    row.programId === edited.programId && row.exerciseId === edited.exerciseId;
+// export interface PlanRowKey {
+//   id: number;
+//   programId: number;
+//   week: number;
+//   exerciseId: number;
+// }
 
-  switch (field) {
-    case 'weight':
-      return rows.filter(sameExercise);
-    case 'sets':
-    case 'reps':
-      return rows.filter(
-        (row) => sameExercise(row) && row.week === edited.week,
-      );
-    case 'notes':
-      return rows.filter((row) => row.id === edited.id);
-  }
-}
+// // Ids of the rows a plan edit must update so shared targets stay in sync
+// // (D13/D14): weight → same exercise in the program, sets/reps → same exercise
+// // and week, notes → the edited row only.
+// export const idsToSync = (
+//   rows: PlanRowKey[],
+//   edited: PlanRowKey,
+//   field: PlanField,
+// ): number[] => {
+//   const sameExercise = (row: PlanRowKey) =>
+//     row.programId === edited.programId && row.exerciseId === edited.exerciseId;
+//   const matches = (row: PlanRowKey) => {
+//     switch (field) {
+//       case 'weight':
+//         return sameExercise(row);
+//       case 'sets':
+//       case 'reps':
+//         return sameExercise(row) && row.week === edited.week;
+//       case 'notes':
+//         return row.id === edited.id;
+//     }
+//   };
+//   return rows.filter(matches).map((row) => row.id);
+// };

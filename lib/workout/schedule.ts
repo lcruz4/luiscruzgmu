@@ -1,45 +1,35 @@
-export const WEEKS = 2;
-export const DAYS_PER_WEEK = 4;
-export const PASS_FAIL_WEEK = 2;
+// Not used yet; uncomment when the log view / API needs it.
 
-export interface WeekDay {
-  week: number;
-  day: number;
-}
+// export const WEEKS = 2;
+// export const DAYS_PER_WEEK = 4;
 
-export interface LoggedDay extends WeekDay {
-  /** YYYY-MM-DD */
-  date: string;
-}
+// export interface WeekDay {
+//   week: number;
+//   day: number;
+// }
 
-const sequenceIndex = ({ week, day }: WeekDay) =>
-  (week - 1) * DAYS_PER_WEEK + day;
+// export interface LoggedDay extends WeekDay {
+//   /** YYYY-MM-DD */
+//   date: string;
+// }
 
-export function nextWeekDay({ week, day }: WeekDay): WeekDay {
-  if (day < DAYS_PER_WEEK) return { week, day: day + 1 };
-  if (week < WEEKS) return { week: week + 1, day: 1 };
-  return { week: 1, day: 1 };
-}
+// // W1D1…W1D4, W2D1…W2D4, then wraps to W1D1
+// export const nextWeekDay = ({ week, day }: WeekDay): WeekDay => {
+//   const next = ((week - 1) * DAYS_PER_WEEK + day) % (WEEKS * DAYS_PER_WEEK);
+//   return {
+//     week: Math.floor(next / DAYS_PER_WEEK) + 1,
+//     day: (next % DAYS_PER_WEEK) + 1,
+//   };
+// };
 
-/**
- * Something logged today → that week/day. Otherwise the week/day after the
- * most recent one logged before today. No history → W1D1.
- */
-export function autoNext(logged: LoggedDay[], today: string): WeekDay {
-  let latest: LoggedDay | undefined;
-  for (const entry of logged) {
-    if (entry.date === today) return { week: entry.week, day: entry.day };
-    if (entry.date > today) continue;
-    if (
-      !latest ||
-      entry.date > latest.date ||
-      (entry.date === latest.date &&
-        sequenceIndex(entry) > sequenceIndex(latest))
-    ) {
-      latest = entry;
-    }
-  }
-  return latest ? nextWeekDay(latest) : { week: 1, day: 1 };
-}
-
-export const isPassFailWeek = (week: number) => week === PASS_FAIL_WEEK;
+// // Last logged today → same week/day; otherwise the next one. No history → W1D1.
+// export const autoNext = (
+//   lastLogged: LoggedDay | undefined,
+//   today: string,
+// ): WeekDay => {
+//   if (!lastLogged) return { week: 1, day: 1 };
+//   if (lastLogged.date === today) {
+//     return { week: lastLogged.week, day: lastLogged.day };
+//   }
+//   return nextWeekDay(lastLogged);
+// };

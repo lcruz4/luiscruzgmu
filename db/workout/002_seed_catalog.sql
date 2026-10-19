@@ -1,5 +1,3 @@
-BEGIN;
-
 INSERT INTO muscles (slug, name) VALUES
   ('chest', 'Chest'),
   ('front_delt', 'Front delt'),
@@ -22,13 +20,13 @@ INSERT INTO exercises (name, aliases) VALUES
   -- current plan
   ('Incline dumbbell press', '{}'),
   ('Dumbbell bench press', '{"Dumbbell press","Flat DB press"}'),
-  ('Cable cross-over (band, mid)', '{}'),
+  ('Cable cross-over (band, mid)', '{"Cable cross-over (band)","Cable cross-over (band, high)"}'),
   ('Tricep dips', '{"Triceps dip (bench)","Triceps dip (bench, elevated)","Bench dip"}'),
   ('DB overhead triceps extension', '{}'),
   ('Dumbbell lateral raise', '{}'),
   ('Weighted bench crunch', '{"Weighted crunch"}'),
   ('Pull-up (bar)', '{"Pull-up"}'),
-  ('Prone dumbbell row', '{"Chest-supported row"}'),
+  ('Chest supported row', '{"Prone dumbbell row"}'),
   ('Chin-up (bar)', '{"Chin-up"}'),
   ('Dumbbell reverse flye', '{}'),
   ('Incline biceps curl', '{}'),
@@ -54,7 +52,6 @@ INSERT INTO exercises (name, aliases) VALUES
   ('Bench press', '{}'),
   ('Bent-over row', '{}'),
   ('Box jump (stairs)', '{}'),
-  ('Cable cross-over (band, high)', '{"Cable cross-over (band)"}'),
   ('Clean and press', '{}'),
   ('Concentration curl', '{}'),
   ('Crunch', '{}'),
@@ -111,7 +108,7 @@ INSERT INTO exercises (name, aliases) VALUES
   ('Suitcase carry', '{}'),
   ('Power clean', '{}');
 
--- The 28 verified exercises (handoff §5.2)
+-- Factors for the 28 exercises in the current plan + report plan B (handoff §5.2, adjusted by Luis 2026-10-19)
 INSERT INTO exercise_muscles (exercise_id, muscle_slug, factor)
 SELECT e.id, v.muscle_slug, v.factor
 FROM (VALUES
@@ -138,15 +135,15 @@ FROM (VALUES
   ('Pull-up (bar)', 'forearms', 0.5),
   ('Pull-up (bar)', 'abs', 0.25),
   ('Chin-up (bar)', 'lats', 1.0),
-  ('Chin-up (bar)', 'biceps', 1.0),
+  ('Chin-up (bar)', 'biceps', 0.5),
   ('Chin-up (bar)', 'upper_back', 0.5),
   ('Chin-up (bar)', 'rear_delt', 0.25),
   ('Chin-up (bar)', 'forearms', 0.5),
-  ('Chin-up (bar)', 'abs', 0.5),
-  ('Prone dumbbell row', 'lats', 1.0),
-  ('Prone dumbbell row', 'upper_back', 1.0),
-  ('Prone dumbbell row', 'rear_delt', 0.5),
-  ('Prone dumbbell row', 'biceps', 0.5),
+  ('Chin-up (bar)', 'abs', 0.25),
+  ('Chest supported row', 'lats', 1.0),
+  ('Chest supported row', 'upper_back', 1.0),
+  ('Chest supported row', 'rear_delt', 0.5),
+  ('Chest supported row', 'biceps', 0.5),
   ('Single-arm dumbbell row', 'lats', 1.0),
   ('Single-arm dumbbell row', 'upper_back', 1.0),
   ('Single-arm dumbbell row', 'rear_delt', 0.5),
@@ -156,13 +153,13 @@ FROM (VALUES
   ('Band face pull', 'rear_delt', 1.0),
   ('Band face pull', 'upper_back', 1.0),
   ('Incline biceps curl', 'biceps', 1.0),
+  ('Incline biceps curl', 'forearms', 0.5),
   ('Dumbbell hammer curl', 'biceps', 1.0),
   ('Dumbbell hammer curl', 'forearms', 0.5),
   ('Dead hang', 'forearms', 1.0),
-  ('Dead hang', 'upper_back', 0.5),
-  ('Dead hang', 'lats', 0.25),
+  ('Dead hang', 'upper_back', 0.25),
   ('Front squat', 'quads', 1.0),
-  ('Front squat', 'glutes', 0.5),
+  ('Front squat', 'glutes', 1.0),
   ('Front squat', 'lower_back', 0.5),
   ('Front squat', 'abs', 0.5),
   ('Romanian deadlift', 'hams', 1.0),
@@ -185,5 +182,3 @@ FROM (VALUES
   ('Dumbbell skull crusher', 'triceps', 1.0)
 ) AS v (exercise, muscle_slug, factor)
 JOIN exercises e ON e.name = v.exercise;
-
-COMMIT;
