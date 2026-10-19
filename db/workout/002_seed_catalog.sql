@@ -108,6 +108,8 @@ INSERT INTO exercises (name, aliases) VALUES
   ('Suitcase carry', '{}'),
   ('Power clean', '{}');
 
+UPDATE exercises SET is_timed = true WHERE name IN ('Dead hang', 'Plank');
+
 -- Factors for the 28 exercises in the current plan + report plan B (handoff §5.2, adjusted by Luis 2026-10-19)
 INSERT INTO exercise_muscles (exercise_id, muscle_slug, factor)
 SELECT e.id, v.muscle_slug, v.factor

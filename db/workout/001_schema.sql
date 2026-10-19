@@ -16,6 +16,8 @@ CREATE TABLE exercises (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name text NOT NULL UNIQUE,
   aliases text[] NOT NULL DEFAULT '{}',
+  -- reps are seconds
+  is_timed boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
