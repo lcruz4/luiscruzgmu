@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { getStickers } from '../api/get-stickers';
+import { getAuthenticatedEmail } from '@/services/auth';
 import {
   StickerGrid,
   AddStickerForm,
@@ -81,7 +82,6 @@ const RewardChart: React.FC<RewardChartProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
           category,
           sticker: newSticker,
         }),
@@ -133,7 +133,6 @@ const RewardChart: React.FC<RewardChartProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
           category,
           index: indexToRemove,
         }),
@@ -241,15 +240,7 @@ const RewardChart: React.FC<RewardChartProps> = ({
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const category = 'sight_words';
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/authorize`,
-    {
-      headers: {
-        cookie: context.req.headers.cookie || '',
-      },
-    },
-  );
-  const email = response.headers.get('x-authenticated-email') || null;
+  const email = await getAuthenticatedEmail(context.req.headers.cookie);
 
   if (!email) {
     return {
