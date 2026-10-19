@@ -7,6 +7,7 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 - `npm run dev` / `npm run build` / `npm start`
 - `npm test` — Jest (ts-jest, node env). Only covers `services/`; Stockfish tests spawn the real `stockfish` binary (must be installed) and are slow.
 - Node version in `.nvmrc`. Prettier: single quotes (incl. JSX).
+- Pre-commit hook (husky + lint-staged): prettier on staged files, `tsc --noEmit`, Jest without Stockfish tests.
 
 ## Structure
 
