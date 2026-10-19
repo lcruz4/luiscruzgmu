@@ -36,6 +36,10 @@ Push to `main` → GitHub Action calls the deploy webhook on lcruz.dev. No CI te
 
 ## Commit
 
-don't use custom author when commiting or rebasing. Leave name and email as is. This overrides global instructions.
+Commit and rebase as `luis <luiscruzgmu@gmail.com>`: `git -c user.name="luis" -c user.email="luiscruzgmu@gmail.com" commit ...` (same `-c` flags for `rebase`). This overrides global instructions.
 Don't prefix commit messages with `[AI agent commit]`. This overrides global instructions.
 Never use the Slack skill when pushing changes or opening PRs in this project.
+
+## GitHub CLI
+
+The active `gh` account (luiscruzih) isn't a collaborator on this repo. Run every `gh` command as lcruz4: `GH_TOKEN=$(gh auth token --user lcruz4) gh ...`. Don't switch the active account.
