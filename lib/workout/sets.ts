@@ -1,47 +1,38 @@
-// Not used yet; uncomment when the log view needs it.
+import type { LogSet } from '@/types/workout';
 
-// export interface SetValues {
-//   setNumber: number;
-//   weight: string | null;
-//   reps: number | null;
-//   notes: string | null;
-// }
+/** A saved set, or a draft (id null) that isn't stored until reps are entered */
+export type SetRow = Omit<LogSet, 'id'> & { id: number | null };
 
-// export interface SetRow extends SetValues {
-//   saved: boolean;
-// }
+interface PlanTarget {
+  sets: number;
+  weight: string | null;
+}
 
-// interface PlanTarget {
-//   sets: number;
-//   weight: string | null;
-// }
-
-// const draftRow = (setNumber: number, plan: PlanTarget): SetRow => ({
-//   setNumber,
-//   weight: plan.weight,
-//   reps: null,
-//   notes: null,
-//   saved: false,
-// });
-
-// // Saved sets plus drafts up to the plan's set count.
-// export const buildSetRows = (
-//   plan: PlanTarget,
-//   saved: SetValues[],
-// ): SetRow[] => {
-//   const bySetNumber = new Map(saved.map((set) => [set.setNumber, set]));
-//   const count = Math.max(plan.sets, ...saved.map((set) => set.setNumber));
-//   const rows: SetRow[] = [];
-//   for (let setNumber = 1; setNumber <= count; setNumber++) {
-//     const existing = bySetNumber.get(setNumber);
-//     rows.push(
-//       existing ? { ...existing, saved: true } : draftRow(setNumber, plan),
-//     );
-//   }
-//   return rows;
-// };
-
-// export const addSetRow = (rows: SetRow[], plan: PlanTarget): SetRow[] => [
-//   ...rows,
-//   draftRow(rows.length + 1, plan),
-// ];
+// Saved sets plus drafts for any gaps, up to the plan's set count, the
+// highest saved set or rowCount (rows added by hand), whichever is largest.
+// Drafts start at the plan weight (D41).
+export const buildSetRows = (
+  plan: PlanTarget,
+  saved: LogSet[],
+  rowCount = 0,
+): SetRow[] => {
+  const bySetNumber = new Map(saved.map((set) => [set.setNumber, set]));
+  const count = Math.max(
+    plan.sets,
+    rowCount,
+    ...saved.map((set) => set.setNumber),
+  );
+  const rows: SetRow[] = [];
+  for (let setNumber = 1; setNumber <= count; setNumber++) {
+    rows.push(
+      bySetNumber.get(setNumber) ?? {
+        id: null,
+        setNumber,
+        weight: plan.weight,
+        reps: null,
+        notes: null,
+      },
+    );
+  }
+  return rows;
+};

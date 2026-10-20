@@ -25,7 +25,11 @@ const LogContent = ({ email }: LogPageProps) => {
           week={data.week}
           day={data.day}
         />
-        <ExerciseList exercises={data.exercises} week={data.week} />
+        <ExerciseList
+          exercises={data.exercises}
+          date={data.date}
+          week={data.week}
+        />
       </>
     );
   }

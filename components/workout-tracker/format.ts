@@ -7,11 +7,13 @@ export const DAY_TITLES = [
   'Shoulders · Arms',
 ];
 
-// Numbers are lb, bands ('rb -1.5') stay as typed, no weight = bodyweight
-// (except timed holds, where it's just omitted)
+// Numbers are lb; bands ('rb -1.5') and 'BW' stay as typed
+export const isPounds = (weight: string) => /^[\d./]+$/.test(weight);
+
+// No weight = bodyweight (except timed holds, where it's just omitted)
 const atWeight = (weight: string | null, isTimed: boolean) => {
   if (weight === null) return isTimed ? '' : ' @ BW';
-  return /^[\d./]+$/.test(weight) ? ` @ ${weight} lb` : ` @ ${weight}`;
+  return isPounds(weight) ? ` @ ${weight} lb` : ` @ ${weight}`;
 };
 
 const unit = (isTimed: boolean) => (isTimed ? ' s' : '');
