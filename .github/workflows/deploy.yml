@@ -12,4 +12,4 @@ jobs:
       env:
         token: ${{ secrets.DEPLOY_KEY }}
       run: |
-        curl https://lcruz.dev/flask/deploy/luiscruzgmu -H "Authorization: $token"
+        curl -sSN https://lcruz.dev/flask/deploy/luiscruzgmu -H "Authorization: $token"
