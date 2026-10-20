@@ -15,7 +15,7 @@ export const WorkoutLayout = ({ children }: { children: ReactNode }) => (
     className={cn(
       raleway.variable,
       jetBrainsMono.variable,
-      'flex min-h-dvh flex-col bg-mist-ground font-ui text-mist-text',
+      'min-h-dvh bg-mist-ground font-ui text-mist-text',
     )}
   >
     <Head>
@@ -23,7 +23,9 @@ export const WorkoutLayout = ({ children }: { children: ReactNode }) => (
       {/* _app's body is black; this colours the overscroll area instead */}
       <style>{'html { background: var(--color-mist-ground); }'}</style>
     </Head>
-    {children}
-    <TabBar />
+    <div className='mx-auto flex min-h-dvh w-full max-w-md flex-col'>
+      {children}
+      <TabBar />
+    </div>
   </div>
 );
