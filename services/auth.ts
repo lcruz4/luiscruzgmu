@@ -1,8 +1,9 @@
+import type { GetServerSideProps } from 'next';
 import { logger } from './logger';
 
-export async function getAuthenticatedEmail(
+export const getAuthenticatedEmail = async (
   cookie: string | undefined,
-): Promise<string | null> {
+): Promise<string | null> => {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/authorize`,
@@ -13,4 +14,28 @@ export async function getAuthenticatedEmail(
     logger.error('Auth check failed:', error);
     return null;
   }
-}
+};
+
+// Page login check. Signed out → the auth service's login, which sets the
+// session cookie on `domain` and sends the browser back to `redirectTo` (D22).
+export const requireLogin: GetServerSideProps<{ email: string }> = async ({
+  req,
+  resolvedUrl,
+}) => {
+  const email = await getAuthenticatedEmail(req.headers.cookie);
+  if (email) return { props: { email } };
+
+  const host = req.headers.host ?? '';
+  const domain = host.split(':')[0];
+  const protocol = domain === 'localhost' ? 'http' : 'https';
+  const params = new URLSearchParams({
+    redirectTo: `${protocol}://${host}${resolvedUrl}`,
+    domain,
+  });
+  return {
+    redirect: {
+      destination: `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/login?${params}`,
+      permanent: false,
+    },
+  };
+};

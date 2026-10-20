@@ -1,8 +1,8 @@
 @tailwind utilities;
 
 @plugin "tailwindcss-animate";
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -12,15 +12,14 @@
   --breakpoint-venti: 1024px;
 
   --color-white: #e5e7eb;
-  --color-pink-l: #ec4899
-  --color-cyan-l: #04c2c9;
+  --color-pink-l: #ec4899 --color-cyan-l: #04c2c9;
   --color-book: #d5a47d;
-  --color-best: #81B64C;
-  --color-excellent: #81B64C;
-  --color-good: #95B776;
-  --color-inaccuracy: #F7C631;
-  --color-mistake: #FFA459;
-  --color-blunder: #FA412D;
+  --color-best: #81b64c;
+  --color-excellent: #81b64c;
+  --color-good: #95b776;
+  --color-inaccuracy: #f7c631;
+  --color-mistake: #ffa459;
+  --color-blunder: #fa412d;
 
   --spacing-100: 100px;
   --spacing-200: 200px;
@@ -29,8 +28,10 @@
 
   --border-width-3: 3px;
 
-  --shadow-innerL-tl-cyanL-br-pink-500: inset -3px -2px 2px #ec4899, inset 3px 2px 2px #04c2c9;
-  --shadow-innerL-tl-pink-500-br-cyanL: inset -3px -2px 2px #04c2c9, inset 3px 2px 2px #ec4899;
+  --shadow-innerL-tl-cyanL-br-pink-500: inset -3px -2px 2px #ec4899,
+    inset 3px 2px 2px #04c2c9;
+  --shadow-innerL-tl-pink-500-br-cyanL: inset -3px -2px 2px #04c2c9,
+    inset 3px 2px 2px #ec4899;
   --shadow-innerL-lr-cyanL: inset 0px 2px #04c2c9, inset 0px -2px #04c2c9;
 
   --transition-duration-2: 2s;
@@ -41,6 +42,38 @@
   --rotate-120: 120deg;
 
   --z-index-1: 1;
+}
+
+/* Workout tracker, Mist palette (D26) */
+@theme {
+  --color-mist-ground: #e2eff1;
+  --color-mist-header: #cdeaed;
+  --color-mist-surface: #fbfefe;
+  --color-mist-raised: #eef7f8;
+  --color-mist-line: #bcd5da;
+  --color-mist-dashed: #9fbcc2;
+  --color-mist-skeleton: #c9e0e3;
+  --color-mist-skeleton-strong: #b5d3d8;
+  --color-mist-text: #0e2a2f;
+  --color-mist-muted: #4a6469;
+  --color-mist-ink: #040404;
+  --color-mist-cyan: #04c2c9;
+  --color-mist-cyan-text: #00747a;
+  --color-mist-cyan-line: #00a3aa;
+  --color-mist-pink: #ec3e85;
+  --color-mist-pink-text: #b81f66;
+  --color-mist-warn-text: #a85300;
+  --color-mist-warn-line: #c96f1c;
+  --color-mist-warn-fill: #ffa459;
+  --color-mist-warn-banner: #fff1e3;
+
+  --shadow-mist-card: 0 1px 2px rgba(14, 42, 47, 0.08);
+}
+
+/* next/font variables, set on the workout layout root */
+@theme inline {
+  --font-ui: var(--font-raleway), system-ui, sans-serif;
+  --font-num: var(--font-jetbrains-mono), monospace;
 }
 
 @variant child (&> *);
@@ -66,12 +99,20 @@
 }
 
 @keyframes glow {
-  from { background-color: #ec4899; }
-  to { background-color: #04c2c9; }
+  from {
+    background-color: #ec4899;
+  }
+  to {
+    background-color: #04c2c9;
+  }
 }
 @keyframes reverseGlow {
-  from { background-color: #04c2c9; }
-  to { background-color: #ec4899; }
+  from {
+    background-color: #04c2c9;
+  }
+  to {
+    background-color: #ec4899;
+  }
 }
 
 @layer utilities {
@@ -82,7 +123,9 @@
     animation: spinReverse 1s linear normal;
   }
 
-  .hexagon, .hexagon:before, .hexagon:after {
+  .hexagon,
+  .hexagon:before,
+  .hexagon:after {
     @apply from-cyan-100 via-teal-100 to-cyan-100 shadow-innerL-lr-cyanL before:rotate-60 before:absolute after:rotate-120 after:absolute;
     width: calc(100px / 0.86602540378);
     height: 200px;
@@ -95,11 +138,11 @@
 }
 
 @font-face {
-    font-family: 'Chess Sans'; /* Choose a unique name for your font */
-    src: url('/fonts/chess-sans-700.woff2') format('woff2'); /* Specify the path to your WOFF2 file */
-    font-weight: 700; /* Optional: Define the font's weight */
-    font-style: normal;  /* Optional: Define the font's style (e.g., italic) */
-    font-display: swap; /* Optional: Controls how the font loads and renders */
+  font-family: 'Chess Sans'; /* Choose a unique name for your font */
+  src: url('/fonts/chess-sans-700.woff2') format('woff2'); /* Specify the path to your WOFF2 file */
+  font-weight: 700; /* Optional: Define the font's weight */
+  font-style: normal; /* Optional: Define the font's style (e.g., italic) */
+  font-display: swap; /* Optional: Controls how the font loads and renders */
 }
 
 @theme inline {
