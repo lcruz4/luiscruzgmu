@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { DayExercise } from '@/types/workout';
 import { ExerciseCard } from './ExerciseCard';
+import { useDrafts } from './useDrafts';
 
 interface ExerciseListProps {
   exercises: DayExercise[];
@@ -9,8 +10,9 @@ interface ExerciseListProps {
 }
 
 // Accordion: one card open at a time, starting with the first one not logged
-// yet. Finish exercise opens the next card; finishing the last closes it.
+// yet. Finish exercise saves the card and opens the next; the last just closes.
 export const ExerciseList = ({ exercises, date, week }: ExerciseListProps) => {
+  const { drafts, setDraft } = useDrafts(date);
   const [openId, setOpenId] = useState(
     (exercises.find((exercise) => !exercise.log) ?? exercises.at(0))?.id,
   );
@@ -23,6 +25,8 @@ export const ExerciseList = ({ exercises, date, week }: ExerciseListProps) => {
           date={date}
           week={week}
           open={exercise.id === openId}
+          draft={drafts[exercise.id]}
+          onDraftChange={(draft) => setDraft(exercise.id, draft)}
           onToggle={() =>
             setOpenId(exercise.id === openId ? undefined : exercise.id)
           }

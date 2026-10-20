@@ -1,11 +1,11 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { buildSetRows } from '@/lib/workout/sets';
+import { type DraftSet, plannedSet } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { SET_GRID, SetRowEditor } from './SetRowEditor';
 
-// PUT sets accepts set numbers up to 20
+// PUT log accepts up to 20 sets
 const MAX_SETS = 20;
 
 const headClass =
@@ -13,20 +13,14 @@ const headClass =
 
 interface SetListProps {
   exercise: DayExercise;
-  date: string;
+  sets: DraftSet[];
+  saved: boolean;
+  onChange: (sets: DraftSet[]) => void;
 }
 
-export const SetList = ({ exercise, date }: SetListProps) => {
-  const [rowCount, setRowCount] = useState(0);
-  // Bumped when a saved set is deleted: later sets were renumbered, so every
-  // row remounts from the server's sets instead of keeping its local inputs
-  const [generation, setGeneration] = useState(0);
-  const rows = buildSetRows(exercise, exercise.log?.sets ?? [], rowCount);
-
-  const onRemoved = (renumbered: boolean) => {
-    setRowCount(rows.length - 1);
-    if (renumbered) setGeneration(generation + 1);
-  };
+export const SetList = ({ exercise, sets, saved, onChange }: SetListProps) => {
+  // One set's note panel open at a time, by row index
+  const [openNote, setOpenNote] = useState<number>();
 
   return (
     <>
@@ -39,26 +33,33 @@ export const SetList = ({ exercise, date }: SetListProps) => {
           </span>
           <span />
         </div>
-        {rows.map((row) => (
+        {sets.map((set, index) => (
           <SetRowEditor
-            key={`${generation}-${row.setNumber}`}
-            row={row}
-            planExerciseId={exercise.id}
-            date={date}
-            planReps={exercise.reps}
-            planWeight={exercise.weight}
+            // Rows have no ids until saved; removing one closes the note panel
+            key={index}
+            setNumber={index + 1}
+            set={set}
+            saved={saved}
             isTimed={exercise.isTimed}
-            canRemoveDraft={
-              row.setNumber === rows.length && row.setNumber > exercise.sets
+            planWeight={exercise.weight}
+            noteOpen={openNote === index}
+            onToggleNote={() =>
+              setOpenNote(openNote === index ? undefined : index)
             }
-            onRemoved={onRemoved}
+            onChange={(changed) =>
+              onChange(sets.map((row, i) => (i === index ? changed : row)))
+            }
+            onRemove={() => {
+              setOpenNote(undefined);
+              onChange(sets.filter((_row, i) => i !== index));
+            }}
           />
         ))}
       </div>
-      {rows.length < MAX_SETS && (
+      {sets.length < MAX_SETS && (
         <button
           type='button'
-          onClick={() => setRowCount(rows.length + 1)}
+          onClick={() => onChange([...sets, plannedSet(exercise)])}
           className='mr-1 flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-dashed border-mist-dashed text-[15px] font-bold text-mist-cyan-text'
         >
           <Plus size={18} strokeWidth={2.5} aria-hidden />

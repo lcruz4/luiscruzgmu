@@ -1,52 +1,35 @@
 import { Check, X } from 'lucide-react';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
-import type { DayExercise } from '@/types/workout';
-import { SaveStatus } from './SaveStatus';
-import { type LogFields, useLogMutations } from './useLogMutations';
+import type { ExerciseDraft } from '@/lib/workout/sets';
 
 const labelClass =
   'text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase';
 
 interface ExerciseLogFieldsProps {
-  exercise: DayExercise;
-  date: string;
+  planExerciseId: number;
   week: number;
+  notes: string;
+  passed: boolean | null;
+  onChange: (patch: Partial<ExerciseDraft>) => void;
 }
 
-// Exercise note + the Week 2 pass/fail check (D15). Both go in one PUT log,
-// so each save sends the current value of the other.
+// Exercise note + the Week 2 pass/fail check (D15)
 export const ExerciseLogFields = ({
-  exercise,
-  date,
+  planExerciseId,
   week,
+  notes,
+  passed,
+  onChange,
 }: ExerciseLogFieldsProps) => {
-  const { saveLog } = useLogMutations(exercise.id, date);
-  const savedNotes = exercise.log?.notes ?? null;
-  const savedPassed = exercise.log?.passed ?? null;
-  const [notes, setNotes] = useState(savedNotes ?? '');
-  const [passed, setPassed] = useState(savedPassed);
-
-  const save = (fields: LogFields) => {
-    if (fields.notes === savedNotes && fields.passed === savedPassed) return;
-    saveLog.mutate(fields);
-  };
-  const notesValue = notes.trim() || null;
-
-  const check = (value: boolean) => {
-    const next = passed === value ? null : value;
-    setPassed(next);
-    save({ passed: next, notes: notesValue });
-  };
-
   const checkButton = (value: boolean) => {
     const pressed = passed === value;
     return (
       <button
         type='button'
         aria-pressed={pressed}
-        onClick={() => check(value)}
+        // Tapping the pressed one clears it
+        onClick={() => onChange({ passed: pressed ? null : value })}
         className={cn(
           'flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] border text-[15px] font-bold',
           !pressed && 'border-mist-line bg-mist-raised text-mist-text',
@@ -67,19 +50,15 @@ export const ExerciseLogFields = ({
   return (
     <>
       <div className='mr-1 flex flex-col gap-1.5'>
-        <label htmlFor={`note-${exercise.id}`} className={labelClass}>
+        <label htmlFor={`note-${planExerciseId}`} className={labelClass}>
           Exercise note
         </label>
         <input
-          id={`note-${exercise.id}`}
+          id={`note-${planExerciseId}`}
           value={notes}
           placeholder='Optional'
           maxLength={1000}
-          onChange={(event) => setNotes(event.target.value)}
-          onBlur={() => save({ passed, notes: notesValue })}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') event.currentTarget.blur();
-          }}
+          onChange={(event) => onChange({ notes: event.target.value })}
           className='box-border h-12 w-full rounded-[12px] border border-mist-line bg-mist-raised px-3.5 text-base font-medium text-mist-text placeholder:text-mist-muted'
         />
       </div>
@@ -94,11 +73,6 @@ export const ExerciseLogFields = ({
           </div>
         </fieldset>
       )}
-      <SaveStatus
-        error={saveLog.error}
-        paused={saveLog.isPaused}
-        onRetry={() => saveLog.mutate({ passed, notes: notesValue })}
-      />
     </>
   );
 };

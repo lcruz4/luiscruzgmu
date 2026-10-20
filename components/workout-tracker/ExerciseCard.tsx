@@ -1,18 +1,24 @@
 import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
+import { type ExerciseDraft, initialDraft } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { ExerciseLogFields } from './ExerciseLogFields';
 import { setsText, shortDate, targetText } from './format';
+import { SaveStatus } from './SaveStatus';
 import { SetList } from './SetList';
+import { useSaveLog } from './useSaveLog';
 
 interface ExerciseCardProps {
   exercise: DayExercise;
   date: string;
   week: number;
   open: boolean;
+  /** Unsaved inputs, if any were changed since the last save */
+  draft: ExerciseDraft | undefined;
+  onDraftChange: (draft: ExerciseDraft | null) => void;
   onToggle: () => void;
-  /** Collapse this card and open the next one (D44, UI-only) */
+  /** Collapse this card and open the next one */
   onFinish: () => void;
 }
 
@@ -30,10 +36,14 @@ export const ExerciseCard = ({
   date,
   week,
   open,
+  draft,
+  onDraftChange,
   onToggle,
   onFinish,
 }: ExerciseCardProps) => {
   const { name, position, isTimed, last, log } = exercise;
+  const saveLog = useSaveLog(exercise.id, date);
+  const unsaved = draft !== undefined;
 
   if (!open) {
     return (
@@ -81,6 +91,11 @@ export const ExerciseCard = ({
                 {targetText(exercise)}
               </span>
             )}
+            {unsaved && (
+              <span className='self-start rounded-full border border-mist-warn-line bg-mist-warn-banner px-2 py-px text-xs font-bold text-mist-warn-text'>
+                Not saved
+              </span>
+            )}
           </span>
           <span className='flex size-8 items-center justify-center text-mist-muted'>
             <ChevronDown size={20} strokeWidth={2.25} aria-hidden />
@@ -91,6 +106,22 @@ export const ExerciseCard = ({
   }
 
   const week2 = week === PASS_FAIL_WEEK;
+  const current = draft ?? initialDraft(exercise);
+  const update = (patch: Partial<ExerciseDraft>) =>
+    onDraftChange({ ...current, ...patch });
+
+  // Nothing persists until here. Unchanged since the last save → just move on;
+  // nothing logged yet → saves the pre-filled plan.
+  const finish = () => {
+    if (log && !unsaved) return onFinish();
+    saveLog.mutate(current, {
+      onSuccess: () => {
+        onDraftChange(null);
+        onFinish();
+      },
+    });
+  };
+
   return (
     <section
       aria-label={name}
@@ -143,16 +174,37 @@ export const ExerciseCard = ({
         </dd>
       </dl>
       <div className='mr-1 h-px bg-mist-line' />
-      <SetList exercise={exercise} date={date} />
-      <ExerciseLogFields exercise={exercise} date={date} week={week} />
-      <button
-        type='button'
-        onClick={onFinish}
-        className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink'
+      <fieldset
+        disabled={saveLog.isPending}
+        className='m-0 flex min-w-0 flex-col gap-3 border-0 p-0'
       >
-        <Check size={18} strokeWidth={3} aria-hidden />
-        Finish exercise
-      </button>
+        <SetList
+          exercise={exercise}
+          sets={current.sets}
+          saved={log !== null && !unsaved}
+          onChange={(sets) => update({ sets })}
+        />
+        <ExerciseLogFields
+          planExerciseId={exercise.id}
+          week={week}
+          notes={current.notes}
+          passed={current.passed}
+          onChange={update}
+        />
+        <button
+          type='button'
+          onClick={finish}
+          className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink disabled:opacity-60'
+        >
+          <Check size={18} strokeWidth={3} aria-hidden />
+          {saveLog.isPending ? 'Saving…' : 'Finish exercise'}
+        </button>
+      </fieldset>
+      <SaveStatus
+        error={saveLog.error}
+        paused={saveLog.isPaused}
+        onRetry={finish}
+      />
     </section>
   );
 };

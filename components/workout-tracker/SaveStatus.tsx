@@ -1,10 +1,9 @@
-import { onlineManager } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { saveErrorText } from './useLogMutations';
+import { saveErrorText } from './useSaveLog';
 
 interface SaveStatusProps {
   error: Error | null;
-  /** Offline, or queued behind an earlier write to the same log */
+  /** Offline: TanStack holds the write until the connection is back */
   paused: boolean;
   onRetry: () => void;
   className?: string;
@@ -18,7 +17,7 @@ export const SaveStatus = ({
   onRetry,
   className,
 }: SaveStatusProps) => {
-  if (paused && !onlineManager.isOnline()) {
+  if (paused) {
     return (
       <p role='status' className={cn(textClass, className)}>
         Waiting for a connection…
