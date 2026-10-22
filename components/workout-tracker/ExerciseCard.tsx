@@ -1,12 +1,12 @@
 import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
 import { type ExerciseDraft, initialDraft } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { ExerciseLogFields } from './ExerciseLogFields';
 import { setsText, shortDate, targetText } from './format';
 import { SaveStatus } from './SaveStatus';
 import { SetList } from './SetList';
+import { accentBorder, badgeClass, cardClass, labelClass } from './styles';
 import { useSaveLog } from './useSaveLog';
 
 interface ExerciseCardProps {
@@ -21,12 +21,6 @@ interface ExerciseCardProps {
   /** Collapse this card and open the next one */
   onFinish: () => void;
 }
-
-const cardClass = 'rounded-2xl border bg-mist-surface shadow-mist-card';
-const badgeClass =
-  'flex size-7 shrink-0 items-center justify-center rounded-full border-2 font-num text-[13px] font-bold';
-const labelClass =
-  'text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase';
 
 const pillClass =
   'rounded-full px-2 py-0.5 text-[11px] font-extrabold tracking-[0.06em] text-mist-ink uppercase';
@@ -47,7 +41,7 @@ export const ExerciseCard = ({
 
   if (!open) {
     return (
-      <section className={cn(cardClass, 'border-mist-line')}>
+      <section className={cardClass}>
         <button
           type='button'
           aria-expanded={false}
@@ -62,11 +56,7 @@ export const ExerciseCard = ({
               <Check size={16} strokeWidth={3} aria-hidden />
             </span>
           ) : (
-            <span
-              className={cn(badgeClass, 'border-mist-line text-mist-muted')}
-            >
-              {position}
-            </span>
+            <span className={badgeClass()}>{position}</span>
           )}
           <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
             <span className='text-base leading-[22px] font-bold'>{name}</span>
@@ -105,7 +95,6 @@ export const ExerciseCard = ({
     );
   }
 
-  const week2 = week === PASS_FAIL_WEEK;
   const current = draft ?? initialDraft(exercise);
   const update = (patch: Partial<ExerciseDraft>) =>
     onDraftChange({ ...current, ...patch });
@@ -128,20 +117,11 @@ export const ExerciseCard = ({
       className={cn(
         cardClass,
         'flex flex-col gap-3 pt-3.5 pr-3 pb-4 pl-4',
-        week2 ? 'border-mist-pink' : 'border-mist-cyan-line',
+        accentBorder(week),
       )}
     >
       <div className='flex items-center gap-3'>
-        <span
-          className={cn(
-            badgeClass,
-            week2
-              ? 'border-mist-pink text-mist-pink-text'
-              : 'border-mist-cyan-line text-mist-cyan-text',
-          )}
-        >
-          {position}
-        </span>
+        <span className={badgeClass(week)}>{position}</span>
         <h2 className='m-0 flex-1 text-lg leading-6 font-extrabold'>{name}</h2>
         {isTimed && (
           <span className='inline-flex items-center gap-1 rounded-full border border-mist-line px-2 py-0.5 text-xs font-bold text-mist-muted'>

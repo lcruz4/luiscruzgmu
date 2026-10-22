@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { HistoryByDate } from '@/components/workout-tracker/HistoryByDate';
 import { HistoryByExercise } from '@/components/workout-tracker/HistoryByExercise';
 import { LoadError } from '@/components/workout-tracker/LoadError';
+import { cardClass } from '@/components/workout-tracker/styles';
 import { useHistory } from '@/components/workout-tracker/useHistory';
 import { WorkoutLayout } from '@/components/workout-tracker/WorkoutLayout';
 import { cn } from '@/lib/utils';
@@ -16,15 +17,12 @@ const VIEWS: { view: View; label: string }[] = [
   { view: 'exercise', label: 'By exercise' },
 ];
 
-const card =
-  'rounded-2xl border border-mist-line bg-mist-surface shadow-mist-card';
-
 const HistorySkeleton = () => (
   <main aria-busy className='flex flex-1 animate-pulse flex-col gap-4 p-4'>
     <span className='sr-only'>Loading history</span>
-    <div aria-hidden className={`h-[180px] ${card}`} />
-    <div aria-hidden className={`h-[76px] ${card}`} />
-    <div aria-hidden className={`h-[76px] ${card}`} />
+    <div aria-hidden className={`h-[180px] ${cardClass}`} />
+    <div aria-hidden className={`h-[76px] ${cardClass}`} />
+    <div aria-hidden className={`h-[76px] ${cardClass}`} />
   </main>
 );
 

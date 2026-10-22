@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import type { PlanResponse, PlanRow } from '@/types/workout';
 import { DAY_TITLES, targetText } from './format';
 import { PlanRowEditor } from './PlanRowEditor';
+import { badgeClass, cardClass } from './styles';
 
 const WEEKS = [1, 2];
 
@@ -15,7 +16,7 @@ const RowList = ({
   onEdit: (id: number) => void;
 }) =>
   rows.length === 0 ? null : (
-    <div className='flex flex-col rounded-2xl border border-mist-line bg-mist-surface shadow-mist-card'>
+    <div className={cn(cardClass, 'flex flex-col')}>
       {rows.map((row) => (
         <button
           key={row.id}
@@ -23,9 +24,7 @@ const RowList = ({
           onClick={() => onEdit(row.id)}
           className='flex min-h-[68px] w-full cursor-pointer items-center gap-3 border-b border-mist-line py-3 pr-3 pl-4 text-left last:border-b-0'
         >
-          <span className='flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-mist-line font-num text-[13px] font-bold text-mist-muted'>
-            {row.position}
-          </span>
+          <span className={badgeClass()}>{row.position}</span>
           <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
             <span className='text-base leading-[22px] font-bold'>
               {row.name}

@@ -1,5 +1,4 @@
-const card =
-  'rounded-2xl border border-mist-line bg-mist-surface shadow-mist-card';
+import { cardClass } from './styles';
 
 export const PlanSkeleton = () => (
   <div aria-busy className='flex flex-1 animate-pulse flex-col'>
@@ -18,7 +17,7 @@ export const PlanSkeleton = () => (
           <div key={d} className='h-14 rounded-[12px] bg-mist-skeleton' />
         ))}
       </div>
-      <div className={`h-[340px] ${card}`} />
+      <div className={`h-[340px] ${cardClass}`} />
     </div>
   </div>
 );

@@ -1,11 +1,10 @@
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/types/workout';
 import { EntryNotes, PassFail } from './EntryDetails';
 import { longDate, setsText } from './format';
-
-const labelClass =
-  'text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase';
+import { cardClass, labelClass } from './styles';
 
 // Lists logged exercises only; starts on the most recently logged one
 export const HistoryByExercise = ({ entries }: { entries: HistoryEntry[] }) => {
@@ -41,7 +40,12 @@ export const HistoryByExercise = ({ entries }: { entries: HistoryEntry[] }) => {
           />
         </div>
       </div>
-      <ol className='m-0 flex list-none flex-col divide-y divide-mist-line rounded-2xl border border-mist-line bg-mist-surface p-0 shadow-mist-card'>
+      <ol
+        className={cn(
+          cardClass,
+          'm-0 flex list-none flex-col divide-y divide-mist-line p-0',
+        )}
+      >
         {logs.map((entry) => (
           <li key={entry.id} className='flex flex-col gap-1 px-4 py-3.5'>
             <div className='flex items-center justify-between gap-2'>

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/types/workout';
 import { EntryNotes, PassFail } from './EntryDetails';
 import { DAY_TITLES, longDate, setsText } from './format';
+import { cardClass } from './styles';
 import { useToday } from './useDay';
 
 interface DayGroup {
@@ -56,7 +57,7 @@ const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
   const { date, week, day, entries } = group;
   const Chevron = open ? ChevronUp : ChevronDown;
   return (
-    <section className='rounded-2xl border border-mist-line bg-mist-surface shadow-mist-card'>
+    <section className={cardClass}>
       <button
         type='button'
         aria-expanded={open}

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { idsToSync, PLAN_FIELDS, type PlanField } from '@/lib/workout/planSync';
 import { cn } from '@/lib/utils';
 import type { PlanRow } from '@/types/workout';
+import { accentBorder, badgeClass, cardClass, labelClass } from './styles';
 import { useSavePlanRow } from './usePlan';
 
 interface PlanRowEditorProps {
@@ -17,8 +18,6 @@ interface PlanRowEditorProps {
 const SETS_MAX = 20;
 const REPS_MAX = 9999;
 
-const labelClass =
-  'text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase';
 const inputClass =
   'h-12 w-full rounded-[12px] border border-mist-line bg-mist-raised px-3.5 text-mist-text outline-none placeholder:text-mist-muted focus:border-mist-cyan-line focus:ring-1 focus:ring-mist-cyan-line';
 const listFormat = new Intl.ListFormat('en-US');
@@ -157,21 +156,13 @@ export const PlanRowEditor = ({
     <section
       aria-label={`Editing ${row.name}`}
       className={cn(
-        'flex flex-col gap-3.5 rounded-2xl border bg-mist-surface px-4 pt-3.5 pb-4 text-mist-muted shadow-mist-card',
-        row.week === 2 ? 'border-mist-pink' : 'border-mist-cyan-line',
+        cardClass,
+        'flex flex-col gap-3.5 px-4 pt-3.5 pb-4 text-mist-muted',
+        accentBorder(row.week),
       )}
     >
       <div className='flex items-center gap-3 text-mist-text'>
-        <span
-          className={cn(
-            'flex size-7 shrink-0 items-center justify-center rounded-full border-2 font-num text-[13px] font-bold',
-            row.week === 2
-              ? 'border-mist-pink text-mist-pink-text'
-              : 'border-mist-cyan-line text-mist-cyan-text',
-          )}
-        >
-          {row.position}
-        </span>
+        <span className={badgeClass(row.week)}>{row.position}</span>
         <h3 className='m-0 flex-1 text-lg leading-6 font-extrabold'>
           {row.name}
         </h3>
