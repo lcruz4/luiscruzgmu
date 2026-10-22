@@ -1,4 +1,4 @@
-import type { DayExercise, LogSet } from '@/types/workout';
+import type { DayExercise, LogEntry, LogSet } from '@/types/workout';
 
 /** One set row as typed; set numbers follow the row order */
 export interface DraftSet {
@@ -58,3 +58,41 @@ export const draftToLog = ({ sets, notes, passed }: ExerciseDraft) => ({
       notes: set.notes.trim() || null,
     })),
 });
+
+const sameSet = (a: DraftSet, b: DraftSet) =>
+  a.weight.trim() === b.weight.trim() &&
+  a.reps === b.reps &&
+  a.notes.trim() === b.notes.trim();
+
+// Per row: matches the saved set at the same position
+export const savedRows = (log: LogEntry | null, sets: DraftSet[]) =>
+  sets.map((set, index) => {
+    const saved = log?.sets[index];
+    return saved !== undefined && sameSet(set, toDraftSet(saved));
+  });
+
+// Logged, and no row on the card left unsaved
+export const allSetsSaved = (
+  log: LogEntry | null,
+  draft: ExerciseDraft | undefined,
+) =>
+  log !== null &&
+  (draft === undefined || savedRows(log, draft.sets).every(Boolean));
+
+// The saved log with one row swapped in. Set numbers are positions, so
+// earlier rows that aren't saved yet go in too.
+export const withSavedSet = (
+  log: LogEntry | null,
+  sets: DraftSet[],
+  index: number,
+): ExerciseDraft => {
+  const saved = log ? log.sets.map(toDraftSet) : [];
+  return {
+    sets: Array.from(
+      { length: Math.max(saved.length, index + 1) },
+      (_unused, i) => (i === index ? sets[i] : saved[i] ?? sets[i]),
+    ),
+    notes: log?.notes ?? '',
+    passed: log?.passed ?? null,
+  };
+};

@@ -12,11 +12,19 @@ const MAX_SETS = 20;
 interface SetListProps {
   exercise: DayExercise;
   sets: DraftSet[];
-  saved: boolean;
+  /** Per row: matches the saved log */
+  saved: boolean[];
   onChange: (sets: DraftSet[]) => void;
+  onSave: (index: number) => void;
 }
 
-export const SetList = ({ exercise, sets, saved, onChange }: SetListProps) => {
+export const SetList = ({
+  exercise,
+  sets,
+  saved,
+  onChange,
+  onSave,
+}: SetListProps) => {
   // One set's note panel open at a time, by row index
   const [openNote, setOpenNote] = useState<number>();
 
@@ -37,7 +45,7 @@ export const SetList = ({ exercise, sets, saved, onChange }: SetListProps) => {
             key={index}
             setNumber={index + 1}
             set={set}
-            saved={saved}
+            saved={saved[index]}
             isTimed={exercise.isTimed}
             planWeight={exercise.weight}
             noteOpen={openNote === index}
@@ -47,6 +55,7 @@ export const SetList = ({ exercise, sets, saved, onChange }: SetListProps) => {
             onChange={(changed) =>
               onChange(sets.map((row, i) => (i === index ? changed : row)))
             }
+            onSave={() => onSave(index)}
             onRemove={() => {
               setOpenNote(undefined);
               onChange(sets.filter((_row, i) => i !== index));
