@@ -1,47 +1,60 @@
-// Not used yet; uncomment when the log view needs it.
+import type { DayExercise, LogSet } from '@/types/workout';
 
-// export interface SetValues {
-//   setNumber: number;
-//   weight: string | null;
-//   reps: number | null;
-//   notes: string | null;
-// }
+/** One set row as typed; set numbers follow the row order */
+export interface DraftSet {
+  weight: string;
+  reps: string;
+  notes: string;
+}
 
-// export interface SetRow extends SetValues {
-//   saved: boolean;
-// }
+/** An exercise card's inputs, kept locally until Finish exercise saves them */
+export interface ExerciseDraft {
+  sets: DraftSet[];
+  notes: string;
+  passed: boolean | null;
+}
 
-// interface PlanTarget {
-//   sets: number;
-//   weight: string | null;
-// }
+type DraftSource = Pick<DayExercise, 'sets' | 'reps' | 'weight' | 'log'>;
 
-// const draftRow = (setNumber: number, plan: PlanTarget): SetRow => ({
-//   setNumber,
-//   weight: plan.weight,
-//   reps: null,
-//   notes: null,
-//   saved: false,
-// });
+// A row as planned: the plan's weight (D41) and reps
+export const plannedSet = ({
+  reps,
+  weight,
+}: Pick<DayExercise, 'reps' | 'weight'>): DraftSet => ({
+  weight: weight ?? '',
+  reps: String(reps),
+  notes: '',
+});
 
-// // Saved sets plus drafts up to the plan's set count.
-// export const buildSetRows = (
-//   plan: PlanTarget,
-//   saved: SetValues[],
-// ): SetRow[] => {
-//   const bySetNumber = new Map(saved.map((set) => [set.setNumber, set]));
-//   const count = Math.max(plan.sets, ...saved.map((set) => set.setNumber));
-//   const rows: SetRow[] = [];
-//   for (let setNumber = 1; setNumber <= count; setNumber++) {
-//     const existing = bySetNumber.get(setNumber);
-//     rows.push(
-//       existing ? { ...existing, saved: true } : draftRow(setNumber, plan),
-//     );
-//   }
-//   return rows;
-// };
+const toDraftSet = (set: LogSet): DraftSet => ({
+  weight: set.weight ?? '',
+  reps: set.reps === null ? '' : String(set.reps),
+  notes: set.notes ?? '',
+});
 
-// export const addSetRow = (rows: SetRow[], plan: PlanTarget): SetRow[] => [
-//   ...rows,
-//   draftRow(rows.length + 1, plan),
-// ];
+// The saved log, or the plan pre-filled when nothing is logged yet
+export const initialDraft = (exercise: DraftSource): ExerciseDraft =>
+  exercise.log
+    ? {
+        sets: exercise.log.sets.map(toDraftSet),
+        notes: exercise.log.notes ?? '',
+        passed: exercise.log.passed,
+      }
+    : {
+        sets: Array.from({ length: exercise.sets }, () => plannedSet(exercise)),
+        notes: '',
+        passed: null,
+      };
+
+// The PUT log fields. Rows with no reps aren't stored.
+export const draftToLog = ({ sets, notes, passed }: ExerciseDraft) => ({
+  passed,
+  notes: notes.trim() || null,
+  sets: sets
+    .filter((set) => set.reps !== '')
+    .map((set) => ({
+      weight: set.weight.trim() || null,
+      reps: Number(set.reps),
+      notes: set.notes.trim() || null,
+    })),
+});

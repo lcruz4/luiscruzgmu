@@ -1,13 +1,25 @@
-import { ChevronDown, ChevronUp, Timer } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
+import { type ExerciseDraft, initialDraft } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
+import { ExerciseLogFields } from './ExerciseLogFields';
 import { setsText, shortDate, targetText } from './format';
+import { SaveStatus } from './SaveStatus';
+import { SetList } from './SetList';
+import { useSaveLog } from './useSaveLog';
 
 interface ExerciseCardProps {
   exercise: DayExercise;
+  date: string;
   week: number;
   open: boolean;
+  /** Unsaved inputs, if any were changed since the last save */
+  draft: ExerciseDraft | undefined;
+  onDraftChange: (draft: ExerciseDraft | null) => void;
   onToggle: () => void;
+  /** Collapse this card and open the next one */
+  onFinish: () => void;
 }
 
 const cardClass = 'rounded-2xl border bg-mist-surface shadow-mist-card';
@@ -16,13 +28,22 @@ const badgeClass =
 const labelClass =
   'text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase';
 
+const pillClass =
+  'rounded-full px-2 py-0.5 text-[11px] font-extrabold tracking-[0.06em] text-mist-ink uppercase';
+
 export const ExerciseCard = ({
   exercise,
+  date,
   week,
   open,
+  draft,
+  onDraftChange,
   onToggle,
+  onFinish,
 }: ExerciseCardProps) => {
-  const { name, position, isTimed, last } = exercise;
+  const { name, position, isTimed, last, log } = exercise;
+  const saveLog = useSaveLog(exercise.id, date);
+  const unsaved = draft !== undefined;
 
   if (!open) {
     return (
@@ -33,14 +54,48 @@ export const ExerciseCard = ({
           onClick={onToggle}
           className='flex w-full cursor-pointer items-center gap-3 py-3.5 pr-3 pl-4 text-left'
         >
-          <span className={cn(badgeClass, 'border-mist-line text-mist-muted')}>
-            {position}
-          </span>
+          {log ? (
+            <span
+              aria-label='Logged'
+              className='flex size-7 shrink-0 items-center justify-center rounded-full bg-mist-cyan text-mist-ink'
+            >
+              <Check size={16} strokeWidth={3} aria-hidden />
+            </span>
+          ) : (
+            <span
+              className={cn(badgeClass, 'border-mist-line text-mist-muted')}
+            >
+              {position}
+            </span>
+          )}
           <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
             <span className='text-base leading-[22px] font-bold'>{name}</span>
-            <span className='font-num text-sm font-medium text-mist-muted'>
-              {targetText(exercise)}
-            </span>
+            {log ? (
+              <span className='flex items-center gap-2'>
+                <span className='font-num text-sm font-bold text-mist-cyan-text'>
+                  {setsText(log.sets, isTimed)}
+                </span>
+                {log.passed !== null && (
+                  <span
+                    className={cn(
+                      pillClass,
+                      log.passed ? 'bg-mist-cyan' : 'bg-mist-pink',
+                    )}
+                  >
+                    {log.passed ? 'Pass' : 'Fail'}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className='font-num text-sm font-medium text-mist-muted'>
+                {targetText(exercise)}
+              </span>
+            )}
+            {unsaved && (
+              <span className='self-start rounded-full border border-mist-warn-line bg-mist-warn-banner px-2 py-px text-xs font-bold text-mist-warn-text'>
+                Not saved
+              </span>
+            )}
           </span>
           <span className='flex size-8 items-center justify-center text-mist-muted'>
             <ChevronDown size={20} strokeWidth={2.25} aria-hidden />
@@ -50,7 +105,23 @@ export const ExerciseCard = ({
     );
   }
 
-  const week2 = week === 2;
+  const week2 = week === PASS_FAIL_WEEK;
+  const current = draft ?? initialDraft(exercise);
+  const update = (patch: Partial<ExerciseDraft>) =>
+    onDraftChange({ ...current, ...patch });
+
+  // Nothing persists until here. Unchanged since the last save → just move on;
+  // nothing logged yet → saves the pre-filled plan.
+  const finish = () => {
+    if (log && !unsaved) return onFinish();
+    saveLog.mutate(current, {
+      onSuccess: () => {
+        onDraftChange(null);
+        onFinish();
+      },
+    });
+  };
+
   return (
     <section
       aria-label={name}
@@ -102,6 +173,38 @@ export const ExerciseCard = ({
           {last && shortDate(last.date)}
         </dd>
       </dl>
+      <div className='mr-1 h-px bg-mist-line' />
+      <fieldset
+        disabled={saveLog.isPending}
+        className='m-0 flex min-w-0 flex-col gap-3 border-0 p-0'
+      >
+        <SetList
+          exercise={exercise}
+          sets={current.sets}
+          saved={log !== null && !unsaved}
+          onChange={(sets) => update({ sets })}
+        />
+        <ExerciseLogFields
+          planExerciseId={exercise.id}
+          week={week}
+          notes={current.notes}
+          passed={current.passed}
+          onChange={update}
+        />
+        <button
+          type='button'
+          onClick={finish}
+          className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink disabled:opacity-60'
+        >
+          <Check size={18} strokeWidth={3} aria-hidden />
+          {saveLog.isPending ? 'Saving…' : 'Finish exercise'}
+        </button>
+      </fieldset>
+      <SaveStatus
+        error={saveLog.error}
+        paused={saveLog.isPaused}
+        onRetry={finish}
+      />
     </section>
   );
 };

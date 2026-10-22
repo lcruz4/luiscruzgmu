@@ -5,6 +5,7 @@ import {
   dateField,
   HttpError,
   idField,
+  intField,
   nullableBooleanField,
   textField,
   workoutRoute,
@@ -16,8 +17,34 @@ import {
 } from '@/services/workoutDb';
 import type { LogResponse } from '@/types/workout';
 
-// Body: { planExerciseId, date, passed, notes }. Replaces the exercise-level
-// fields of that day's log, creating the log if needed.
+const MAX_SETS = 20;
+
+const setsField = (value: unknown) => {
+  if (!Array.isArray(value) || value.length > MAX_SETS) {
+    throw new HttpError(400, `sets must be a list of up to ${MAX_SETS} sets`);
+  }
+  return value.map((set: unknown, index) => {
+    if (
+      typeof set !== 'object' ||
+      set === null ||
+      !('weight' in set && 'reps' in set && 'notes' in set)
+    ) {
+      throw new HttpError(
+        400,
+        `sets[${index}] must be { weight, reps, notes }`,
+      );
+    }
+    return {
+      weight: textField(set.weight, `sets[${index}].weight`, 50),
+      reps: intField(set.reps, `sets[${index}].reps`, 0, 9999),
+      notes: textField(set.notes, `sets[${index}].notes`, 1000),
+    };
+  });
+};
+
+// Body: { planExerciseId, date, passed, notes, sets: [{ weight, reps, notes }] }.
+// Replaces that day's whole log for the exercise (sent on Finish exercise);
+// set numbers follow the list order. Reps are seconds for timed exercises.
 const putLog = async (
   req: NextApiRequest,
   email: string,
@@ -27,6 +54,7 @@ const putLog = async (
   const date = dateField(body.date);
   const passed = nullableBooleanField(body.passed, 'passed');
   const notes = textField(body.notes, 'notes', 1000);
+  const sets = setsField(body.sets);
 
   return withTransaction(async (client) => {
     const { week } = await getOwnedPlanExercise(client, email, planExerciseId);
@@ -42,7 +70,24 @@ const putLog = async (
        RETURNING id`,
       [planExerciseId, date, passed, notes],
     );
-    return { log: await loadOrPruneLog(client, rows[0].id) };
+    const logId = rows[0].id;
+    await client.query(
+      'DELETE FROM workout_log_sets WHERE workout_log_id = $1',
+      [logId],
+    );
+    await client.query(
+      `INSERT INTO workout_log_sets (workout_log_id, set_number, weight, reps, notes)
+       SELECT $1, t.set_number, t.weight, t.reps, t.notes
+       FROM unnest($2::text[], $3::int[], $4::text[])
+         WITH ORDINALITY AS t(weight, reps, notes, set_number)`,
+      [
+        logId,
+        sets.map((set) => set.weight),
+        sets.map((set) => set.reps),
+        sets.map((set) => set.notes),
+      ],
+    );
+    return { log: await loadOrPruneLog(client, logId) };
   });
 };
 
