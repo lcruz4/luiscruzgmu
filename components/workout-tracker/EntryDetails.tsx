@@ -1,7 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/types/workout';
 
-// passed is only ever set on Week 2 logs
 export const PassFail = ({ passed }: { passed: boolean | null }) => {
   if (passed === null) return null;
   return (

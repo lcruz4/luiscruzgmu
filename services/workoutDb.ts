@@ -51,21 +51,19 @@ export const getActivePlan = async (email: string): Promise<Plan> => {
 };
 
 // 404s for missing rows and rows of another owner alike
-export const getOwnedPlanExercise = async (
+export const assertOwnedPlanExercise = async (
   client: PoolClient,
   email: string,
   planExerciseId: number,
-): Promise<{ week: number }> => {
-  const { rows } = await client.query<{ week: number }>(
-    `SELECT pe.week
+) => {
+  const { rowCount } = await client.query(
+    `SELECT 1
      FROM plan_exercises pe
      JOIN plans p ON p.id = pe.plan_id
      WHERE pe.id = $1 AND p.owner_email = $2`,
     [planExerciseId, email],
   );
-  const planExercise = rows.at(0);
-  if (!planExercise) throw new HttpError(404, 'Plan exercise not found');
-  return planExercise;
+  if (!rowCount) throw new HttpError(404, 'Plan exercise not found');
 };
 
 // A log with no sets, note or pass/fail is deleted, so a stray entry that was

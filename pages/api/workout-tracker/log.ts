@@ -1,5 +1,4 @@
 import type { NextApiRequest } from 'next';
-import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
 import {
   bodyOf,
   dateField,
@@ -11,7 +10,7 @@ import {
   workoutRoute,
 } from '@/services/workoutApi';
 import {
-  getOwnedPlanExercise,
+  assertOwnedPlanExercise,
   loadOrPruneLog,
   withTransaction,
 } from '@/services/workoutDb';
@@ -57,10 +56,7 @@ const putLog = async (
   const sets = setsField(body.sets);
 
   return withTransaction(async (client) => {
-    const { week } = await getOwnedPlanExercise(client, email, planExerciseId);
-    if (passed !== null && week !== PASS_FAIL_WEEK) {
-      throw new HttpError(400, `Pass/fail is only for Week ${PASS_FAIL_WEEK}`);
-    }
+    await assertOwnedPlanExercise(client, email, planExerciseId);
 
     const { rows } = await client.query<{ id: number }>(
       `INSERT INTO workout_log (plan_exercise_id, date, passed, notes)
