@@ -6,6 +6,7 @@
     "build": "next build",
     "start": "next start",
     "workout:migrate": "node --env-file-if-exists=.env.local db/workout/migrate.mjs",
+    "workout:reset": "node --env-file-if-exists=.env.local db/workout/reset.mjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
