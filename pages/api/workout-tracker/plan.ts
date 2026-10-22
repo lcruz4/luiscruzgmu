@@ -2,6 +2,7 @@ import type { NextApiRequest } from 'next';
 import type { PoolClient } from 'pg';
 import {
   idsToSync,
+  PLAN_FIELDS,
   type PlanField,
   type PlanRowKey,
 } from '@/lib/workout/planSync';
@@ -20,8 +21,6 @@ import {
   workoutPool,
 } from '@/services/workoutDb';
 import type { PlanResponse, PlanRow } from '@/types/workout';
-
-const PLAN_FIELDS: PlanField[] = ['sets', 'reps', 'weight', 'notes'];
 
 const getPlanRows = async (
   db: PoolClient | typeof workoutPool,

@@ -2,9 +2,7 @@ import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
 import type { ExerciseDraft } from '@/lib/workout/sets';
-
-const labelClass =
-  'text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase';
+import { labelClass } from './styles';
 
 interface ExerciseLogFieldsProps {
   planExerciseId: number;

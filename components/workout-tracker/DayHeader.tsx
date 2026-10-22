@@ -2,6 +2,7 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
 import { DAY_TITLES, longDate } from './format';
+import { accentBorder } from './styles';
 
 interface DayHeaderProps {
   date: string;
@@ -14,7 +15,7 @@ export const DayHeader = ({ date, today, week, day }: DayHeaderProps) => (
   <header
     className={cn(
       'flex items-end justify-between gap-3 border-b-2 bg-mist-header px-4 pt-5 pb-4',
-      week === PASS_FAIL_WEEK ? 'border-mist-pink' : 'border-mist-cyan-line',
+      accentBorder(week),
     )}
   >
     <div className='flex min-w-0 flex-col gap-1'>

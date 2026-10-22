@@ -4,12 +4,10 @@ import { cn } from '@/lib/utils';
 import { type DraftSet, plannedSet } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { SET_GRID, SetRowEditor } from './SetRowEditor';
+import { labelClass } from './styles';
 
 // PUT log accepts up to 20 sets
 const MAX_SETS = 20;
-
-const headClass =
-  'text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase';
 
 interface SetListProps {
   exercise: DayExercise;
@@ -25,7 +23,7 @@ export const SetList = ({ exercise, sets, saved, onChange }: SetListProps) => {
   return (
     <>
       <div className='flex flex-col gap-2'>
-        <div aria-hidden className={cn(SET_GRID, headClass)}>
+        <div aria-hidden className={cn(SET_GRID, labelClass)}>
           <span className='text-center'>Set</span>
           <span>Weight</span>
           <span className='text-center'>

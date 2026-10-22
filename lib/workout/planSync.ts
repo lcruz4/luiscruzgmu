@@ -1,5 +1,7 @@
 export type PlanField = 'sets' | 'reps' | 'weight' | 'notes';
 
+export const PLAN_FIELDS: PlanField[] = ['sets', 'reps', 'weight', 'notes'];
+
 export interface PlanRowKey {
   id: number;
   planId: number;

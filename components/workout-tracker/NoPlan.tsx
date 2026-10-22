@@ -1,5 +1,6 @@
 import { List } from 'lucide-react';
 import Link from 'next/link';
+import { labelClass } from './styles';
 
 export const NoPlan = ({ email }: { email: string }) => (
   <main className='flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8 text-center'>
@@ -14,9 +15,7 @@ export const NoPlan = ({ email }: { email: string }) => (
       </p>
     </div>
     <div className='flex flex-col gap-0.5 self-stretch rounded-[14px] border border-mist-line bg-mist-surface px-4 py-3.5 text-left'>
-      <span className='text-[11px] font-bold tracking-[0.08em] text-mist-muted uppercase'>
-        Signed in as
-      </span>
+      <span className={labelClass}>Signed in as</span>
       <span className='text-[15px] font-bold break-words'>{email}</span>
     </div>
     <Link href='/' className='text-sm font-bold text-mist-cyan-text'>
