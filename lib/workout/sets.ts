@@ -71,6 +71,14 @@ export const savedRows = (log: LogEntry | null, sets: DraftSet[]) =>
     return saved !== undefined && sameSet(set, toDraftSet(saved));
   });
 
+// Logged, and no row on the card left unsaved
+export const allSetsSaved = (
+  log: LogEntry | null,
+  draft: ExerciseDraft | undefined,
+) =>
+  log !== null &&
+  (draft === undefined || savedRows(log, draft.sets).every(Boolean));
+
 // The saved log with one row swapped in. Set numbers are positions, so
 // earlier rows that aren't saved yet go in too.
 export const withSavedSet = (

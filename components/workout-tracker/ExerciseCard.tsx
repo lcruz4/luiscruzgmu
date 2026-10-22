@@ -2,6 +2,7 @@ import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
+  allSetsSaved,
   type ExerciseDraft,
   initialDraft,
   savedRows,
@@ -54,7 +55,7 @@ export const ExerciseCard = ({
           onClick={onToggle}
           className='flex w-full cursor-pointer items-center gap-3 py-3.5 pr-3 pl-4 text-left'
         >
-          {log ? (
+          {allSetsSaved(log, draft) ? (
             <span
               aria-label='Logged'
               className='flex size-7 shrink-0 items-center justify-center rounded-full bg-mist-cyan text-mist-ink'

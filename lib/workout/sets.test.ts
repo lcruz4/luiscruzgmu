@@ -1,4 +1,10 @@
-import { draftToLog, initialDraft, savedRows, withSavedSet } from './sets';
+import {
+  allSetsSaved,
+  draftToLog,
+  initialDraft,
+  savedRows,
+  withSavedSet,
+} from './sets';
 
 const plan = { sets: 3, reps: 10, weight: '40', log: null };
 const planned = { weight: '40', reps: '10', notes: '' };
@@ -79,6 +85,22 @@ describe('savedRows', () => {
       ]),
     ).toEqual([true, false, false]);
     expect(savedRows(null, [planned])).toEqual([false]);
+  });
+});
+
+describe('allSetsSaved', () => {
+  const savedDraft = initialDraft({ ...plan, log: savedLog });
+
+  it('needs a log with every row on the card saved', () => {
+    expect(allSetsSaved(null, undefined)).toBe(false);
+    expect(allSetsSaved(savedLog, undefined)).toBe(true);
+    expect(allSetsSaved(savedLog, savedDraft)).toBe(true);
+    expect(
+      allSetsSaved(savedLog, {
+        ...savedDraft,
+        sets: [...savedDraft.sets, planned],
+      }),
+    ).toBe(false);
   });
 });
 
