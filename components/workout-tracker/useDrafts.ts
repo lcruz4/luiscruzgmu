@@ -4,11 +4,11 @@ import type { ExerciseDraft } from '@/lib/workout/sets';
 const storageKey = (date: string) => `workout-tracker:drafts:${date}`;
 
 // Unsaved exercise cards for one date, by plan exercise id. Kept in
-// sessionStorage so a reload in the same tab doesn't lose them.
+// localStorage so a reload in the same tab doesn't lose them.
 export const useDrafts = (date: string) => {
   const [drafts, setDrafts] = useState<Record<number, ExerciseDraft>>(() => {
     try {
-      return JSON.parse(sessionStorage.getItem(storageKey(date)) ?? '{}');
+      return JSON.parse(localStorage.getItem(storageKey(date)) ?? '{}');
     } catch {
       return {};
     }
@@ -16,7 +16,7 @@ export const useDrafts = (date: string) => {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(storageKey(date), JSON.stringify(drafts));
+      localStorage.setItem(storageKey(date), JSON.stringify(drafts));
     } catch {
       // Storage full or blocked: the drafts still live in memory
     }
