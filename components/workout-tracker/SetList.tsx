@@ -1,14 +1,9 @@
-import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { type DraftSet, plannedSet } from '@/lib/workout/sets';
+import { type DraftSet } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { SET_GRID, SetRowEditor } from './SetRowEditor';
 import { labelClass } from './styles';
-
-// PUT log accepts up to 20 sets
-const MAX_SETS = 20;
-
 interface SetListProps {
   exercise: DayExercise;
   sets: DraftSet[];
@@ -63,16 +58,6 @@ export const SetList = ({
           />
         ))}
       </div>
-      {sets.length < MAX_SETS && (
-        <button
-          type='button'
-          onClick={() => onChange([...sets, plannedSet(exercise)])}
-          className='mr-1 flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-dashed border-mist-dashed text-[15px] font-bold text-mist-cyan-text'
-        >
-          <Plus size={18} strokeWidth={2.5} aria-hidden />
-          Add set
-        </button>
-      )}
     </>
   );
 };
