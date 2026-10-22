@@ -16,7 +16,8 @@ const getHistory = async (
 
   const { rows: entries } = await workoutPool.query<HistoryEntry>(
     `SELECT wl.id, wl.date::text AS date, pe.week, pe.day, pe.position,
-       pe.exercise_id AS "exerciseId", e.name, wl.passed, wl.notes, ${SETS_JSON}
+       pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
+       wl.passed, wl.notes, ${SETS_JSON}
      FROM workout_log wl
      JOIN plan_exercises pe ON pe.id = wl.plan_exercise_id
      JOIN plans p ON p.id = pe.plan_id

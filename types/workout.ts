@@ -61,6 +61,7 @@ export interface LogResponse {
 export interface HistoryEntry extends LastPerformance {
   exerciseId: number;
   name: string;
+  isTimed: boolean;
   position: number;
 }
 
