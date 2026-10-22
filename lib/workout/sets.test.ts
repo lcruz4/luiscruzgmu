@@ -1,4 +1,4 @@
-import { draftToLog, initialDraft } from './sets';
+import { draftToLog, initialDraft, savedRows, withSavedSet } from './sets';
 
 const plan = { sets: 3, reps: 10, weight: '40', log: null };
 const planned = { weight: '40', reps: '10', notes: '' };
@@ -55,6 +55,49 @@ describe('draftToLog', () => {
         { weight: '45', reps: 8, notes: null },
         { weight: null, reps: 0, notes: '+2 after pause' },
       ],
+    });
+  });
+});
+
+const savedLog = {
+  id: 1,
+  passed: true,
+  notes: 'easy',
+  sets: [
+    { id: 7, setNumber: 1, weight: '40', reps: 10, notes: null },
+    { id: 8, setNumber: 2, weight: '45', reps: 9, notes: null },
+  ],
+};
+
+describe('savedRows', () => {
+  it('marks rows matching the saved set at the same position', () => {
+    expect(
+      savedRows(savedLog, [
+        { weight: ' 40', reps: '10', notes: '' },
+        { weight: '45', reps: '8', notes: '' },
+        planned,
+      ]),
+    ).toEqual([true, false, false]);
+    expect(savedRows(null, [planned])).toEqual([false]);
+  });
+});
+
+describe('withSavedSet', () => {
+  const edited = { weight: '45', reps: '7', notes: 'grip' };
+
+  it('swaps one row into the saved log, keeping its note and pass/fail', () => {
+    expect(withSavedSet(savedLog, [planned, edited, planned], 1)).toEqual({
+      sets: [{ weight: '40', reps: '10', notes: '' }, edited],
+      notes: 'easy',
+      passed: true,
+    });
+  });
+
+  it('fills earlier unsaved rows from the draft', () => {
+    expect(withSavedSet(null, [planned, planned, edited], 2)).toEqual({
+      sets: [planned, planned, edited],
+      notes: '',
+      passed: null,
     });
   });
 });

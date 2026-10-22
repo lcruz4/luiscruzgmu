@@ -1,6 +1,12 @@
 import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { type ExerciseDraft, initialDraft } from '@/lib/workout/sets';
+import {
+  type ExerciseDraft,
+  initialDraft,
+  savedRows,
+  withSavedSet,
+} from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { PassFail } from './EntryDetails';
 import { ExerciseLogFields } from './ExerciseLogFields';
@@ -35,6 +41,8 @@ export const ExerciseCard = ({
 }: ExerciseCardProps) => {
   const { name, position, isTimed, last, log } = exercise;
   const saveLog = useSaveLog(exercise.id, date);
+  // Row of the last set save, so Retry repeats it; undefined → Finish
+  const [retrySet, setRetrySet] = useState<number>();
   const unsaved = draft !== undefined;
 
   if (!open) {
@@ -91,11 +99,25 @@ export const ExerciseCard = ({
   // Nothing persists until here. Unchanged since the last save → just move on;
   // nothing logged yet → saves the pre-filled plan.
   const finish = () => {
+    setRetrySet(undefined);
     if (log && !unsaved) return onFinish();
     saveLog.mutate(current, {
       onSuccess: () => {
         onDraftChange(null);
         onFinish();
+      },
+    });
+  };
+
+  // Saves one row; the rest of the card stays a draft
+  const saveSet = (index: number) => {
+    setRetrySet(index);
+    saveLog.mutate(withSavedSet(log, current.sets, index), {
+      onSuccess: ({ log: saved }) => {
+        const unchanged =
+          JSON.stringify(current) ===
+          JSON.stringify(initialDraft({ ...exercise, log: saved }));
+        onDraftChange(unchanged ? null : current);
       },
     });
   };
@@ -150,8 +172,9 @@ export const ExerciseCard = ({
         <SetList
           exercise={exercise}
           sets={current.sets}
-          saved={log !== null && !unsaved}
+          saved={savedRows(log, current.sets)}
           onChange={(sets) => update({ sets })}
+          onSave={saveSet}
         />
         <ExerciseLogFields
           planExerciseId={exercise.id}
@@ -172,7 +195,7 @@ export const ExerciseCard = ({
       <SaveStatus
         error={saveLog.error}
         paused={saveLog.isPaused}
-        onRetry={finish}
+        onRetry={() => (retrySet === undefined ? finish() : saveSet(retrySet))}
       />
     </section>
   );

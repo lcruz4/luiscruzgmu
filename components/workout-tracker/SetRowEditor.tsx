@@ -6,13 +6,14 @@ import { isPounds } from './format';
 interface SetRowEditorProps {
   setNumber: number;
   set: DraftSet;
-  /** The exercise's log is saved and unchanged */
+  /** Matches the saved set at this position */
   saved: boolean;
   isTimed: boolean;
   planWeight: string | null;
   noteOpen: boolean;
   onToggleNote: () => void;
   onChange: (set: DraftSet) => void;
+  onSave: () => void;
   onRemove: () => void;
 }
 
@@ -30,23 +31,31 @@ export const SetRowEditor = ({
   noteOpen,
   onToggleNote,
   onChange,
+  onSave,
   onRemove,
 }: SetRowEditorProps) => {
   const repsLabel = isTimed ? 'seconds' : 'reps';
   return (
     <div className='flex flex-col gap-2'>
       <div className={cn(SET_GRID, 'items-center')}>
-        <span
-          aria-label={`Set ${setNumber}${saved ? ', saved' : ''}`}
+        <button
+          type='button'
+          aria-label={
+            saved ? `Set ${setNumber}, saved` : `Save set ${setNumber}`
+          }
+          // Rows without reps aren't stored
+          disabled={saved || set.reps === ''}
+          onClick={onSave}
           className={cn(
-            'flex size-8 items-center justify-center rounded-full font-num text-sm font-bold',
+            // before: widens the tap target to 44px
+            'relative flex size-8 cursor-pointer items-center justify-center rounded-full font-num text-sm font-bold before:absolute before:-inset-1.5 disabled:cursor-default',
             saved
               ? 'bg-mist-cyan text-mist-ink'
               : 'border-2 border-mist-line text-mist-muted',
           )}
         >
           {setNumber}
-        </span>
+        </button>
         <div className='relative'>
           <input
             aria-label={`Set ${setNumber} weight`}
