@@ -1,5 +1,6 @@
 import { skipToken, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import type { WeekDay } from '@/lib/workout/schedule';
 import type { DayResponse } from '@/types/workout';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -18,16 +19,24 @@ export const useToday = () => {
 };
 
 // null = no active plan (404)
-const fetchDay = async (date: string): Promise<DayResponse | null> => {
-  const response = await fetch(`/api/workout-tracker/day?date=${date}`);
+const fetchDay = async (
+  date: string,
+  weekDay: WeekDay | undefined,
+): Promise<DayResponse | null> => {
+  const params = new URLSearchParams({ date });
+  if (weekDay) {
+    params.set('week', String(weekDay.week));
+    params.set('day', String(weekDay.day));
+  }
+  const response = await fetch(`/api/workout-tracker/day?${params}`);
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`GET day failed: ${response.status}`);
   return response.json();
 };
 
 // No week/day = auto-next (D17)
-export const useDay = (date: string | undefined) =>
+export const useDay = (date: string | undefined, weekDay?: WeekDay) =>
   useQuery({
-    queryKey: ['workout-tracker', 'day', date],
-    queryFn: date ? () => fetchDay(date) : skipToken,
+    queryKey: ['workout-tracker', 'day', date, weekDay],
+    queryFn: date ? () => fetchDay(date, weekDay) : skipToken,
   });

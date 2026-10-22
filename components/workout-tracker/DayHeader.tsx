@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
 import { DAY_TITLES, longDate } from './format';
@@ -9,9 +9,17 @@ interface DayHeaderProps {
   today: string | undefined;
   week: number;
   day: number;
+  /** The Change button */
+  children: ReactNode;
 }
 
-export const DayHeader = ({ date, today, week, day }: DayHeaderProps) => (
+export const DayHeader = ({
+  date,
+  today,
+  week,
+  day,
+  children,
+}: DayHeaderProps) => (
   <header
     className={cn(
       'flex items-end justify-between gap-3 border-b-2 bg-mist-header px-4 pt-5 pb-4',
@@ -39,14 +47,6 @@ export const DayHeader = ({ date, today, week, day }: DayHeaderProps) => (
         )}
       </div>
     </div>
-    {/* Week/day picker comes in 4c */}
-    <button
-      type='button'
-      disabled
-      className='inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[12px] border border-mist-line bg-mist-raised pr-3 pl-3.5 text-[15px] font-bold text-mist-text disabled:opacity-50'
-    >
-      Change
-      <ChevronDown size={18} strokeWidth={2.25} aria-hidden />
-    </button>
+    {children}
   </header>
 );
