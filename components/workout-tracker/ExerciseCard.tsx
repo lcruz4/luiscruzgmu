@@ -2,6 +2,7 @@ import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type ExerciseDraft, initialDraft } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
+import { PassFail } from './EntryDetails';
 import { ExerciseLogFields } from './ExerciseLogFields';
 import { setsText, shortDate, targetText } from './format';
 import { SaveStatus } from './SaveStatus';
@@ -21,9 +22,6 @@ interface ExerciseCardProps {
   /** Collapse this card and open the next one */
   onFinish: () => void;
 }
-
-const pillClass =
-  'rounded-full px-2 py-0.5 text-[11px] font-extrabold tracking-[0.06em] text-mist-ink uppercase';
 
 export const ExerciseCard = ({
   exercise,
@@ -65,16 +63,7 @@ export const ExerciseCard = ({
                 <span className='font-num text-sm font-bold text-mist-cyan-text'>
                   {setsText(log.sets, isTimed)}
                 </span>
-                {log.passed !== null && (
-                  <span
-                    className={cn(
-                      pillClass,
-                      log.passed ? 'bg-mist-cyan' : 'bg-mist-pink',
-                    )}
-                  >
-                    {log.passed ? 'Pass' : 'Fail'}
-                  </span>
-                )}
+                <PassFail passed={log.passed} />
               </span>
             ) : (
               <span className='font-num text-sm font-medium text-mist-muted'>
