@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { allSetsSaved } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { ExerciseCard } from './ExerciseCard';
@@ -20,6 +20,16 @@ export const ExerciseList = ({ exercises, date, week }: ExerciseListProps) => {
       (exercise) => !allSetsSaved(exercise.log, drafts[exercise.id]),
     )?.id ?? undefined,
   );
+
+  useEffect(() => {
+    localStorage.setItem(
+      'lastOpenExerciseId',
+      exercises
+        .find((exercise) => exercise.id === openId)
+        ?.exerciseId.toString() ?? 'null',
+    );
+  }, [openId]);
+
   return (
     <main className='flex flex-1 flex-col gap-3 p-4'>
       {exercises.map((exercise, index) => (

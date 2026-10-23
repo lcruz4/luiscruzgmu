@@ -64,7 +64,10 @@ const HistoryContent = ({ view }: { view: View }) => {
 };
 
 const HistoryPage = () => {
-  const [view, setView] = useState<View>('date');
+  const lastOpenExerciseId = Number(localStorage.getItem('lastOpenExerciseId'));
+  const [view, setView] = useState<View>(
+    isNaN(lastOpenExerciseId) ? 'date' : 'exercise',
+  );
   return (
     <WorkoutLayout>
       <header className='flex flex-col gap-3.5 border-b border-mist-line bg-mist-header px-4 pt-5 pb-4'>
