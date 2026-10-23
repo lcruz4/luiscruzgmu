@@ -4,6 +4,7 @@ import { ExerciseList } from '@/components/workout-tracker/ExerciseList';
 import { LoadError } from '@/components/workout-tracker/LoadError';
 import { LogSkeleton } from '@/components/workout-tracker/LogSkeleton';
 import { NoPlan } from '@/components/workout-tracker/NoPlan';
+import { RestTimer } from '@/components/workout-tracker/RestTimer';
 import { getToday, useDay } from '@/components/workout-tracker/useDay';
 import { useSelection } from '@/components/workout-tracker/useSelection';
 import { WorkoutLayout } from '@/components/workout-tracker/WorkoutLayout';
@@ -36,6 +37,7 @@ const LogContent = ({ email }: LogPageProps) => {
           date={data.date}
           week={data.week}
         />
+        <RestTimer />
       </>
     );
   }
