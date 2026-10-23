@@ -4,7 +4,7 @@ import { ExerciseList } from '@/components/workout-tracker/ExerciseList';
 import { LoadError } from '@/components/workout-tracker/LoadError';
 import { LogSkeleton } from '@/components/workout-tracker/LogSkeleton';
 import { NoPlan } from '@/components/workout-tracker/NoPlan';
-import { useDay, useToday } from '@/components/workout-tracker/useDay';
+import { getToday, useDay } from '@/components/workout-tracker/useDay';
 import { useSelection } from '@/components/workout-tracker/useSelection';
 import { WorkoutLayout } from '@/components/workout-tracker/WorkoutLayout';
 import { requireLogin } from '@/services/auth';
@@ -14,7 +14,7 @@ interface LogPageProps {
 }
 
 const LogContent = ({ email }: LogPageProps) => {
-  const today = useToday();
+  const today = getToday();
   const { selection, select } = useSelection();
   const { data, isError } = useDay(selection.date ?? today, selection.weekDay);
 

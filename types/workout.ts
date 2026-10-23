@@ -72,4 +72,5 @@ export interface HistoryResponse {
 export interface PlanResponse {
   plan: Plan;
   rows: PlanRow[];
+  dayData?: DayResponse | null;
 }

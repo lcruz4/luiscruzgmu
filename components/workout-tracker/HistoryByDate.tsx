@@ -5,7 +5,7 @@ import type { HistoryEntry } from '@/types/workout';
 import { EntryNotes, PassFail } from './EntryDetails';
 import { DAY_TITLES, longDate, setsText } from './format';
 import { cardClass } from './styles';
-import { useToday } from './useDay';
+import { getToday } from './useDay';
 
 interface DayGroup {
   key: string;
@@ -108,7 +108,7 @@ const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
 
 // Newest group starts open, older ones show their summary
 export const HistoryByDate = ({ entries }: { entries: HistoryEntry[] }) => {
-  const today = useToday();
+  const today = getToday();
   const groups = groupByDay(entries);
   const [openKeys, setOpenKeys] = useState(
     () => new Set(groups.slice(0, 1).map((group) => group.key)),
