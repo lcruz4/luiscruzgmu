@@ -16,11 +16,9 @@ interface ExerciseListProps {
 export const ExerciseList = ({ exercises, date, week }: ExerciseListProps) => {
   const { drafts, setDraft } = useDrafts(date);
   const [openId, setOpenId] = useState(
-    (
-      exercises.find(
-        (exercise) => !allSetsSaved(exercise.log, drafts[exercise.id]),
-      ) ?? exercises.at(0)
-    )?.id,
+    exercises.find(
+      (exercise) => !allSetsSaved(exercise.log, drafts[exercise.id]),
+    )?.id ?? undefined,
   );
   return (
     <main className='flex flex-1 flex-col gap-3 p-4'>
