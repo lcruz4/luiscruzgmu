@@ -41,9 +41,9 @@ const RowList = ({
     </div>
   );
 
-export const PlanEditor = ({ plan, rows }: PlanResponse) => {
-  const [week, setWeek] = useState(1);
-  const [day, setDay] = useState(1);
+export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
+  const [week, setWeek] = useState(dayData?.week ?? 1);
+  const [day, setDay] = useState(dayData?.day ?? 1);
   const [editingId, setEditingId] = useState<number>();
 
   const dayRows = rows.filter((row) => row.week === week && row.day === day);
