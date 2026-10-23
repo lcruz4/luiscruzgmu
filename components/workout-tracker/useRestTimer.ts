@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 
-const DEFAULT_REST = 180_000;
-// Until this file is added to public/ the timer just stays silent
-const CHIME_SRC = '/sounds/rest-timer.mp3';
+const DEFAULT_REST = 170_000;
+const CHIME_SRC = '/audio/timerDone.mp3';
 
 let chime: HTMLAudioElement | undefined;
 const getChime = () => (chime ??= new Audio(CHIME_SRC));
 
-const playChime = () => {
-  const audio = getChime();
-  audio.currentTime = 0;
-  // Missing file or autoplay blocked
-  audio.play().catch(() => {});
-};
+// play() resolves once playback starts, so this waits for 'ended' instead
+const playChime = () =>
+  new Promise<void>((resolve) => {
+    const audio = getChime();
+    audio.currentTime = 0;
+    audio.addEventListener('ended', () => resolve(), { once: true });
+    // Missing file or autoplay blocked
+    audio.play().catch(() => resolve());
+  });
 
 // iOS only plays audio outside a tap once a tap has played it, so Start
 // plays it muted
@@ -37,12 +39,14 @@ export const useRestTimer = () => {
 
   useEffect(() => {
     if (endsAt === null) return;
-    const id = setInterval(() => {
+    const id = setInterval(async () => {
       const next = Math.max(0, endsAt - Date.now());
       setLeft(next);
       if (next > 0) return;
       setEndsAt(null);
-      playChime();
+      await playChime();
+      await playChime();
+      await playChime();
     }, 100);
     return () => clearInterval(id);
   }, [endsAt]);

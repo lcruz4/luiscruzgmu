@@ -46,7 +46,7 @@ export const RestTimer = forwardRef<RestTimerHandle>((_props, ref) => {
           className={cn(
             'flex h-14 min-w-14 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 shadow-lg',
             timer.running
-              ? 'bg-mist-cyan text-mist-ink'
+              ? 'bg-mist-pink text-mist-raised'
               : 'border border-mist-line bg-mist-surface text-mist-cyan-text',
           )}
         >
@@ -96,7 +96,7 @@ export const RestTimer = forwardRef<RestTimerHandle>((_props, ref) => {
               strokeDasharray={100}
               strokeDashoffset={100 * (1 - timer.progress)}
               className={cn(
-                'stroke-mist-cyan transition-[stroke-dashoffset] duration-100 ease-linear',
+                'stroke-mist-pink transition-[stroke-dashoffset] duration-100 ease-linear',
                 timer.left === 0 && 'opacity-0',
               )}
             />
