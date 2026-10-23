@@ -8,12 +8,19 @@ interface ExerciseListProps {
   exercises: DayExercise[];
   date: string;
   week: number;
+  /** A set's save button was tapped */
+  onSetSave: () => void;
 }
 
 // Accordion: one card open at a time, starting with the first one with sets
 // not saved yet. Finish exercise saves the card and opens the next; the last
 // just closes.
-export const ExerciseList = ({ exercises, date, week }: ExerciseListProps) => {
+export const ExerciseList = ({
+  exercises,
+  date,
+  week,
+  onSetSave,
+}: ExerciseListProps) => {
   const { drafts, setDraft } = useDrafts(date);
   const [openId, setOpenId] = useState(
     exercises.find(
@@ -41,6 +48,7 @@ export const ExerciseList = ({ exercises, date, week }: ExerciseListProps) => {
           open={exercise.id === openId}
           draft={drafts[exercise.id]}
           onDraftChange={(draft) => setDraft(exercise.id, draft)}
+          onSetSave={onSetSave}
           onToggle={() =>
             setOpenId(exercise.id === openId ? undefined : exercise.id)
           }
