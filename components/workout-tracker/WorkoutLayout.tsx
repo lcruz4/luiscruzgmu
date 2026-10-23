@@ -20,6 +20,11 @@ export const WorkoutLayout = ({ children }: { children: ReactNode }) => (
   >
     <Head>
       <title>Workout Tracker</title>
+      <link
+        rel='icon'
+        href='/images/workout-tracker.svg'
+        type='image/svg+xml'
+      />
       {/* _app's body is black; this colours the overscroll area instead */}
       <style>{'html { background: var(--color-mist-ground); }'}</style>
     </Head>
