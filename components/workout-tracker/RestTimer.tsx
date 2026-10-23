@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Pause, Play, RotateCcw, Timer, X } from 'lucide-react';
-import { useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useRestTimer } from './useRestTimer';
 
@@ -16,11 +16,23 @@ const clock = (ms: number) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
+export interface RestTimerHandle {
+  /** Opens the sheet and starts a fresh rest */
+  restart: () => void;
+}
+
 // Floating button above the tab bar; opens the timer as a bottom sheet.
 // Sticky, so its own space keeps it clear of the last card.
-export const RestTimer = () => {
+export const RestTimer = forwardRef<RestTimerHandle>((_props, ref) => {
   const timer = useRestTimer();
   const [open, setOpen] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    restart: () => {
+      timer.restart();
+      setOpen(true);
+    },
+  }));
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -135,4 +147,6 @@ export const RestTimer = () => {
       </Dialog.Content>
     </Dialog.Root>
   );
-};
+});
+
+RestTimer.displayName = 'RestTimer';

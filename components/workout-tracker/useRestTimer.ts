@@ -47,19 +47,23 @@ export const useRestTimer = () => {
     return () => clearInterval(id);
   }, [endsAt]);
 
+  const restart = () => {
+    unlockChime();
+    setTotal(DEFAULT_REST);
+    setLeft(DEFAULT_REST);
+    setEndsAt(Date.now() + DEFAULT_REST);
+  };
+
   return {
     left,
     progress: total ? left / total : 0,
     running: endsAt !== null,
+    restart,
+    // From 0:00 it starts over
     start: () => {
+      if (left === 0) return restart();
       unlockChime();
-      // From 0:00 it starts over
-      const from = left > 0 ? left : DEFAULT_REST;
-      if (left === 0) {
-        setTotal(DEFAULT_REST);
-        setLeft(DEFAULT_REST);
-      }
-      setEndsAt(Date.now() + from);
+      setEndsAt(Date.now() + left);
     },
     pause: () => setEndsAt(null),
     reset: () => {
