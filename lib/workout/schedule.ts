@@ -1,6 +1,5 @@
 export const WEEKS = 2;
 export const DAYS_PER_WEEK = 4;
-export const PASS_FAIL_WEEK = 2;
 
 export interface WeekDay {
   week: number;

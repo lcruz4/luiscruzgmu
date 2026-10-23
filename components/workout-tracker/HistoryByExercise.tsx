@@ -8,7 +8,10 @@ import { cardClass, labelClass } from './styles';
 
 // Lists logged exercises only; starts on the most recently logged one
 export const HistoryByExercise = ({ entries }: { entries: HistoryEntry[] }) => {
-  const [exerciseId, setExerciseId] = useState(entries.at(0)?.exerciseId);
+  const lastOpenExerciseId = Number(localStorage.getItem('lastOpenExerciseId'));
+  const [exerciseId, setExerciseId] = useState(
+    isNaN(lastOpenExerciseId) ? entries.at(0)?.exerciseId : lastOpenExerciseId,
+  );
   const names = new Map(entries.map((entry) => [entry.exerciseId, entry.name]));
   const options = [...names].sort(([, a], [, b]) => a.localeCompare(b));
   const logs = entries.filter((entry) => entry.exerciseId === exerciseId);

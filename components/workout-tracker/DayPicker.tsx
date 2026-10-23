@@ -3,12 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import {
-  autoNext,
-  PASS_FAIL_WEEK,
-  type WeekDay,
-  WEEKS,
-} from '@/lib/workout/schedule';
+import { autoNext, type WeekDay, WEEKS } from '@/lib/workout/schedule';
 import type { DayResponse } from '@/types/workout';
 import { DAY_TITLES, shortDate } from './format';
 import { accentBorder, labelClass } from './styles';
@@ -84,11 +79,10 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
               <span
                 className={cn(
                   'size-2 rounded-full',
-                  week === PASS_FAIL_WEEK ? 'bg-mist-pink' : 'bg-mist-cyan',
+                  week % 2 === 0 ? 'bg-mist-pink' : 'bg-mist-cyan',
                 )}
               />
               Week {week}
-              {week === PASS_FAIL_WEEK && ' · pass/fail'}
             </div>
             <div className='grid grid-cols-4 gap-2'>
               {DAY_TITLES.map((title, index) => {
@@ -114,9 +108,7 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
                       current && [
                         'border-2',
                         accentBorder(week),
-                        week === PASS_FAIL_WEEK
-                          ? 'bg-mist-pink/15'
-                          : 'bg-mist-cyan/15',
+                        week % 2 === 0 ? 'bg-mist-pink/15' : 'bg-mist-cyan/15',
                       ],
                     )}
                   >

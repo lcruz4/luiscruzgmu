@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { PASS_FAIL_WEEK } from '@/lib/workout/schedule';
 import { DAY_TITLES, longDate } from './format';
 import { accentBorder } from './styles';
 
@@ -40,11 +39,6 @@ export const DayHeader = ({
       </h1>
       <div className='flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-semibold text-mist-muted'>
         <span>{DAY_TITLES[day - 1]}</span>
-        {week === PASS_FAIL_WEEK && (
-          <span className='rounded-full border border-mist-pink px-2 py-px text-xs font-bold whitespace-nowrap text-mist-pink-text'>
-            Pass/fail week
-          </span>
-        )}
       </div>
     </div>
     {children}
