@@ -1,0 +1,313 @@
+<title>Golden Recovery Group Homepage</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Single-page homepage mockup: navy + gold from the logo, alternating light and navy bands, single light look on purpose */
+:root {
+  --navy: #13284a;
+  --navy-deep: #0c1a33;
+  --gold: #c99a2e;
+  --gold-soft: #f4e6bf;
+  --ink: #1a2436;
+  --muted: #586378;
+  --paper: #f5f7fa;
+  --white: #ffffff;
+  --line: #dde3ec;
+  --on-navy: #e9eef6;
+  --on-navy-muted: #a9b6cb;
+  --display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  --body: 'Public Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.12; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold);
+  color: var(--navy-deep);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 24px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.btn.ghost { background: transparent; color: var(--navy); border: 1.5px solid var(--navy); }
+
+/* Draft note */
+.draft {
+  background: var(--navy-deep);
+  color: var(--on-navy-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.draft .wrap { padding-block: 8px; }
+.draft b { color: var(--gold-soft); font-weight: 600; }
+
+/* Header */
+header { border-bottom: 1px solid var(--line); background: var(--white); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand img { width: 56px; height: 56px; object-fit: cover; border-radius: 50%; }
+.brand-name { font-family: var(--display); font-size: 22px; color: var(--navy); line-height: 1.1; }
+.brand-name small { display: block; font-family: var(--body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+/* Hero */
+.hero { background: var(--paper); }
+.hero .wrap { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; align-items: center; padding-block: 64px; }
+.hero h1 { font-size: clamp(38px, 5.4vw, 64px); color: var(--navy); }
+.hero h1 em { font-style: normal; color: var(--gold); }
+.hero-copy { display: grid; gap: 24px; min-width: 0; }
+.hero-copy .lede { font-size: 19px; color: var(--muted); max-width: 52ch; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.hero-note { font-size: 14px; color: var(--muted); }
+.hero-logo { justify-self: center; width: 100%; max-width: 420px; }
+.hero-logo img { width: 100%; display: block; border-radius: 12px; box-shadow: 0 20px 50px -24px rgba(12, 26, 51, 0.45); }
+
+/* Trust strip */
+.strip { background: var(--navy); color: var(--on-navy); }
+.strip .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding-block: 28px; }
+.strip-item { display: grid; gap: 2px; min-width: 0; }
+.strip-item strong { font-family: var(--display); font-size: 24px; color: var(--gold-soft); font-weight: 400; }
+.strip-item span { font-size: 14px; color: var(--on-navy-muted); }
+
+/* Generic section */
+section.band .wrap { padding-block: 80px; display: grid; gap: 40px; }
+.section-head { display: grid; gap: 12px; max-width: 640px; }
+.section-head h2 { font-size: clamp(30px, 3.6vw, 42px); color: var(--navy); }
+.section-head p { color: var(--muted); font-size: 17px; }
+
+/* Why us */
+.why-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px 48px; }
+.why-item { display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start; }
+.why-item > div { min-width: 0; display: grid; gap: 6px; }
+.why-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--gold-soft); display: grid; place-items: center; }
+.why-icon svg { width: 22px; height: 22px; stroke: var(--navy); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.why-item h3 { font-family: var(--body); font-weight: 700; font-size: 17px; color: var(--navy); }
+.why-item p { color: var(--muted); font-size: 15px; }
+
+/* Steps */
+.steps-band { background: var(--paper); }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: step; }
+.step { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 28px; display: grid; gap: 10px; align-content: start; }
+.step-num { font-family: var(--display); font-size: 40px; color: var(--gold); line-height: 1; }
+.step h3 { font-size: 22px; color: var(--navy); }
+.step p { color: var(--muted); font-size: 15px; }
+
+/* Fees */
+.fees .wrap { grid-template-columns: 1fr 1fr; align-items: center; }
+.fee-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.fee-list li { display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: start; font-size: 16px; }
+.fee-list svg { width: 22px; height: 22px; margin-top: 1px; stroke: var(--gold); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* FAQ */
+.faq-band { background: var(--paper); }
+.faq { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.faq-item { border-top: 1px solid var(--line); padding-block: 20px; display: grid; gap: 8px; min-width: 0; }
+.faq-item h3 { font-family: var(--body); font-weight: 700; font-size: 16px; color: var(--navy); }
+.faq-item p { color: var(--muted); font-size: 15px; }
+
+/* CTA */
+.cta { background: var(--navy); color: var(--on-navy); }
+.cta .wrap { padding-block: 72px; display: grid; gap: 20px; justify-items: center; text-align: center; }
+.cta h2 { font-size: clamp(30px, 3.8vw, 44px); color: var(--white); max-width: 22ch; }
+.cta p { color: var(--on-navy-muted); max-width: 58ch; font-size: 17px; }
+
+/* Footer */
+footer { background: var(--navy-deep); color: var(--on-navy-muted); font-size: 14px; }
+footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
+.foot-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 40px; }
+.foot-grid > div { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.foot-name { font-family: var(--display); font-size: 26px; color: var(--white); line-height: 1.1; }
+.foot-grid h4 { margin: 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-soft); font-weight: 600; }
+.foot-grid ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--on-navy); }
+.placeholder { border: 1px dashed var(--on-navy-muted); border-radius: 6px; padding: 10px 12px; font-size: 13px; }
+.disclosure { border-top: 1px solid rgba(169, 182, 203, 0.25); padding-top: 24px; display: grid; gap: 12px; font-size: 13px; line-height: 1.6; }
+.disclosure b { color: var(--on-navy); }
+
+@media (max-width: 860px) {
+  .hero .wrap, .fees .wrap { grid-template-columns: 1fr; }
+  .hero .wrap { padding-block: 40px; gap: 32px; }
+  .hero-logo { max-width: 320px; order: -1; }
+  .strip .wrap { grid-template-columns: repeat(2, 1fr); }
+  .why-grid, .steps, .faq { grid-template-columns: 1fr; }
+  .foot-grid { grid-template-columns: 1fr 1fr; }
+  .foot-grid > div:first-child { grid-column: 1 / -1; }
+  section.band .wrap { padding-block: 56px; }
+}
+@media (max-width: 480px) {
+  .brand-name small { display: none; }
+  header .btn { padding: 10px 14px; font-size: 14px; }
+}
+</style>
+
+<div class="draft"><div class="wrap"><b>Draft mockup</b> · layout and wording for review · contact details and some copy are placeholders</div></div>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <img src="logo.jpg" alt="Golden Recovery Group logo">
+      <div class="brand-name">Golden Recovery Group<small>Surplus funds recovery</small></div>
+    </div>
+    <span class="btn">Request a Free Review</span>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <h1>Helping homeowners &amp; heirs recover <em>foreclosure surplus funds</em></h1>
+      <p class="lede">When a property sells at a foreclosure or tax sale for more than was owed, the extra money can belong to the former owner or their heirs. We find those funds in public records and help you claim them.</p>
+      <div class="hero-actions">
+        <span class="btn">Request a Free Review</span>
+        <span class="btn ghost">How it works</span>
+      </div>
+      <p class="hero-note">Free to ask. No obligation to move forward.</p>
+    </div>
+    <div class="hero-logo">
+      <img src="logo.jpg" alt="Golden Recovery Group, LLC: Restore and Recover What's Yours">
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div class="wrap">
+    <div class="strip-item"><strong>$0 upfront</strong><span>No retainers or application fees</span></div>
+    <div class="strip-item"><strong>Contingency fee</strong><span>Paid only if funds are released</span></div>
+    <div class="strip-item"><strong>Public records</strong><span>County, court and sale records</span></div>
+    <div class="strip-item"><strong>One contact</strong><span>A real person from start to finish</span></div>
+  </div>
+</div>
+
+<section class="band">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Why Golden Recovery Group</span>
+      <h2>A careful, step-by-step process you can follow</h2>
+      <p>Surplus funds claims involve deadlines, paperwork and court or county rules. We keep you informed at every stage.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-item">
+        <span class="why-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></span>
+        <div><h3>Research from public records</h3><p>Every case starts with county, court and foreclosure sale records. We don't buy lists from data brokers.</p></div>
+      </div>
+      <div class="why-item">
+        <span class="why-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg></span>
+        <div><h3>Plain-language updates</h3><p>We explain what we found, what your options are and what happens next before you sign anything.</p></div>
+      </div>
+      <div class="why-item">
+        <span class="why-icon"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <div><h3>Your information stays private</h3><p>We use what you share only to check your claim and help you recover it. We never sell it.</p></div>
+      </div>
+      <div class="why-item">
+        <span class="why-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg></span>
+        <div><h3>We handle the paperwork</h3><p>We prepare the documents, file with the county or court and follow up until the funds are released.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band steps-band">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Three steps from records to recovery</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="step-num">1</span><h3>We review public records</h3><p>We look through foreclosure and tax sale records to find sales that left money unclaimed.</p></div>
+      <div class="step"><span class="step-num">2</span><h3>We confirm who is owed</h3><p>We verify the former owner or heirs and reach out with a free review of what we found.</p></div>
+      <div class="step"><span class="step-num">3</span><h3>We help you file the claim</h3><p>If you choose to proceed, we prepare and file everything and keep you updated until you're paid.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band fees">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Fees</span>
+      <h2>You pay nothing unless your funds are recovered</h2>
+      <p>Our fee is a percentage of the recovered amount. It is written into your service agreement before any work begins.</p>
+    </div>
+    <ul class="fee-list">
+      <li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>No upfront fees, retainers or administrative charges</li>
+      <li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Fee terms in writing before you sign</li>
+      <li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Cancel at no cost before a claim is filed</li>
+      <li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Your information is never sold or shared for marketing</li>
+    </ul>
+  </div>
+</section>
+
+<section class="band faq-band">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Frequently asked questions</h2>
+    </div>
+    <div class="faq">
+      <div class="faq-item"><h3>What are surplus funds?</h3><p>If a home sells at a foreclosure or tax sale for more than the debt and costs owed, the difference is held by the county or court. That money may belong to the former owner or their heirs.</p></div>
+      <div class="faq-item"><h3>How did you find my information?</h3><p>Foreclosure and tax sale results are public records. We review them to identify people who may be owed money.</p></div>
+      <div class="faq-item"><h3>Are you a government agency?</h3><p>No. Golden Recovery Group is a private company. We are not affiliated with any court, county or government office.</p></div>
+      <div class="faq-item"><h3>Do I pay anything upfront?</h3><p>No. We are paid only if your funds are released, and the fee is agreed in writing first.</p></div>
+      <div class="faq-item"><h3>How long does it take?</h3><p>It depends on the county or court. Many claims take a few months from filing to payment.</p></div>
+      <div class="faq-item"><h3>What documents will I need?</h3><p>Usually a photo ID and proof of ownership or heirship. We'll tell you exactly what your case needs.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <span class="eyebrow">Free review</span>
+    <h2>Find out if you may be owed surplus funds</h2>
+    <p>Request a free, confidential review. We'll follow up to explain what we found and what your options are, even if there's no claim.</p>
+    <span class="btn">Request a Free Review</span>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <span class="foot-name">Golden Recovery Group, LLC</span>
+        <p>We help homeowners, heirs and probate claimants check whether they're owed foreclosure surplus funds and recover them from counties and courts.</p>
+        <div class="placeholder">Email, phone and badges to be added later</div>
+      </div>
+      <div>
+        <h4>Claimants</h4>
+        <ul><li>Request a Free Review</li><li>How it works</li><li>Eligibility</li><li>FAQ</li><li>Learning center</li><li>About</li><li>Contact</li></ul>
+      </div>
+      <div>
+        <h4>Legal &amp; compliance</h4>
+        <ul><li>Privacy Policy</li><li>Terms of Service</li><li>SMS Terms</li><li>Contact us</li></ul>
+      </div>
+    </div>
+    <div class="disclosure">
+      <p><b>Important disclosure:</b> Golden Recovery Group, LLC is not a government agency, law firm, lender, financial institution or debt collector, and is not affiliated with any court, county, tax office, sheriff's office, trustee or the U.S. Department of the Treasury. Information you submit is used only to check potential claim eligibility and assist with recovery. Eligibility and recovery amounts depend on verification, legal deadlines, competing claims and court approval. No recovery is guaranteed, and we do not provide legal advice.</p>
+      <p>© 2026 Golden Recovery Group, LLC. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
