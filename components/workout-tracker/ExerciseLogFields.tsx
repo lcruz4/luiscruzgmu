@@ -61,6 +61,10 @@ export const ExerciseLogFields = ({
         <div className='relative grid h-12 grid-cols-2 rounded-[12px] border border-mist-line bg-mist-raised p-1'>
           <span
             aria-hidden
+            className='absolute inset-y-3 left-1/2 w-px -translate-x-1/2 bg-mist-line'
+          />
+          <span
+            aria-hidden
             className={cn(
               'absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-[9px] transition-[translate,background-color,opacity] duration-200',
               passed === null && 'opacity-0',
