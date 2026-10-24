@@ -1,5 +1,6 @@
 import Head from 'next/head';
-import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import { NavItems } from '../types';
 import { HomeHero } from '../components/home/HomeHero';
@@ -20,7 +21,26 @@ const Underline = styled.div`
   }
 `;
 
+const useCmdHeld = () => {
+  const [held, setHeld] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => setHeld(e.metaKey);
+    const onBlur = () => setHeld(false);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKey);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKey);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
+  return held;
+};
+
 const Home = () => {
+  const router = useRouter();
+  const cmdHeld = useCmdHeld();
   return (
     <>
       <Head>
@@ -31,12 +51,16 @@ const Home = () => {
           href='https://fonts.googleapis.com/css?family=Raleway'
         />
       </Head>
-      <Link
-        href='/admin'
-        className='absolute top-4 right-4 z-10 rounded border border-white/40 px-3 py-1 text-sm text-white/80 hover:border-white hover:text-white'
-      >
-        Admin
-      </Link>
+      {cmdHeld && (
+        // A button, not a Link: Cmd+click on a link opens a new tab
+        <button
+          type='button'
+          onClick={() => router.push('/admin')}
+          className='absolute top-4 right-4 z-10 cursor-pointer rounded border border-white/40 px-3 py-1 text-sm text-white/80 hover:border-white hover:text-white'
+        >
+          Admin
+        </button>
+      )}
       <HomeHero>
         <h1 className='m-8 text-center'>
           Hello 👋, I'm <span className='text-red-300'>Luis Cruz</span>!<br />A
