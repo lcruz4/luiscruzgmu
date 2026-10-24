@@ -1,4 +1,5 @@
 import type { GetServerSideProps } from 'next';
+import { authLoginUrl } from '@/lib/auth';
 import { logger } from './logger';
 
 export const getAuthenticatedEmail = async (
@@ -28,13 +29,9 @@ export const requireLogin: GetServerSideProps<{ email: string }> = async ({
   const host = req.headers.host ?? '';
   const domain = host.split(':')[0];
   const protocol = domain === 'localhost' ? 'http' : 'https';
-  const params = new URLSearchParams({
-    redirectTo: `${protocol}://${host}${resolvedUrl}`,
-    domain,
-  });
   return {
     redirect: {
-      destination: `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/login?${params}`,
+      destination: authLoginUrl(`${protocol}://${host}${resolvedUrl}`, domain),
       permanent: false,
     },
   };

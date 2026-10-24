@@ -1,4 +1,5 @@
-import Head from 'next/head'
+import Head from 'next/head';
+import Link from 'next/link';
 import styled from '@emotion/styled';
 import { NavItems } from '../types';
 import { HomeHero } from '../components/home/HomeHero';
@@ -19,17 +20,27 @@ const Underline = styled.div`
   }
 `;
 
-export default function Home() {
+const Home = () => {
   return (
     <>
       <Head>
         <title>Luis Cruz | Software Engineer</title>
-        <link rel='icon' href='/images/favicon.ico' type='image/gif'/>
-        <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Raleway' />
+        <link rel='icon' href='/images/favicon.ico' type='image/gif' />
+        <link
+          rel='stylesheet'
+          href='https://fonts.googleapis.com/css?family=Raleway'
+        />
       </Head>
+      <Link
+        href='/admin'
+        className='absolute top-4 right-4 z-10 rounded border border-white/40 px-3 py-1 text-sm text-white/80 hover:border-white hover:text-white'
+      >
+        Admin
+      </Link>
       <HomeHero>
         <h1 className='m-8 text-center'>
-          Hello 👋, I'm <span className='text-red-300'>Luis Cruz</span>!<br/>A full stack software engineer.
+          Hello 👋, I'm <span className='text-red-300'>Luis Cruz</span>!<br />A
+          full stack software engineer.
         </h1>
       </HomeHero>
       <DesktopMobileSwitch>
@@ -39,11 +50,17 @@ export default function Home() {
           <Underline />
         </div>
       </DesktopMobileSwitch>
-      <FlexContainer className='mx-8 tall:mx-16 venti:mx-24 my-0 child:my-16 child:mx-0' justifyContent='center' flexDirection='column'>
+      <FlexContainer
+        className='mx-8 tall:mx-16 venti:mx-24 my-0 child:my-16 child:mx-0'
+        justifyContent='center'
+        flexDirection='column'
+      >
         <About />
         <Projects />
         <Contact />
       </FlexContainer>
     </>
   );
-}
+};
+
+export default Home;
