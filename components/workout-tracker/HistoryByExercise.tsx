@@ -1,20 +1,25 @@
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/types/workout';
 import { EntryNotes, PassFail } from './EntryDetails';
 import { longDate, setsText } from './format';
+import { readLastOpenExerciseId } from './lastOpenExercise';
 import { cardClass, labelClass } from './styles';
 
 // Lists logged exercises only; starts on the most recently logged one
 export const HistoryByExercise = ({ entries }: { entries: HistoryEntry[] }) => {
-  const lastOpenExerciseId = Number(localStorage.getItem('lastOpenExerciseId'));
-  const [exerciseId, setExerciseId] = useState(
-    isNaN(lastOpenExerciseId) ? entries.at(0)?.exerciseId : lastOpenExerciseId,
-  );
+  const [exerciseId, setExerciseId] = useState(entries.at(0)?.exerciseId);
   const names = new Map(entries.map((entry) => [entry.exerciseId, entry.name]));
   const options = [...names].sort(([, a], [, b]) => a.localeCompare(b));
   const logs = entries.filter((entry) => entry.exerciseId === exerciseId);
+
+  useEffect(() => {
+    const lastOpenId = readLastOpenExerciseId();
+    if (lastOpenId !== undefined && names.has(lastOpenId)) {
+      setExerciseId(lastOpenId);
+    }
+  }, []);
 
   return (
     <main className='flex flex-1 flex-col gap-4 p-4'>
