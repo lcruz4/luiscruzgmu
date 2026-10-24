@@ -28,10 +28,8 @@ export const ExerciseLogFields = ({
         // Tapping the pressed one clears it
         onClick={() => onChange({ passed: pressed ? null : value })}
         className={cn(
-          'flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] border text-[15px] font-bold',
-          !pressed && 'border-mist-line bg-mist-raised text-mist-text',
-          pressed && value && 'border-mist-cyan bg-mist-cyan text-mist-ink',
-          pressed && !value && 'border-mist-pink bg-mist-pink text-mist-ink',
+          'relative z-10 flex cursor-pointer items-center justify-center gap-2 text-[15px] font-bold transition-colors',
+          pressed ? 'text-mist-ink' : 'text-mist-muted',
         )}
       >
         {value ? (
@@ -60,7 +58,20 @@ export const ExerciseLogFields = ({
         />
       </div>
       <fieldset className='m-0 mr-1 flex flex-col gap-1.5 border-0 p-0'>
-        <div className='grid grid-cols-2 gap-2'>
+        <div className='relative grid h-12 grid-cols-2 rounded-[12px] border border-mist-line bg-mist-raised p-1'>
+          <span
+            aria-hidden
+            className='absolute inset-y-3 left-1/2 w-px -translate-x-1/2 bg-mist-line'
+          />
+          <span
+            aria-hidden
+            className={cn(
+              'absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-[9px] transition-[translate,background-color,opacity] duration-200',
+              passed === null && 'opacity-0',
+              passed === true && 'bg-mist-cyan',
+              passed === false && 'translate-x-full bg-mist-pink',
+            )}
+          />
           {checkButton(true)}
           {checkButton(false)}
         </div>
