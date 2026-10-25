@@ -1,6 +1,46 @@
-import { List } from 'lucide-react';
+import { Check, Copy, List } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 import { labelClass } from './styles';
+
+const REQUEST_EMAIL = 'workouttrackerrequest@lcruz.dev';
+
+const RequestEmail = () => {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(REQUEST_EMAIL);
+    } catch {
+      return;
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <span className='flex items-center justify-center gap-1'>
+      <a
+        href={`mailto:${REQUEST_EMAIL}`}
+        className='font-bold break-all text-mist-cyan-text underline underline-offset-4'
+      >
+        {REQUEST_EMAIL}
+      </a>
+      <button
+        type='button'
+        onClick={copy}
+        aria-label={copied ? 'Email copied' : 'Copy email'}
+        className='flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-mist-cyan-text'
+      >
+        {copied ? (
+          <Check size={18} strokeWidth={2.5} aria-hidden />
+        ) : (
+          <Copy size={18} strokeWidth={2} aria-hidden />
+        )}
+      </button>
+    </span>
+  );
+};
 
 export const NoPlan = ({ email }: { email: string }) => (
   <main className='flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8 text-center'>
@@ -10,17 +50,11 @@ export const NoPlan = ({ email }: { email: string }) => (
     <div className='flex max-w-sm flex-col gap-2'>
       <h1 className='m-0 text-[26px] leading-8 font-extrabold'>No plan yet</h1>
       <p className='m-0 text-base leading-6 font-medium text-balance text-mist-muted'>
-        This account doesn’t have an active workout plan, so there’s nothing to
-        log yet.
+        Your account doesn’t have an active workout plan yet. 🫨
       </p>
       <p className='m-0 text-base leading-6 font-medium text-balance text-mist-muted'>
         To request a free plan, email
-        <a
-          href='mailto:workouttrackerrequest@lcruz.dev'
-          className='block font-bold break-all text-mist-cyan-text underline underline-offset-4'
-        >
-          workouttrackerrequest@lcruz.dev
-        </a>
+        <RequestEmail />
       </p>
     </div>
     <div className='flex flex-col gap-0.5 self-stretch rounded-[14px] border border-mist-line bg-mist-surface px-4 py-3.5 text-left'>

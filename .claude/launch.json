@@ -2,15 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "next-dev-3333",
-      "url": "http://localhost:3333",
-      "port": 3333
-    },
-    {
       "name": "next-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "-p", "3001"],
-      "port": 3001
+      "runtimeArgs": ["run", "dev", "--", "-p", "3333"],
+      "port": 3333
     }
   ]
 }
