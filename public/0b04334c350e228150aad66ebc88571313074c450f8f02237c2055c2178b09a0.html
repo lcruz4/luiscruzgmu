@@ -1,180 +1,27 @@
-<title>Golden Recovery Group Homepage</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Golden Recovery Group | Foreclosure Surplus Funds Recovery</title>
+<link rel="icon" href="grg-favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Public+Sans:wght@400;500;600;700&display=swap">
-<style>
-/* Single-page homepage mockup: navy + gold from the logo, alternating light and navy bands, single light look on purpose */
-:root {
-  --navy: #13284a;
-  --navy-deep: #0c1a33;
-  --gold: #c99a2e;
-  --gold-soft: #f4e6bf;
-  --ink: #1a2436;
-  --muted: #586378;
-  --paper: #f5f7fa;
-  --white: #ffffff;
-  --line: #dde3ec;
-  --on-navy: #e9eef6;
-  --on-navy-muted: #a9b6cb;
-  --display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
-  --body: 'Public Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
-  color-scheme: light;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: var(--white);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.6;
-}
-.wrap {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
-h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.12; margin: 0; text-wrap: balance; }
-p { margin: 0; }
-.eyebrow {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--gold);
-  color: var(--navy-deep);
-  font-weight: 700;
-  font-size: 15px;
-  padding: 14px 24px;
-  border-radius: 6px;
-  white-space: nowrap;
-}
-.btn.ghost { background: transparent; color: var(--navy); border: 1.5px solid var(--navy); }
+<link rel="stylesheet" href="adddc1673fa02c3d9b9f6c02825e06d45b4762c9e51ab86491a00a16671287e0.css">
+</head>
+<body>
 
-/* Draft note */
-.draft {
-  background: var(--navy-deep);
-  color: var(--on-navy-muted);
-  font-size: 13px;
-  text-align: center;
-}
-.draft .wrap { padding-block: 8px; }
-.draft b { color: var(--gold-soft); font-weight: 600; }
-
-/* Header */
-header { border-bottom: 1px solid var(--line); background: var(--white); }
-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; flex-wrap: wrap; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand img { width: 56px; height: 56px; object-fit: cover; border-radius: 50%; }
-.brand-name { font-family: var(--display); font-size: 22px; color: var(--navy); line-height: 1.1; }
-.brand-name small { display: block; font-family: var(--body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-
-/* Hero */
-.hero { background: var(--paper); }
-.hero .wrap { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; align-items: center; padding-block: 64px; }
-.hero h1 { font-size: clamp(38px, 5.4vw, 64px); color: var(--navy); }
-.hero h1 em { font-style: normal; color: var(--gold); }
-.hero-copy { display: grid; gap: 24px; min-width: 0; }
-.hero-copy .lede { font-size: 19px; color: var(--muted); max-width: 52ch; }
-.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-.hero-note { font-size: 14px; color: var(--muted); }
-.hero-logo { justify-self: center; width: 100%; max-width: 420px; }
-.hero-logo img { width: 100%; display: block; border-radius: 12px; box-shadow: 0 20px 50px -24px rgba(12, 26, 51, 0.45); }
-
-/* Trust strip */
-.strip { background: var(--navy); color: var(--on-navy); }
-.strip .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding-block: 28px; }
-.strip-item { display: grid; gap: 2px; min-width: 0; }
-.strip-item strong { font-family: var(--display); font-size: 24px; color: var(--gold-soft); font-weight: 400; }
-.strip-item span { font-size: 14px; color: var(--on-navy-muted); }
-
-/* Generic section */
-section.band .wrap { padding-block: 80px; display: grid; gap: 40px; }
-.section-head { display: grid; gap: 12px; max-width: 640px; }
-.section-head h2 { font-size: clamp(30px, 3.6vw, 42px); color: var(--navy); }
-.section-head p { color: var(--muted); font-size: 17px; }
-
-/* Why us */
-.why-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px 48px; }
-.why-item { display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start; }
-.why-item > div { min-width: 0; display: grid; gap: 6px; }
-.why-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--gold-soft); display: grid; place-items: center; }
-.why-icon svg { width: 22px; height: 22px; stroke: var(--navy); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.why-item h3 { font-family: var(--body); font-weight: 700; font-size: 17px; color: var(--navy); }
-.why-item p { color: var(--muted); font-size: 15px; }
-
-/* Steps */
-.steps-band { background: var(--paper); }
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: step; }
-.step { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 28px; display: grid; gap: 10px; align-content: start; }
-.step-num { font-family: var(--display); font-size: 40px; color: var(--gold); line-height: 1; }
-.step h3 { font-size: 22px; color: var(--navy); }
-.step p { color: var(--muted); font-size: 15px; }
-
-/* Fees */
-.fees .wrap { grid-template-columns: 1fr 1fr; align-items: center; }
-.fee-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-.fee-list li { display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: start; font-size: 16px; }
-.fee-list svg { width: 22px; height: 22px; margin-top: 1px; stroke: var(--gold); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-
-/* FAQ */
-.faq-band { background: var(--paper); }
-.faq { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
-.faq-item { border-top: 1px solid var(--line); padding-block: 20px; display: grid; gap: 8px; min-width: 0; }
-.faq-item h3 { font-family: var(--body); font-weight: 700; font-size: 16px; color: var(--navy); }
-.faq-item p { color: var(--muted); font-size: 15px; }
-
-/* CTA */
-.cta { background: var(--navy); color: var(--on-navy); }
-.cta .wrap { padding-block: 72px; display: grid; gap: 20px; justify-items: center; text-align: center; }
-.cta h2 { font-size: clamp(30px, 3.8vw, 44px); color: var(--white); max-width: 22ch; }
-.cta p { color: var(--on-navy-muted); max-width: 58ch; font-size: 17px; }
-
-/* Footer */
-footer { background: var(--navy-deep); color: var(--on-navy-muted); font-size: 14px; }
-footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
-.foot-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 40px; }
-.foot-grid > div { min-width: 0; display: grid; gap: 12px; align-content: start; }
-.foot-name { font-family: var(--display); font-size: 26px; color: var(--white); line-height: 1.1; }
-.foot-grid h4 { margin: 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-soft); font-weight: 600; }
-.foot-grid ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--on-navy); }
-.placeholder { border: 1px dashed var(--on-navy-muted); border-radius: 6px; padding: 10px 12px; font-size: 13px; }
-.disclosure { border-top: 1px solid rgba(169, 182, 203, 0.25); padding-top: 24px; display: grid; gap: 12px; font-size: 13px; line-height: 1.6; }
-.disclosure b { color: var(--on-navy); }
-
-@media (max-width: 860px) {
-  .hero .wrap, .fees .wrap { grid-template-columns: 1fr; }
-  .hero .wrap { padding-block: 40px; gap: 32px; }
-  .hero-logo { max-width: 320px; order: -1; }
-  .strip .wrap { grid-template-columns: repeat(2, 1fr); }
-  .why-grid, .steps, .faq { grid-template-columns: 1fr; }
-  .foot-grid { grid-template-columns: 1fr 1fr; }
-  .foot-grid > div:first-child { grid-column: 1 / -1; }
-  section.band .wrap { padding-block: 56px; }
-}
-@media (max-width: 480px) {
-  .brand-name small { display: none; }
-  header .btn { padding: 10px 14px; font-size: 14px; }
-}
-</style>
-
-<div class="draft"><div class="wrap"><b>Draft mockup</b> · layout and wording for review · contact details and some copy are placeholders</div></div>
+<div class="draft"><div class="wrap"><b>Draft mockup</b> · layout and wording for review · highlighted text and some details are placeholders</div></div>
 
 <header>
   <div class="wrap">
-    <div class="brand">
-      <img src="logo.jpg" alt="Golden Recovery Group logo">
+    <a class="brand" href="0b04334c350e228150aad66ebc88571313074c450f8f02237c2055c2178b09a0.html">
+      <img src="logo-simple.jpg" alt="Golden Recovery Group logo">
       <div class="brand-name">Golden Recovery Group<small>Surplus funds recovery</small></div>
-    </div>
-    <span class="btn">Request a Free Review</span>
+    </a>
+    <a class="btn" href="0b04334c350e228150aad66ebc88571313074c450f8f02237c2055c2178b09a0.html#review">Request a Free Review</a>
   </div>
 </header>
 
@@ -184,10 +31,10 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
       <h1>Helping homeowners &amp; heirs recover <em>foreclosure surplus funds</em></h1>
       <p class="lede">When a property sells at a foreclosure or tax sale for more than was owed, the extra money can belong to the former owner or their heirs. We find those funds in public records and help you claim them.</p>
       <div class="hero-actions">
-        <span class="btn">Request a Free Review</span>
-        <span class="btn ghost">How it works</span>
+        <a class="btn" href="#review">Request a Free Review</a>
+        <a class="btn ghost" href="943214fad638d32b95a5b2c0ae5e550fec669b9c76f65162c24f0ac2ac2c6799.html">How it works</a>
       </div>
-      <p class="hero-note">Free to ask. No obligation to move forward.</p>
+      <p class="hero-note">Free to ask. No obligation to move forward. Serving all states except California, New York and Arizona.</p>
     </div>
     <div class="hero-logo">
       <img src="logo.jpg" alt="Golden Recovery Group, LLC: Restore and Recover What's Yours">
@@ -199,8 +46,8 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
   <div class="wrap">
     <div class="strip-item"><strong>$0 upfront</strong><span>No retainers or application fees</span></div>
     <div class="strip-item"><strong>Contingency fee</strong><span>Paid only if funds are released</span></div>
+    <div class="strip-item"><strong>1 business day</strong><span>Reply to every new request</span></div>
     <div class="strip-item"><strong>Public records</strong><span>County, court and sale records</span></div>
-    <div class="strip-item"><strong>One contact</strong><span>A real person from start to finish</span></div>
   </div>
 </div>
 
@@ -232,7 +79,7 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
   </div>
 </section>
 
-<section class="band steps-band">
+<section class="band paper">
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">How it works</span>
@@ -246,14 +93,14 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
   </div>
 </section>
 
-<section class="band fees">
-  <div class="wrap">
+<section class="band">
+  <div class="wrap split">
     <div class="section-head">
       <span class="eyebrow">Fees</span>
       <h2>You pay nothing unless your funds are recovered</h2>
       <p>Our fee is a percentage of the recovered amount. It is written into your service agreement before any work begins.</p>
     </div>
-    <ul class="fee-list">
+    <ul class="check-list">
       <li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>No upfront fees, retainers or administrative charges</li>
       <li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Fee terms in writing before you sign</li>
       <li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Cancel at no cost before a claim is filed</li>
@@ -262,7 +109,56 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
   </div>
 </section>
 
-<section class="band faq-band">
+<section class="band paper" id="review">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Free review</span>
+      <h2>Request a free review</h2>
+      <p>Tell us about the property. We'll check the records and reply within 1 business day.</p>
+    </div>
+    <div class="review-grid">
+      <form class="review-form" onsubmit="event.preventDefault()">
+        <fieldset>
+          <legend>About you</legend>
+          <div class="fields">
+            <div class="field"><label for="f-name">Full name</label><input type="text" id="f-name" autocomplete="name" placeholder="Jane Smith"></div>
+            <div class="field half"><label for="f-phone">Phone</label><input type="tel" id="f-phone" autocomplete="tel" placeholder="(555) 555-0123"></div>
+            <div class="field half"><label for="f-email">Email</label><input type="email" id="f-email" autocomplete="email" placeholder="jane@example.com"></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>About the property</legend>
+          <div class="fields">
+            <div class="field"><label for="f-street">Property street address</label><input type="text" id="f-street" placeholder="123 Main St"></div>
+            <div class="field half"><label for="f-city">City</label><input type="text" id="f-city"></div>
+            <div class="field half"><label for="f-county">County</label><input type="text" id="f-county"></div>
+            <div class="field half"><label for="f-state">State</label><select id="f-state"><option value="">Select</option><option>Alabama</option><option>Alaska</option><option>Arkansas</option><option>Colorado</option><option>Connecticut</option><option>Delaware</option><option>District of Columbia</option><option>Florida</option><option>Georgia</option><option>Hawaii</option><option>Idaho</option><option>Illinois</option><option>Indiana</option><option>Iowa</option><option>Kansas</option><option>Kentucky</option><option>Louisiana</option><option>Maine</option><option>Maryland</option><option>Massachusetts</option><option>Michigan</option><option>Minnesota</option><option>Mississippi</option><option>Missouri</option><option>Montana</option><option>Nebraska</option><option>Nevada</option><option>New Hampshire</option><option>New Jersey</option><option>New Mexico</option><option>North Carolina</option><option>North Dakota</option><option>Ohio</option><option>Oklahoma</option><option>Oregon</option><option>Pennsylvania</option><option>Rhode Island</option><option>South Carolina</option><option>South Dakota</option><option>Tennessee</option><option>Texas</option><option>Utah</option><option>Vermont</option><option>Virginia</option><option>Washington</option><option>West Virginia</option><option>Wisconsin</option><option>Wyoming</option></select></div>
+            <div class="field half"><label for="f-zip">ZIP</label><input type="text" id="f-zip" inputmode="numeric"></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Documents <span class="hint">(optional)</span></legend>
+          <div class="fields">
+            <div class="field half"><div class="upload"><label for="f-deed">Copy of your deed</label><input type="file" id="f-deed" accept=".pdf,image/*"><span class="hint">PDF or photo</span></div></div>
+            <div class="field half"><div class="upload"><label for="f-note">Copy of your promissory note</label><input type="file" id="f-note" accept=".pdf,image/*"><span class="hint">PDF or photo</span></div></div>
+          </div>
+        </fieldset>
+        <label class="consent" for="f-sms"><input type="checkbox" id="f-sms"><span>I agree to receive calls and text messages from Golden Recovery Group, LLC about my inquiry at the number above, including by automated technology. Consent is not a condition of service. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. See our SMS Terms and <a href="53d8fc7b0de0a2f9582406d15beb16eaa9b525efb987b94476fc15d791d6249f.html">Privacy Policy</a>.</span></label>
+        <div class="form-actions">
+          <button class="btn" type="submit">Request my free review</button>
+          <span class="preview-note">Preview only. This form doesn't send anything yet.</span>
+        </div>
+      </form>
+      <div class="review-aside">
+        <div class="aside-card"><h3>What happens next</h3><p>We review public records for the property and reply within 1 business day, even if no funds exist.</p></div>
+        <div class="aside-card"><h3>No obligation</h3><p>A review is free. You decide whether to move forward after we explain what we found.</p></div>
+        <div class="aside-card"><h3>Keep sensitive numbers out</h3><p>Please don't send Social Security, bank or card numbers through this form. If we need them later, we'll tell you how to send them securely.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="faq">
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">Questions</span>
@@ -273,8 +169,10 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
       <div class="faq-item"><h3>How did you find my information?</h3><p>Foreclosure and tax sale results are public records. We review them to identify people who may be owed money.</p></div>
       <div class="faq-item"><h3>Are you a government agency?</h3><p>No. Golden Recovery Group is a private company. We are not affiliated with any court, county or government office.</p></div>
       <div class="faq-item"><h3>Do I pay anything upfront?</h3><p>No. We are paid only if your funds are released, and the fee is agreed in writing first.</p></div>
+      <div class="faq-item"><h3>Which states do you serve?</h3><p>All states except California, New York and Arizona.</p></div>
+      <div class="faq-item"><h3>How soon will I hear back?</h3><p>We reply to every new request within 1 business day.</p></div>
       <div class="faq-item"><h3>How long does it take?</h3><p>It depends on the county or court. Many claims take a few months from filing to payment.</p></div>
-      <div class="faq-item"><h3>What documents will I need?</h3><p>Usually a photo ID and proof of ownership or heirship. We'll tell you exactly what your case needs.</p></div>
+      <div class="faq-item"><h3>What documents will I need?</h3><p>Usually a photo ID and proof of ownership or heirship, such as your deed. We'll tell you exactly what your case needs.</p></div>
     </div>
   </div>
 </section>
@@ -283,26 +181,48 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
   <div class="wrap">
     <span class="eyebrow">Free review</span>
     <h2>Find out if you may be owed surplus funds</h2>
-    <p>Request a free, confidential review. We'll follow up to explain what we found and what your options are, even if there's no claim.</p>
-    <span class="btn">Request a Free Review</span>
+    <p>Request a free, confidential review. We'll reply within 1 business day to explain what we found and what your options are, even if there's no claim.</p>
+    <a class="btn" href="0b04334c350e228150aad66ebc88571313074c450f8f02237c2055c2178b09a0.html#review">Request a Free Review</a>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
     <div class="foot-grid">
-      <div>
+      <div id="contact">
         <span class="foot-name">Golden Recovery Group, LLC</span>
         <p>We help homeowners, heirs and probate claimants check whether they're owed foreclosure surplus funds and recover them from counties and courts.</p>
-        <div class="placeholder">Email, phone and badges to be added later</div>
+        <div class="contact-list">
+          <div>(267) 980-6240</div>
+          <div><span>Hours:</span> 9 am – 6 pm ET</div>
+          <div><span>Email:</span> coming soon</div>
+        </div>
+        <div class="badges">
+          <span class="badge"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Encrypted intake</span>
+          <span class="badge"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/></svg>No upfront fees</span>
+        </div>
       </div>
       <div>
         <h4>Claimants</h4>
-        <ul><li>Request a Free Review</li><li>How it works</li><li>Eligibility</li><li>FAQ</li><li>Learning center</li><li>About</li><li>Contact</li></ul>
+        <ul>
+          <li><a href="0b04334c350e228150aad66ebc88571313074c450f8f02237c2055c2178b09a0.html#review">Request a Free Review</a></li>
+          <li><a href="943214fad638d32b95a5b2c0ae5e550fec669b9c76f65162c24f0ac2ac2c6799.html">How it works</a></li>
+          <li><a href="f0ef3a0445095f3821a28430d7892e6e43560239dcbda787743701902d71ff76.html">Eligibility</a></li>
+          <li><a href="0b04334c350e228150aad66ebc88571313074c450f8f02237c2055c2178b09a0.html#faq">FAQ</a></li>
+          <li><a href="d14b59e0a1ec13219496d60f5e170515ee4c4909b64377694701d8d076a3830f.html">Learning center</a></li>
+          <li><a href="186f6d89dfdce1e10b7c3e7d6482bf23e010596324f83140e614d2748617a803.html">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
       </div>
       <div>
         <h4>Legal &amp; compliance</h4>
-        <ul><li>Privacy Policy</li><li>Terms of Service</li><li>SMS Terms</li><li>Contact us</li></ul>
+        <ul>
+          <li><a href="53d8fc7b0de0a2f9582406d15beb16eaa9b525efb987b94476fc15d791d6249f.html">Privacy Policy</a></li>
+          <li><a href="20800560857682e7105f14d55c8663926d25b9b9e980f0df4725f2d9a2ae02d4.html">Terms of Service</a></li>
+          <li><a href="633bb47cad970d48b5f1d9b6a8a52d7fc38af09dd1b6b2367046465be1404def.html">Disclaimer</a></li>
+          <li class="soon">SMS Terms <small>· coming soon</small></li>
+          <li><a href="#contact">Contact us</a></li>
+        </ul>
       </div>
     </div>
     <div class="disclosure">
@@ -311,3 +231,6 @@ footer .wrap { padding-block: 56px 32px; display: grid; gap: 40px; }
     </div>
   </div>
 </footer>
+
+</body>
+</html>
