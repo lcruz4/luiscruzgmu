@@ -16,8 +16,8 @@ const SITEMAP = [
   },
   { href: '/projects/workout-tracker/plan', label: 'Workout tracker: Plan' },
   {
-    href: '/projects/workout-tracker/signed-out',
-    label: 'Workout tracker: Signed out',
+    href: '/projects/workout-tracker/sign-in',
+    label: 'Workout tracker: Sign in',
   },
 ];
 

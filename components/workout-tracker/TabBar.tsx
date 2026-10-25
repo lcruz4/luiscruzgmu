@@ -1,7 +1,7 @@
 import { Clock, Dumbbell, List, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { authLogoutUrl } from '@/lib/auth';
+import { authLogoutUrl, SIGN_IN_PATH } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 const TABS = [
@@ -15,7 +15,7 @@ const tabClass =
 
 const logOut = () => {
   window.location.href = authLogoutUrl(
-    `${window.location.origin}/projects/workout-tracker/signed-out`,
+    `${window.location.origin}${SIGN_IN_PATH}`,
   );
 };
 

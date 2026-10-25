@@ -1,7 +1,7 @@
 // Exercise last opened on the Log page; History starts on it
 export const LAST_OPEN_EXERCISE_KEY = 'lastOpenExerciseId';
 
-// Browser only. Missing key → null, and ExerciseList stores 'null' when none is open
+// Missing key → null, and ExerciseList stores 'null' when none is open
 export const readLastOpenExerciseId = (): number | undefined => {
   const id = Number(
     typeof localStorage === 'undefined'

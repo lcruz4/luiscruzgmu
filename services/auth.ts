@@ -1,5 +1,5 @@
 import type { GetServerSideProps } from 'next';
-import { authLoginUrl } from '@/lib/auth';
+import { SIGN_IN_PATH } from '@/lib/auth';
 import { logger } from './logger';
 
 export const getAuthenticatedEmail = async (
@@ -17,8 +17,8 @@ export const getAuthenticatedEmail = async (
   }
 };
 
-// Page login check. Signed out → the auth service's login, which sets the
-// session cookie on `domain` and sends the browser back to `redirectTo` (D22).
+// Page login check. Signed out → the sign-in page, which comes back to this
+// page after login.
 export const requireLogin: GetServerSideProps<{ email: string }> = async ({
   req,
   resolvedUrl,
@@ -26,12 +26,11 @@ export const requireLogin: GetServerSideProps<{ email: string }> = async ({
   const email = await getAuthenticatedEmail(req.headers.cookie);
   if (email) return { props: { email } };
 
-  const host = req.headers.host ?? '';
-  const domain = host.split(':')[0];
-  const protocol = domain === 'localhost' ? 'http' : 'https';
   return {
     redirect: {
-      destination: authLoginUrl(`${protocol}://${host}${resolvedUrl}`, domain),
+      destination: `${SIGN_IN_PATH}?${new URLSearchParams({
+        returnTo: resolvedUrl,
+      })}`,
       permanent: false,
     },
   };

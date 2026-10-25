@@ -8,7 +8,17 @@ export default defineConfig(
   {
     files: ['**/*.{ts,tsx,js,jsx,mjs}'],
     languageOptions: { parser: tseslint.parser },
+    plugins: { '@typescript-eslint': tseslint.plugin },
     rules: {
+      // Unused imports, variables and args; prefix with _ to keep one on purpose
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       // Arrow functions only; class/object methods and generators are allowed.
       'no-restricted-syntax': [
         'error',
