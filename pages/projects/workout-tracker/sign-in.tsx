@@ -53,7 +53,7 @@ const SignInPage = () => {
         <button
           type='button'
           onClick={() => logIn(returnTo)}
-          className='flex items-center gap-3 self-stretch justify-center rounded-[14px] border border-mist-line bg-mist-surface px-4 py-3.5 text-[15px] font-bold shadow-mist-card'
+          className='flex cursor-pointer items-center gap-3 self-stretch justify-center rounded-[14px] border border-mist-line bg-mist-surface px-4 py-3.5 text-[15px] font-bold shadow-mist-card'
         >
           <GoogleIcon />
           Log in with Google

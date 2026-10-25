@@ -48,7 +48,10 @@ export const TabBar = () => {
       <button
         type='button'
         onClick={logOut}
-        className={cn(tabClass, 'border-transparent text-mist-muted')}
+        className={cn(
+          tabClass,
+          'cursor-pointer border-transparent text-mist-muted',
+        )}
       >
         <LogOut size={24} strokeWidth={2} aria-hidden />
         Log out
