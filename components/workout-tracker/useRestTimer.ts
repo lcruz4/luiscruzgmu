@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 
 const DEFAULT_REST = 170_000;
 const CHIME_SRC = '/audio/timerDone.mp3';
+// Keeps the screen on after the timer ends so the chime plays
+const WAKE_LOCK_HOLD = 10_000;
 
 let chime: HTMLAudioElement | undefined;
 const getChime = () => (chime ??= new Audio(CHIME_SRC));
@@ -51,6 +53,36 @@ export const useRestTimer = () => {
     return () => clearInterval(id);
   }, [endsAt]);
 
+  const running = endsAt !== null;
+
+  // The browser drops the lock when the tab is hidden, so it's re-requested
+  // when the tab is visible again
+  useEffect(() => {
+    if (!running || !('wakeLock' in navigator)) return;
+    let lock: WakeLockSentinel | undefined;
+    let done = false;
+    const request = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (lock && !lock.released) return;
+      navigator.wakeLock
+        .request('screen')
+        .then((next) => {
+          lock = next;
+          if (done) lock.release().catch(() => {});
+        })
+        .catch(() => {});
+    };
+    request();
+    document.addEventListener('visibilitychange', request);
+    return () => {
+      document.removeEventListener('visibilitychange', request);
+      setTimeout(() => {
+        done = true;
+        lock?.release().catch(() => {});
+      }, WAKE_LOCK_HOLD);
+    };
+  }, [running]);
+
   const restart = () => {
     unlockChime();
     setTotal(DEFAULT_REST);
@@ -61,7 +93,7 @@ export const useRestTimer = () => {
   return {
     left,
     progress: total ? left / total : 0,
-    running: endsAt !== null,
+    running,
     restart,
     // From 0:00 it starts over
     start: () => {
