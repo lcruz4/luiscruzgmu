@@ -1,8 +1,9 @@
 import { Clock } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HistoryByDate } from '@/components/workout-tracker/HistoryByDate';
 import { HistoryByExercise } from '@/components/workout-tracker/HistoryByExercise';
+import { readLastOpenExerciseId } from '@/components/workout-tracker/lastOpenExercise';
 import { LoadError } from '@/components/workout-tracker/LoadError';
 import { cardClass } from '@/components/workout-tracker/styles';
 import { useHistory } from '@/components/workout-tracker/useHistory';
@@ -64,10 +65,12 @@ const HistoryContent = ({ view }: { view: View }) => {
 };
 
 const HistoryPage = () => {
-  const lastOpenExerciseId = Number(localStorage.getItem('lastOpenExerciseId'));
-  const [view, setView] = useState<View>(
-    isNaN(lastOpenExerciseId) ? 'date' : 'exercise',
-  );
+  const [view, setView] = useState<View>('date');
+
+  useEffect(() => {
+    if (readLastOpenExerciseId() !== undefined) setView('exercise');
+  }, []);
+
   return (
     <WorkoutLayout>
       <header className='flex flex-col gap-3.5 border-b border-mist-line bg-mist-header px-4 pt-5 pb-4'>

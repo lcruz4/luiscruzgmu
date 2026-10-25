@@ -10,7 +10,13 @@ const jetBrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
 });
 
-export const WorkoutLayout = ({ children }: { children: ReactNode }) => (
+export const WorkoutLayout = ({
+  children,
+  tabBar = true,
+}: {
+  children: ReactNode;
+  tabBar?: boolean;
+}) => (
   <div
     className={cn(
       raleway.variable,
@@ -30,7 +36,7 @@ export const WorkoutLayout = ({ children }: { children: ReactNode }) => (
     </Head>
     <div className='mx-auto flex min-h-dvh w-full max-w-md flex-col'>
       {children}
-      <TabBar />
+      {tabBar && <TabBar />}
     </div>
   </div>
 );

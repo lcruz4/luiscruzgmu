@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { allSetsSaved } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { ExerciseCard } from './ExerciseCard';
+import { LAST_OPEN_EXERCISE_KEY } from './lastOpenExercise';
 import { useDrafts } from './useDrafts';
 
 interface ExerciseListProps {
@@ -30,7 +31,7 @@ export const ExerciseList = ({
 
   useEffect(() => {
     localStorage.setItem(
-      'lastOpenExerciseId',
+      LAST_OPEN_EXERCISE_KEY,
       exercises
         .find((exercise) => exercise.id === openId)
         ?.exerciseId.toString() ?? 'null',
