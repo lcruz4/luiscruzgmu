@@ -2,6 +2,7 @@ import { JetBrains_Mono, Raleway } from 'next/font/google';
 import Head from 'next/head';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { RestTimer } from './RestTimer';
 import { TabBar } from './TabBar';
 
 const raleway = Raleway({ subsets: ['latin'], variable: '--font-raleway' });
@@ -36,7 +37,12 @@ export const WorkoutLayout = ({
     </Head>
     <div className='mx-auto flex min-h-dvh w-full max-w-md flex-col'>
       {children}
-      {tabBar && <TabBar />}
+      {tabBar && (
+        <>
+          <RestTimer />
+          <TabBar />
+        </>
+      )}
     </div>
   </div>
 );

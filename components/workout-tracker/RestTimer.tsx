@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Pause, Play, RotateCcw, Timer, X } from 'lucide-react';
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useRestTimer } from './useRestTimer';
 
@@ -16,42 +16,63 @@ const clock = (ms: number) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
-export interface RestTimerHandle {
-  /** Opens the sheet and starts a fresh rest */
-  restart: () => void;
-}
+// Keeps the screen on after the timer ends so the chime plays
+const WAKE_LOCK_HOLD = 10_000;
+
+// The browser drops the lock when the tab is hidden, so it's re-requested
+// when the tab is visible again
+const useWakeLock = (active: boolean) => {
+  useEffect(() => {
+    if (!active || !('wakeLock' in navigator)) return;
+    let lock: WakeLockSentinel | undefined;
+    let done = false;
+    const request = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (lock && !lock.released) return;
+      navigator.wakeLock
+        .request('screen')
+        .then((next) => {
+          lock = next;
+          if (done) lock.release().catch(() => {});
+        })
+        .catch(() => {});
+    };
+    request();
+    document.addEventListener('visibilitychange', request);
+    return () => {
+      document.removeEventListener('visibilitychange', request);
+      setTimeout(() => {
+        done = true;
+        lock?.release().catch(() => {});
+      }, WAKE_LOCK_HOLD);
+    };
+  }, [active]);
+};
 
 // Floating button above the tab bar; opens the timer as a bottom sheet.
 // Sticky, so its own space keeps it clear of the last card.
-export const RestTimer = forwardRef<RestTimerHandle>((_props, ref) => {
+export const RestTimer = () => {
   const timer = useRestTimer();
-  const [open, setOpen] = useState(false);
-
-  useImperativeHandle(ref, () => ({
-    restart: () => {
-      timer.restart();
-      setOpen(true);
-    },
-  }));
+  const running = timer.endsAt !== null;
+  const progress = timer.total ? timer.left / timer.total : 0;
+  useWakeLock(running);
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root open={timer.open} onOpenChange={timer.setOpen}>
       <div className='sticky bottom-[calc(96px+env(safe-area-inset-bottom))] z-10 mr-4 mb-4 self-end'>
         <Dialog.Trigger
           aria-label={
-            timer.running
-              ? `Rest timer, ${clock(timer.left)} left`
-              : 'Rest timer'
+            running ? `Rest timer, ${clock(timer.left)} left` : 'Rest timer'
           }
           className={cn(
             'flex h-14 min-w-14 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 shadow-lg',
-            timer.running
+            running
               ? 'bg-mist-pink text-mist-raised'
               : 'border border-mist-line bg-mist-surface text-mist-cyan-text',
           )}
         >
           <Timer size={22} strokeWidth={2.25} aria-hidden />
-          {timer.running && (
+          {running && (
             <span className='font-num text-base font-bold tabular-nums'>
               {clock(timer.left)}
             </span>
@@ -94,7 +115,7 @@ export const RestTimer = forwardRef<RestTimerHandle>((_props, ref) => {
               strokeLinecap='round'
               pathLength={100}
               strokeDasharray={100}
-              strokeDashoffset={100 * (1 - timer.progress)}
+              strokeDashoffset={100 * (1 - progress)}
               className={cn(
                 'stroke-mist-pink transition-[stroke-dashoffset] duration-100 ease-linear',
                 timer.left === 0 && 'opacity-0',
@@ -133,20 +154,18 @@ export const RestTimer = forwardRef<RestTimerHandle>((_props, ref) => {
           </button>
           <button
             type='button'
-            onClick={timer.running ? timer.pause : timer.start}
+            onClick={running ? timer.pause : timer.start}
             className='flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink'
           >
-            {timer.running ? (
+            {running ? (
               <Pause size={18} strokeWidth={3} aria-hidden />
             ) : (
               <Play size={18} strokeWidth={3} aria-hidden />
             )}
-            {timer.running ? 'Pause' : timer.left === 0 ? 'Restart' : 'Start'}
+            {running ? 'Pause' : timer.left === 0 ? 'Restart' : 'Start'}
           </button>
         </div>
       </Dialog.Content>
     </Dialog.Root>
   );
-});
-
-RestTimer.displayName = 'RestTimer';
+};

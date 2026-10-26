@@ -4,12 +4,8 @@ import { ExerciseList } from '@/components/workout-tracker/ExerciseList';
 import { LoadError } from '@/components/workout-tracker/LoadError';
 import { LogSkeleton } from '@/components/workout-tracker/LogSkeleton';
 import { NoPlan } from '@/components/workout-tracker/NoPlan';
-import { useRef } from 'react';
-import {
-  RestTimer,
-  type RestTimerHandle,
-} from '@/components/workout-tracker/RestTimer';
 import { getToday, useDay } from '@/components/workout-tracker/useDay';
+import { useRestTimer } from '@/components/workout-tracker/useRestTimer';
 import { useSelection } from '@/components/workout-tracker/useSelection';
 import { WorkoutLayout } from '@/components/workout-tracker/WorkoutLayout';
 import { requireLogin } from '@/services/auth';
@@ -22,7 +18,7 @@ const LogContent = ({ email }: LogPageProps) => {
   const today = getToday();
   const { selection, select } = useSelection();
   const { data, isError } = useDay(selection.date ?? today, selection.weekDay);
-  const restTimer = useRef<RestTimerHandle>(null);
+  const restartTimer = useRestTimer((state) => state.restart);
 
   if (data === null) return <NoPlan email={email} />;
   if (data) {
@@ -41,9 +37,8 @@ const LogContent = ({ email }: LogPageProps) => {
           exercises={data.exercises}
           date={data.date}
           week={data.week}
-          onSetSave={() => restTimer.current?.restart()}
+          onSetSave={restartTimer}
         />
-        <RestTimer ref={restTimer} />
       </>
     );
   }
