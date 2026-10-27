@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, LinkIcon, Minus, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { idsToSync, PLAN_FIELDS, type PlanField } from '@/lib/workout/planSync';
 import { cn } from '@/lib/utils';
 import type { PlanRow } from '@/types/workout';
@@ -26,7 +26,6 @@ const REPS_MAX = 9999;
 
 const inputClass =
   'h-12 w-full rounded-[12px] border border-mist-line bg-mist-raised px-3.5 text-mist-text outline-none placeholder:text-mist-muted focus:border-mist-cyan-line focus:ring-1 focus:ring-mist-cyan-line';
-const listFormat = new Intl.ListFormat('en-US');
 
 const parseCount = (value: string, max: number) => {
   const n = Number(value);
@@ -39,12 +38,20 @@ interface StepperProps {
   label: string;
   /** Prefix for the accessible names, when two steppers share a label */
   context?: string;
+  tag?: ReactNode;
   value: string;
   max: number;
   onChange: (value: string) => void;
 }
 
-const Stepper = ({ label, context, value, max, onChange }: StepperProps) => {
+const Stepper = ({
+  label,
+  context,
+  tag,
+  value,
+  max,
+  onChange,
+}: StepperProps) => {
   const name = context ? `${context} ${label.toLowerCase()}` : label;
   const step = (delta: number) =>
     onChange(String(Math.min(max, Math.max(1, Number(value) + delta))));
@@ -52,7 +59,10 @@ const Stepper = ({ label, context, value, max, onChange }: StepperProps) => {
     'flex cursor-pointer items-center justify-center text-mist-muted';
   return (
     <div className='flex flex-col gap-1.5'>
-      <span className={labelClass}>{label}</span>
+      <span className='flex items-center gap-2'>
+        <span className={labelClass}>{label}</span>
+        {tag}
+      </span>
       <div className='grid h-12 grid-cols-[44px_minmax(0,1fr)_44px] overflow-hidden rounded-[12px] border border-mist-line bg-mist-raised focus-within:border-mist-cyan-line'>
         <button
           type='button'
@@ -82,43 +92,39 @@ const Stepper = ({ label, context, value, max, onChange }: StepperProps) => {
   );
 };
 
-const hintVerb = (changed: boolean, includesSelf: boolean) => {
-  if (includesSelf) return changed ? 'Updates' : 'Applies to';
-  return changed ? 'Also updates' : 'Also applies to';
+// Rows an edit reaches, self included → "Both weeks", "Days 2, 4" or nothing
+const shareText = (reached: PlanRow[]) => {
+  if (reached.length < 2) return null;
+  if (new Set(reached.map((other) => other.week)).size > 1) {
+    return 'Both weeks';
+  }
+  return `Days ${reached.map((other) => other.day).join(', ')}`;
 };
 
-// Muted: what an edit of the field would reach. Cyan: the field changed.
-// includesSelf: others lists every row the edit reaches, not just the extras.
-const SyncHint = ({
-  others,
+// Muted: the field is shared. Cyan: it changed, so the edit reaches them all.
+const ShareTag = ({
+  reached,
   changed,
-  includesSelf = false,
 }: {
-  others: PlanRow[];
+  reached: PlanRow[];
   changed: boolean;
-  includesSelf?: boolean;
-}) => (
-  <span
-    className={cn(
-      'flex items-start gap-1.5 text-[13px] leading-[19px]',
-      changed ? 'font-semibold text-mist-cyan-text' : 'font-medium',
-    )}
-  >
-    {others.length > 0 && (
-      <LinkIcon
-        size={14}
-        strokeWidth={2.25}
-        aria-hidden
-        className='mt-[3px] shrink-0'
-      />
-    )}
-    {others.length === 0
-      ? 'Only this row.'
-      : `${hintVerb(changed, includesSelf)} ${listFormat.format(
-          others.map((other) => `Week ${other.week} · Day ${other.day}`),
-        )}.`}
-  </span>
-);
+}) => {
+  const text = shareText(reached);
+  if (!text) return null;
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-1.5 text-[11px] leading-4 font-bold',
+        changed
+          ? 'border-mist-cyan-line text-mist-cyan-text'
+          : 'border-mist-line text-mist-muted',
+      )}
+    >
+      <LinkIcon size={11} strokeWidth={2.5} aria-hidden />
+      {text}
+    </span>
+  );
+};
 
 const Was = ({ children }: { children: string }) => (
   <span className='shrink-0 text-[13px] font-semibold'>
@@ -159,22 +165,22 @@ export const PlanRowEditor = ({
   // Includes the edited row itself
   const syncIds = (field: PlanField) =>
     idsToSync(keys, { ...row, planId }, field);
-  const others = (field: PlanField) => {
+  const reached = (field: PlanField) => {
     const ids = syncIds(field);
-    return rows.filter(
-      (other) => other.id !== row.id && ids.includes(other.id),
-    );
+    return rows.filter((other) => ids.includes(other.id));
   };
+  const tag = (field: PlanField) => (
+    <ShareTag reached={reached(field)} changed={changed(field)} />
+  );
 
   const otherEdit = otherRow && {
     id: otherRow.id,
     sets: parseCount(otherSets, SETS_MAX),
     reps: parseCount(otherReps, REPS_MAX),
   };
-  const otherChanged =
-    otherRow !== undefined &&
-    otherEdit !== undefined &&
-    (otherEdit.sets !== otherRow.sets || otherEdit.reps !== otherRow.reps);
+  const otherFieldChanged = (field: 'sets' | 'reps') =>
+    otherEdit !== undefined && otherEdit[field] !== otherRow?.[field];
+  const otherChanged = otherFieldChanged('sets') || otherFieldChanged('reps');
   const otherSyncRows = otherRow
     ? rows.filter((other) =>
         idsToSync(keys, { ...otherRow, planId }, 'sets').includes(other.id),
@@ -188,7 +194,6 @@ export const PlanRowEditor = ({
     ...PLAN_FIELDS.filter(changed).flatMap(syncIds),
     ...(otherChanged ? otherSyncRows.map((other) => other.id) : []),
   ]).size;
-  const sameWeekDays = others('sets').map((other) => other.day);
   const setsRepsChanged = changed('sets') || changed('reps');
   const repsLabel = row.isTimed ? 'Seconds' : 'Reps';
 
@@ -218,33 +223,30 @@ export const PlanRowEditor = ({
         <h3 className='m-0 flex-1 text-lg leading-6 font-extrabold'>
           {row.name}
         </h3>
-        {sameWeekDays.length > 0 && (
-          <span className='inline-flex shrink-0 items-center gap-1 rounded-full border border-mist-line px-2 py-0.5 text-xs font-bold text-mist-muted'>
-            <LinkIcon size={13} strokeWidth={2.25} aria-hidden />
-            Also Day {sameWeekDays.join(', ')}
-          </span>
-        )}
       </div>
 
       <div className='flex flex-col gap-1.5'>
         <div className='grid grid-cols-2 gap-3'>
           <Stepper
             label='Sets'
+            tag={tag('sets')}
             value={sets}
             max={SETS_MAX}
             onChange={setSets}
           />
           <Stepper
             label={repsLabel}
+            tag={tag('reps')}
             value={reps}
             max={REPS_MAX}
             onChange={setReps}
           />
         </div>
-        <div className='flex items-start justify-between gap-3'>
-          <SyncHint others={others('sets')} changed={setsRepsChanged} />
-          {setsRepsChanged && <Was>{`${row.sets} × ${row.reps}`}</Was>}
-        </div>
+        {setsRepsChanged && (
+          <div className='flex justify-end'>
+            <Was>{`${row.sets} × ${row.reps}`}</Was>
+          </div>
+        )}
       </div>
 
       {otherRow &&
@@ -271,6 +273,12 @@ export const PlanRowEditor = ({
               <Stepper
                 label='Sets'
                 context={`Week ${otherRow.week}`}
+                tag={
+                  <ShareTag
+                    reached={otherSyncRows}
+                    changed={otherFieldChanged('sets')}
+                  />
+                }
                 value={otherSets}
                 max={SETS_MAX}
                 onChange={setOtherSets}
@@ -278,21 +286,22 @@ export const PlanRowEditor = ({
               <Stepper
                 label={repsLabel}
                 context={`Week ${otherRow.week}`}
+                tag={
+                  <ShareTag
+                    reached={otherSyncRows}
+                    changed={otherFieldChanged('reps')}
+                  />
+                }
                 value={otherReps}
                 max={REPS_MAX}
                 onChange={setOtherReps}
               />
             </div>
-            <div className='flex items-start justify-between gap-3'>
-              <SyncHint
-                others={otherSyncRows}
-                changed={otherChanged}
-                includesSelf
-              />
-              {otherChanged && (
+            {otherChanged && (
+              <div className='flex justify-end'>
                 <Was>{`${otherRow.sets} × ${otherRow.reps}`}</Was>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ) : (
           <button
@@ -317,9 +326,12 @@ export const PlanRowEditor = ({
         ))}
 
       <div className='flex flex-col gap-1.5'>
-        <label htmlFor='plan-weight' className={labelClass}>
-          Weight
-        </label>
+        <span className='flex items-center gap-2'>
+          <label htmlFor='plan-weight' className={labelClass}>
+            Weight
+          </label>
+          {tag('weight')}
+        </span>
         <div className='flex items-center gap-2.5'>
           <input
             id='plan-weight'
@@ -334,9 +346,12 @@ export const PlanRowEditor = ({
       </div>
 
       <div className='flex flex-col gap-1.5'>
-        <label htmlFor='plan-notes' className={labelClass}>
-          Notes
-        </label>
+        <span className='flex items-center gap-2'>
+          <label htmlFor='plan-notes' className={labelClass}>
+            Notes
+          </label>
+          {tag('notes')}
+        </span>
         <input
           id='plan-notes'
           value={notes}
@@ -344,11 +359,6 @@ export const PlanRowEditor = ({
           placeholder='Optional'
           onChange={(event) => setNotes(event.target.value)}
           className={cn(inputClass, 'text-[15px] font-medium')}
-        />
-        {/* Weight and notes sync to the same rows */}
-        <SyncHint
-          others={others('weight')}
-          changed={changed('weight') || changed('notes')}
         />
       </div>
 
