@@ -1,9 +1,15 @@
-import { LinkIcon, Minus, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, LinkIcon, Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { idsToSync, PLAN_FIELDS, type PlanField } from '@/lib/workout/planSync';
 import { cn } from '@/lib/utils';
 import type { PlanRow } from '@/types/workout';
-import { accentBorder, badgeClass, cardClass, labelClass } from './styles';
+import {
+  accentBorder,
+  badgeClass,
+  cardClass,
+  labelClass,
+  weekText,
+} from './styles';
 import { useSavePlanRow } from './usePlan';
 
 interface PlanRowEditorProps {
@@ -31,12 +37,15 @@ const blankToNull = (value: string) => value.trim() || null;
 
 interface StepperProps {
   label: string;
+  /** Prefix for the accessible names, when two steppers share a label */
+  context?: string;
   value: string;
   max: number;
   onChange: (value: string) => void;
 }
 
-const Stepper = ({ label, value, max, onChange }: StepperProps) => {
+const Stepper = ({ label, context, value, max, onChange }: StepperProps) => {
+  const name = context ? `${context} ${label.toLowerCase()}` : label;
   const step = (delta: number) =>
     onChange(String(Math.min(max, Math.max(1, Number(value) + delta))));
   const buttonClass =
@@ -47,14 +56,14 @@ const Stepper = ({ label, value, max, onChange }: StepperProps) => {
       <div className='grid h-12 grid-cols-[44px_minmax(0,1fr)_44px] overflow-hidden rounded-[12px] border border-mist-line bg-mist-raised focus-within:border-mist-cyan-line'>
         <button
           type='button'
-          aria-label={`Fewer ${label.toLowerCase()}`}
+          aria-label={`Fewer ${name.toLowerCase()}`}
           onClick={() => step(-1)}
           className={buttonClass}
         >
           <Minus size={18} strokeWidth={2.5} aria-hidden />
         </button>
         <input
-          aria-label={label}
+          aria-label={name}
           value={value}
           inputMode='numeric'
           onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
@@ -62,7 +71,7 @@ const Stepper = ({ label, value, max, onChange }: StepperProps) => {
         />
         <button
           type='button'
-          aria-label={`More ${label.toLowerCase()}`}
+          aria-label={`More ${name.toLowerCase()}`}
           onClick={() => step(1)}
           className={buttonClass}
         >
@@ -73,13 +82,21 @@ const Stepper = ({ label, value, max, onChange }: StepperProps) => {
   );
 };
 
+const hintVerb = (changed: boolean, includesSelf: boolean) => {
+  if (includesSelf) return changed ? 'Updates' : 'Applies to';
+  return changed ? 'Also updates' : 'Also applies to';
+};
+
 // Muted: what an edit of the field would reach. Cyan: the field changed.
+// includesSelf: others lists every row the edit reaches, not just the extras.
 const SyncHint = ({
   others,
   changed,
+  includesSelf = false,
 }: {
   others: PlanRow[];
   changed: boolean;
+  includesSelf?: boolean;
 }) => (
   <span
     className={cn(
@@ -97,7 +114,7 @@ const SyncHint = ({
     )}
     {others.length === 0
       ? 'Only this row.'
-      : `${changed ? 'Also updates' : 'Also applies to'} ${listFormat.format(
+      : `${hintVerb(changed, includesSelf)} ${listFormat.format(
           others.map((other) => `Week ${other.week} · Day ${other.day}`),
         )}.`}
   </span>
@@ -121,6 +138,16 @@ export const PlanRowEditor = ({
   const [notes, setNotes] = useState(row.notes ?? '');
   const { mutate, isPending, isError } = useSavePlanRow();
 
+  // Same day first, so a split exercise edits its matching day
+  const sameExercise = rows.filter(
+    (other) => other.exerciseId === row.exerciseId && other.week !== row.week,
+  );
+  const otherRow =
+    sameExercise.find((other) => other.day === row.day) ?? sameExercise[0];
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherSets, setOtherSets] = useState(String(otherRow?.sets ?? ''));
+  const [otherReps, setOtherReps] = useState(String(otherRow?.reps ?? ''));
+
   const edit = {
     sets: parseCount(sets, SETS_MAX),
     reps: parseCount(reps, REPS_MAX),
@@ -139,15 +166,40 @@ export const PlanRowEditor = ({
     );
   };
 
-  const saveCount = new Set(PLAN_FIELDS.filter(changed).flatMap(syncIds)).size;
+  const otherEdit = otherRow && {
+    id: otherRow.id,
+    sets: parseCount(otherSets, SETS_MAX),
+    reps: parseCount(otherReps, REPS_MAX),
+  };
+  const otherChanged =
+    otherRow !== undefined &&
+    otherEdit !== undefined &&
+    (otherEdit.sets !== otherRow.sets || otherEdit.reps !== otherRow.reps);
+  const otherSyncRows = otherRow
+    ? rows.filter((other) =>
+        idsToSync(keys, { ...otherRow, planId }, 'sets').includes(other.id),
+      )
+    : [];
+  const otherInvalid =
+    otherEdit !== undefined &&
+    (otherEdit.sets === null || otherEdit.reps === null);
+
+  const saveCount = new Set([
+    ...PLAN_FIELDS.filter(changed).flatMap(syncIds),
+    ...(otherChanged ? otherSyncRows.map((other) => other.id) : []),
+  ]).size;
   const sameWeekDays = others('sets').map((other) => other.day);
   const setsRepsChanged = changed('sets') || changed('reps');
   const repsLabel = row.isTimed ? 'Seconds' : 'Reps';
 
   const save = () => {
     if (edit.sets === null || edit.reps === null) return;
+    const otherWeek =
+      otherChanged && otherEdit?.sets && otherEdit.reps
+        ? { id: otherEdit.id, sets: otherEdit.sets, reps: otherEdit.reps }
+        : undefined;
     mutate(
-      { ...edit, id: row.id, sets: edit.sets, reps: edit.reps },
+      { ...edit, id: row.id, sets: edit.sets, reps: edit.reps, otherWeek },
       { onSuccess: onClose },
     );
   };
@@ -194,6 +246,75 @@ export const PlanRowEditor = ({
           {setsRepsChanged && <Was>{`${row.sets} × ${row.reps}`}</Was>}
         </div>
       </div>
+
+      {otherRow &&
+        (otherOpen ? (
+          <div
+            className={cn(
+              'flex flex-col gap-1.5 rounded-[12px] border border-dashed p-3',
+              accentBorder(otherRow.week),
+            )}
+          >
+            <button
+              type='button'
+              aria-expanded
+              onClick={() => setOtherOpen(false)}
+              className={cn(
+                'flex cursor-pointer items-center justify-between text-[13px] font-bold',
+                weekText(otherRow.week),
+              )}
+            >
+              Week {otherRow.week}
+              <ChevronUp size={16} strokeWidth={2.5} aria-hidden />
+            </button>
+            <div className='grid grid-cols-2 gap-3'>
+              <Stepper
+                label='Sets'
+                context={`Week ${otherRow.week}`}
+                value={otherSets}
+                max={SETS_MAX}
+                onChange={setOtherSets}
+              />
+              <Stepper
+                label={repsLabel}
+                context={`Week ${otherRow.week}`}
+                value={otherReps}
+                max={REPS_MAX}
+                onChange={setOtherReps}
+              />
+            </div>
+            <div className='flex items-start justify-between gap-3'>
+              <SyncHint
+                others={otherSyncRows}
+                changed={otherChanged}
+                includesSelf
+              />
+              {otherChanged && (
+                <Was>{`${otherRow.sets} × ${otherRow.reps}`}</Was>
+              )}
+            </div>
+          </div>
+        ) : (
+          <button
+            type='button'
+            aria-expanded={false}
+            onClick={() => setOtherOpen(true)}
+            className={cn(
+              'flex h-11 cursor-pointer items-center justify-between rounded-[12px] border border-dashed px-3 text-[13px] font-bold',
+              accentBorder(otherRow.week),
+              weekText(otherRow.week),
+            )}
+          >
+            <span>
+              Week {otherRow.week} ·{' '}
+              <span className='font-num'>{`${otherRow.sets} × ${otherRow.reps}`}</span>
+            </span>
+            <span className='flex items-center gap-1'>
+              Edit
+              <ChevronDown size={16} strokeWidth={2.5} aria-hidden />
+            </span>
+          </button>
+        ))}
 
       <div className='flex flex-col gap-1.5'>
         <label htmlFor='plan-weight' className={labelClass}>
@@ -251,6 +372,7 @@ export const PlanRowEditor = ({
             saveCount === 0 ||
             edit.sets === null ||
             edit.reps === null ||
+            otherInvalid ||
             isPending
           }
           onClick={save}
