@@ -12,16 +12,13 @@ const rows: PlanRowKey[] = [
 const w1d2 = rows[0];
 
 describe('idsToSync', () => {
-  it('weight → same exercise in both weeks of the plan', () => {
+  it('weight and notes → same exercise in both weeks of the plan', () => {
     expect(idsToSync(rows, w1d2, 'weight')).toEqual([26, 25, 24, 23]);
+    expect(idsToSync(rows, w1d2, 'notes')).toEqual([26, 25, 24, 23]);
   });
 
   it('sets and reps → same exercise in the same week', () => {
     expect(idsToSync(rows, w1d2, 'sets')).toEqual([26, 25]);
     expect(idsToSync(rows, w1d2, 'reps')).toEqual([26, 25]);
-  });
-
-  it('notes → only the edited row', () => {
-    expect(idsToSync(rows, w1d2, 'notes')).toEqual([26]);
   });
 });
