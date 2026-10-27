@@ -185,7 +185,6 @@ export const ExerciseCard = ({
         />
         <ExerciseLogFields
           planExerciseId={exercise.id}
-          week={week}
           notes={current.notes}
           passed={current.passed}
           onChange={update}

@@ -331,7 +331,6 @@ export const PlanRowEditor = ({
           />
           {changed('weight') && <Was>{row.weight ?? '–'}</Was>}
         </div>
-        <SyncHint others={others('weight')} changed={changed('weight')} />
       </div>
 
       <div className='flex flex-col gap-1.5'>
@@ -346,7 +345,11 @@ export const PlanRowEditor = ({
           onChange={(event) => setNotes(event.target.value)}
           className={cn(inputClass, 'text-[15px] font-medium')}
         />
-        <SyncHint others={others('notes')} changed={changed('notes')} />
+        {/* Weight and notes sync to the same rows */}
+        <SyncHint
+          others={others('weight')}
+          changed={changed('weight') || changed('notes')}
+        />
       </div>
 
       {isError && (
