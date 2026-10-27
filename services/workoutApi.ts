@@ -44,12 +44,17 @@ const badRequest = (message: string) => new HttpError(400, message);
 
 const INT_MAX = 2147483647;
 
-export const bodyOf = (req: NextApiRequest): Record<string, unknown> => {
-  if (typeof req.body !== 'object' || req.body === null) {
-    throw badRequest('Expected a JSON body');
+export const objectField = (
+  value: unknown,
+  name: string,
+): Record<string, unknown> => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw badRequest(`${name} must be an object`);
   }
-  return req.body;
+  return Object.fromEntries(Object.entries(value));
 };
+
+export const bodyOf = (req: NextApiRequest) => objectField(req.body, 'body');
 
 // Accepts a JSON number or a numeric query string
 export const intField = (

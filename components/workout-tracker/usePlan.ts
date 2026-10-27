@@ -4,7 +4,10 @@ import type { PlanResponse, PlanRow } from '@/types/workout';
 
 const PLAN_KEY = ['workout-tracker', 'plan'];
 
-export type PlanEdit = Pick<PlanRow, 'id' | PlanField>;
+export type PlanEdit = Pick<PlanRow, 'id' | PlanField> & {
+  /** Sets/reps for the same exercise's row in the other week */
+  otherWeek?: Pick<PlanRow, 'id' | 'sets' | 'reps'>;
+};
 
 // null = no active plan (404)
 const fetchPlan = async (): Promise<PlanResponse | null> => {

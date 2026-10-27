@@ -10,8 +10,8 @@ export interface PlanRowKey {
 }
 
 // Ids of the rows a plan edit must update so shared targets stay in sync
-// (D13/D14): weight → same exercise in the plan, sets/reps → same exercise
-// and week, notes → the edited row only.
+// (D13/D14): weight/notes → same exercise in the plan, sets/reps → same
+// exercise and week.
 export const idsToSync = (
   rows: PlanRowKey[],
   edited: PlanRowKey,
@@ -22,12 +22,11 @@ export const idsToSync = (
   const matches = (row: PlanRowKey) => {
     switch (field) {
       case 'weight':
+      case 'notes':
         return sameExercise(row);
       case 'sets':
       case 'reps':
         return sameExercise(row) && row.week === edited.week;
-      case 'notes':
-        return row.id === edited.id;
     }
   };
   return rows.filter(matches).map((row) => row.id);

@@ -10,6 +10,9 @@ export const labelClass =
 export const accentBorder = (week: number) =>
   week % 2 === 0 ? 'border-mist-pink' : 'border-mist-cyan-line';
 
+export const weekText = (week: number) =>
+  week % 2 === 0 ? 'text-mist-pink-text' : 'text-mist-cyan-text';
+
 // Position number in a circle; given a week, it takes that week's accent
 export const badgeClass = (week?: number) =>
   cn(

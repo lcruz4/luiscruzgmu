@@ -5,16 +5,14 @@ import { labelClass } from './styles';
 
 interface ExerciseLogFieldsProps {
   planExerciseId: number;
-  week: number;
   notes: string;
   passed: boolean | null;
   onChange: (patch: Partial<ExerciseDraft>) => void;
 }
 
-// Exercise note + the Week 2 pass/fail check (D15)
+// Exercise note + pass/fail check
 export const ExerciseLogFields = ({
   planExerciseId,
-  week,
   notes,
   passed,
   onChange,

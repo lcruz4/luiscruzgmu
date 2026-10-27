@@ -126,8 +126,8 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
             aria-hidden
             className='mt-0.5 shrink-0'
           />
-          Weight is shared by Week 1 and Week 2. An exercise on two days shares
-          one target.
+          Weight and notes are shared by Week 1 and Week 2. An exercise on two
+          days shares one target.
         </p>
 
         <h2 className='mx-0.5 mt-1 mb-0 text-lg font-extrabold'>

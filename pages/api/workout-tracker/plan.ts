@@ -11,6 +11,7 @@ import {
   HttpError,
   idField,
   intField,
+  objectField,
   textField,
   workoutRoute,
 } from '@/services/workoutApi';
@@ -43,8 +44,9 @@ const getPlan = async (
   return { plan, rows: await getPlanRows(workoutPool, plan.id) };
 };
 
-// Body: { id, sets, reps, weight, notes } for one row of the active plan.
-// Each changed field is copied to the rows that share it (D13/D14).
+// Body: { id, sets, reps, weight, notes, otherWeek? } for one row of the
+// active plan. otherWeek: { id, sets, reps } of the same exercise's row in the
+// other week. Each changed field is copied to the rows that share it (D13/D14).
 const putPlan = async (
   req: NextApiRequest,
   email: string,
@@ -56,6 +58,13 @@ const putPlan = async (
     reps: intField(body.reps, 'reps', 1, 9999),
     weight: textField(body.weight, 'weight', 50),
     notes: textField(body.notes, 'notes', 1000),
+  };
+  const other =
+    body.otherWeek == null ? null : objectField(body.otherWeek, 'otherWeek');
+  const otherEdit = other && {
+    id: idField(other.id, 'otherWeek.id'),
+    sets: intField(other.sets, 'otherWeek.sets', 1, 20),
+    reps: intField(other.reps, 'otherWeek.reps', 1, 9999),
   };
   const plan = await getActivePlan(email);
 
@@ -71,13 +80,36 @@ const putPlan = async (
     const edited = rows.find((row) => row.id === id);
     if (!edited) throw new HttpError(404, 'Plan exercise not found');
 
-    // Only changed fields sync, so a notes edit never overwrites other rows' weight
-    for (const field of PLAN_FIELDS) {
-      if (edit[field] === edited[field]) continue;
-      await client.query(
-        `UPDATE plan_exercises SET ${field} = $1 WHERE id = ANY($2)`,
-        [edit[field], idsToSync(rows, edited, field)],
+    const otherEdited =
+      otherEdit && rows.find((row) => row.id === otherEdit.id);
+    if (
+      otherEdit &&
+      (!otherEdited ||
+        otherEdited.exerciseId !== edited.exerciseId ||
+        otherEdited.week === edited.week)
+    ) {
+      throw new HttpError(
+        400,
+        'otherWeek must be the exercise in another week',
       );
+    }
+
+    // Only changed fields sync, so a notes edit never overwrites other rows' weight
+    const sync = async (
+      target: PlanRowKey & Pick<PlanRow, PlanField>,
+      values: Partial<Pick<PlanRow, PlanField>>,
+    ) => {
+      for (const field of PLAN_FIELDS) {
+        if (!(field in values) || values[field] === target[field]) continue;
+        await client.query(
+          `UPDATE plan_exercises SET ${field} = $1 WHERE id = ANY($2)`,
+          [values[field], idsToSync(rows, target, field)],
+        );
+      }
+    };
+    await sync(edited, edit);
+    if (otherEdited && otherEdit) {
+      await sync(otherEdited, { sets: otherEdit.sets, reps: otherEdit.reps });
     }
     return { plan, rows: await getPlanRows(client, plan.id) };
   });
