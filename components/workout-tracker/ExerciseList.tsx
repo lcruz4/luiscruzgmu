@@ -9,7 +9,7 @@ interface ExerciseListProps {
   exercises: DayExercise[];
   date: string;
   week: number;
-  /** A set's save button was tapped */
+  /** A set's save button was tapped, except the workout's last set */
   onSetSave: () => void;
 }
 
@@ -49,7 +49,9 @@ export const ExerciseList = ({
           open={exercise.id === openId}
           draft={drafts[exercise.id]}
           onDraftChange={(draft) => setDraft(exercise.id, draft)}
-          onSetSave={onSetSave}
+          onSetSave={(lastSet) => {
+            if (!lastSet || index < exercises.length - 1) onSetSave();
+          }}
           onToggle={() =>
             setOpenId(exercise.id === openId ? undefined : exercise.id)
           }

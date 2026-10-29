@@ -26,7 +26,7 @@ interface ExerciseCardProps {
   draft: ExerciseDraft | undefined;
   onDraftChange: (draft: ExerciseDraft | null) => void;
   /** A set's save button was tapped (not on Retry) */
-  onSetSave: () => void;
+  onSetSave: (lastSet: boolean) => void;
   onToggle: () => void;
   /** Collapse this card and open the next one */
   onFinish: () => void;
@@ -180,7 +180,7 @@ export const ExerciseCard = ({
           onChange={(sets) => update({ sets })}
           onSave={(index) => {
             saveSet(index);
-            onSetSave();
+            onSetSave(index === current.sets.length - 1);
           }}
         />
         <ExerciseLogFields
