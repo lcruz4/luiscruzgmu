@@ -1,4 +1,4 @@
-import type { DayExercise, LogEntry, LogSet } from '@/types/workout';
+import type { DayExercise, DayLog, LogEntry, LogSet } from '@/types/workout';
 
 /** One set row as typed; set numbers follow the row order */
 export interface DraftSet {
@@ -79,6 +79,27 @@ export const allSetsSaved = (
 ) =>
   log !== null &&
   (draft === undefined || savedRows(log, draft.sets).every(Boolean));
+
+// What the server will return for a save, so it shows before the response.
+// Like the server, an empty log is deleted.
+export const expectedLog = (
+  log: DayLog | null,
+  draft: ExerciseDraft,
+): DayLog | null => {
+  const { passed, notes, sets } = draftToLog(draft);
+  if (passed === null && notes === null && sets.length === 0) return null;
+  return {
+    id: log?.id ?? 0,
+    createdAt: log?.createdAt ?? new Date().toISOString(),
+    passed,
+    notes,
+    sets: sets.map((set, index) => ({
+      id: -(index + 1),
+      setNumber: index + 1,
+      ...set,
+    })),
+  };
+};
 
 // The saved log with one row swapped in. Set numbers are positions, so
 // earlier rows that aren't saved yet go in too.
