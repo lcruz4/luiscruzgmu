@@ -15,8 +15,8 @@ interface ExerciseListProps {
 }
 
 // Accordion: one card open at a time, starting with the first one with sets
-// not saved yet. Finish exercise saves the card and opens the next; the last
-// just closes.
+// not saved yet. Saving the last set with the rest saved closes the card and
+// opens the next; the last just closes.
 export const ExerciseList = ({
   exercises,
   date,
@@ -57,7 +57,7 @@ export const ExerciseList = ({
           onToggle={() =>
             setOpenId(exercise.id === openId ? undefined : exercise.id)
           }
-          onFinish={() => setOpenId(exercises.at(index + 1)?.id)}
+          onComplete={() => setOpenId(exercises.at(index + 1)?.id)}
         />
       ))}
     </main>
