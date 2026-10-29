@@ -67,7 +67,7 @@ interface RestTimerState {
   /** Whether the sheet is open */
   open: boolean;
   setOpen: (open: boolean) => void;
-  /** Starts a fresh rest and opens the sheet */
+  /** Starts a fresh rest; leaves the sheet as it is */
   restart: () => void;
   /** From 0:00 it starts over */
   start: () => void;
@@ -117,10 +117,7 @@ export const useRestTimer = create<RestTimerState>((set, get) => {
     endsAt: null,
     open: false,
     setOpen: (open) => set({ open }),
-    restart: () => {
-      restart();
-      set({ open: true });
-    },
+    restart,
     start: () => {
       const { left } = get();
       if (left === 0) return restart();
