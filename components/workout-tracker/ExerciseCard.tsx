@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import {
   allSetsSaved,
   type ExerciseDraft,
+  expectedLog,
   initialDraft,
   savedRows,
   withSavedSet,
@@ -48,6 +49,8 @@ export const ExerciseCard = ({
   // Row of the last set save, so Retry repeats it; undefined → Finish
   const [retrySet, setRetrySet] = useState<number>();
   const unsaved = draft !== undefined;
+  // Set saves show right away, so only Finish holds the card
+  const finishing = saveLog.isPending && retrySet === undefined;
 
   if (!open) {
     return (
@@ -113,17 +116,18 @@ export const ExerciseCard = ({
     });
   };
 
-  // Saves one row; the rest of the card stays a draft
+  // Saves one row; the rest of the card stays a draft. Shows as saved right
+  // away; a failed save puts the draft back so Retry has it.
   const saveSet = (index: number) => {
     setRetrySet(index);
-    saveLog.mutate(withSavedSet(log, current.sets, index), {
-      onSuccess: ({ log: saved }) => {
-        const unchanged =
-          JSON.stringify(current) ===
-          JSON.stringify(initialDraft({ ...exercise, log: saved }));
-        onDraftChange(unchanged ? null : current);
-      },
-    });
+    const saving = withSavedSet(log, current.sets, index);
+    const unchanged =
+      JSON.stringify(current) ===
+      JSON.stringify(
+        initialDraft({ ...exercise, log: expectedLog(log, saving) }),
+      );
+    onDraftChange(unchanged ? null : current);
+    saveLog.mutate(saving, { onError: () => onDraftChange(current) });
   };
 
   return (
@@ -170,7 +174,7 @@ export const ExerciseCard = ({
       </dl>
       <div className='mr-1 h-px bg-mist-line' />
       <fieldset
-        disabled={saveLog.isPending}
+        disabled={finishing}
         className='m-0 flex min-w-0 flex-col gap-3 border-0 p-0'
       >
         <SetList
@@ -195,7 +199,7 @@ export const ExerciseCard = ({
           className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink disabled:opacity-60'
         >
           <Check size={18} strokeWidth={3} aria-hidden />
-          {saveLog.isPending ? 'Saving…' : 'Finish exercise'}
+          {finishing ? 'Saving…' : 'Finish exercise'}
         </button>
       </fieldset>
       <SaveStatus
