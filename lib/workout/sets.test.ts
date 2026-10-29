@@ -86,6 +86,12 @@ describe('savedRows', () => {
     ).toEqual([true, false, false]);
     expect(savedRows(null, [planned])).toEqual([false]);
   });
+
+  it('ignores note edits on a saved row', () => {
+    expect(
+      savedRows(savedLog, [{ weight: '40', reps: '10', notes: 'grip' }]),
+    ).toEqual([true]);
+  });
 });
 
 describe('allSetsSaved', () => {

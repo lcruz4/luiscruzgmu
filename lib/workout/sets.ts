@@ -59,12 +59,11 @@ export const draftToLog = ({ sets, notes, passed }: ExerciseDraft) => ({
     })),
 });
 
+// Notes are left out so editing a completed set's note doesn't uncomplete it
 const sameSet = (a: DraftSet, b: DraftSet) =>
-  a.weight.trim() === b.weight.trim() &&
-  a.reps === b.reps &&
-  a.notes.trim() === b.notes.trim();
+  a.weight.trim() === b.weight.trim() && a.reps === b.reps;
 
-// Per row: matches the saved set at the same position
+// Per row: weight and reps match the saved set at the same position
 export const savedRows = (log: LogEntry | null, sets: DraftSet[]) =>
   sets.map((set, index) => {
     const saved = log?.sets[index];
