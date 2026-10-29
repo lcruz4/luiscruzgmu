@@ -15,8 +15,8 @@ interface ExerciseListProps {
 }
 
 // Accordion: one card open at a time, starting with the first one with sets
-// not saved yet. Finish exercise saves the card and opens the next; the last
-// just closes.
+// not saved yet. Finish exercise, or saving the last set with the rest saved,
+// saves the card and opens the next; the last just closes.
 export const ExerciseList = ({
   exercises,
   date,

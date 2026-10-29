@@ -117,10 +117,14 @@ export const ExerciseCard = ({
   };
 
   // Saves one row; the rest of the card stays a draft. Shows as saved right
-  // away; a failed save puts the draft back so Retry has it.
+  // away; a failed save puts the draft back so Retry has it. The last row with
+  // the rest saved saves the whole card and closes it, like Finish.
   const saveSet = (index: number) => {
     setRetrySet(index);
-    const saving = withSavedSet(log, current.sets, index);
+    const completes =
+      index === current.sets.length - 1 &&
+      savedRows(log, current.sets).every((saved, i) => saved || i === index);
+    const saving = completes ? current : withSavedSet(log, current.sets, index);
     const unchanged =
       JSON.stringify(current) ===
       JSON.stringify(
@@ -128,6 +132,7 @@ export const ExerciseCard = ({
       );
     onDraftChange(unchanged ? null : current);
     saveLog.mutate(saving, { onError: () => onDraftChange(current) });
+    if (completes) onFinish();
   };
 
   return (

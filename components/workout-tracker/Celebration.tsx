@@ -106,13 +106,13 @@ interface CelebrationProps {
   phase: CelebrationPhase;
   /** ms */
   duration: number;
-  /** Trophy → summary */
+  /** Hides the trophy */
   onNext: () => void;
   onClose: () => void;
 }
 
-// Confetti and a trophy, then a summary toast. Each step ends on a tap or
-// after a timeout.
+// Confetti, a trophy and a summary toast. The trophy goes first; each ends on
+// a tap or after a timeout.
 export const Celebration = ({
   phase,
   duration,
@@ -130,7 +130,7 @@ export const Celebration = ({
   return (
     <>
       <Confetti />
-      {phase === 'trophy' ? (
+      {phase === 'trophy' && (
         <button
           type='button'
           aria-label='Workout complete'
@@ -141,24 +141,23 @@ export const Celebration = ({
             <Trophy size={96} strokeWidth={2} aria-hidden />
           </span>
         </button>
-      ) : (
-        <button
-          type='button'
-          role='status'
-          onClick={onClose}
-          className='fixed inset-x-4 top-4 z-50 mx-auto flex max-w-[calc(28rem-2rem)] cursor-pointer items-center gap-3 rounded-2xl bg-mist-text px-4 py-3 text-left text-mist-surface shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-4'
-        >
-          <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-mist-cyan text-mist-ink'>
-            <Check size={20} strokeWidth={3} aria-hidden />
-          </span>
-          <span className='flex flex-col'>
-            <span className='text-base font-extrabold'>Workout complete</span>
-            <span className='font-num text-sm text-mist-skeleton'>
-              {durationText(duration)}
-            </span>
-          </span>
-        </button>
       )}
+      <button
+        type='button'
+        role='status'
+        onClick={onClose}
+        className='fixed inset-x-4 top-4 z-50 mx-auto flex max-w-[calc(28rem-2rem)] cursor-pointer items-center gap-3 rounded-2xl bg-mist-text px-4 py-3 text-left text-mist-surface shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-4'
+      >
+        <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-mist-cyan text-mist-ink'>
+          <Check size={20} strokeWidth={3} aria-hidden />
+        </span>
+        <span className='flex flex-col'>
+          <span className='text-base font-extrabold'>Workout complete</span>
+          <span className='font-num text-sm text-mist-skeleton'>
+            {durationText(duration)}
+          </span>
+        </span>
+      </button>
     </>
   );
 };
