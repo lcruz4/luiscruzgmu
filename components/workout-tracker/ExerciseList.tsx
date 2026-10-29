@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { allSetsSaved } from '@/lib/workout/sets';
+import { allSetsSaved, type ExerciseDraft } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
 import { ExerciseCard } from './ExerciseCard';
 import { LAST_OPEN_EXERCISE_KEY } from './lastOpenExercise';
-import { useDrafts } from './useDrafts';
 
 interface ExerciseListProps {
   exercises: DayExercise[];
   date: string;
   week: number;
+  drafts: Record<number, ExerciseDraft>;
+  setDraft: (planExerciseId: number, draft: ExerciseDraft | null) => void;
   /** A set's save button was tapped, except the workout's last set */
   onSetSave: () => void;
 }
@@ -20,9 +21,10 @@ export const ExerciseList = ({
   exercises,
   date,
   week,
+  drafts,
+  setDraft,
   onSetSave,
 }: ExerciseListProps) => {
-  const { drafts, setDraft } = useDrafts(date);
   const [openId, setOpenId] = useState(
     exercises.find(
       (exercise) => !allSetsSaved(exercise.log, drafts[exercise.id]),

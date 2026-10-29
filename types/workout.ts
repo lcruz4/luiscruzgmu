@@ -36,9 +36,14 @@ export interface LogEntry {
 
 export interface LastPerformance extends LogEntry, LoggedDay {}
 
+export interface DayLog extends LogEntry {
+  /** ISO time of the first save; the earliest one starts the workout */
+  createdAt: string;
+}
+
 export interface DayExercise extends PlanRow {
   /** Logged on the requested date */
-  log: LogEntry | null;
+  log: DayLog | null;
   /** Most recent earlier log of the same exercise, any week/day */
   last: LastPerformance | null;
 }
@@ -55,7 +60,7 @@ export interface DayResponse {
 
 /** null when the change left the log empty and it was deleted */
 export interface LogResponse {
-  log: LogEntry | null;
+  log: DayLog | null;
 }
 
 export interface HistoryEntry extends LastPerformance {

@@ -7,15 +7,16 @@ import {
 } from '@/lib/workout/schedule';
 import { dateField, intField, workoutRoute } from '@/services/workoutApi';
 import {
+  CREATED_AT_JSON,
   getActivePlan,
   PLAN_ROW_SELECT,
   SETS_JSON,
   workoutPool,
 } from '@/services/workoutDb';
 import type {
+  DayLog,
   DayResponse,
   LastPerformance,
-  LogEntry,
   PlanRow,
 } from '@/types/workout';
 
@@ -54,9 +55,9 @@ const getDay = async (
   );
 
   const [{ rows: logs }, { rows: lasts }] = await Promise.all([
-    workoutPool.query<LogEntry & { planExerciseId: number }>(
+    workoutPool.query<DayLog & { planExerciseId: number }>(
       `SELECT wl.id, wl.plan_exercise_id AS "planExerciseId", wl.passed, wl.notes,
-         ${SETS_JSON}
+         ${CREATED_AT_JSON}, ${SETS_JSON}
        FROM workout_log wl
        WHERE wl.plan_exercise_id = ANY($1) AND wl.date = $2`,
       [planRows.map((row) => row.id), date],
