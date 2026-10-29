@@ -14,7 +14,9 @@ export interface ExerciseDraft {
   passed: boolean | null;
 }
 
-type DraftSource = Pick<DayExercise, 'sets' | 'reps' | 'weight' | 'log'>;
+type DraftSource = Pick<DayExercise, 'sets' | 'reps' | 'weight'> & {
+  log: LogEntry | null;
+};
 
 // A row as planned: the plan's weight (D41) and reps
 export const plannedSet = ({

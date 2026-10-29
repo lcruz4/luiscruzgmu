@@ -34,6 +34,14 @@ export const setsText = (sets: LogSet[], isTimed: boolean) => {
   return `${reps}${unit(isTimed)}${atWeight(weight, isTimed)}`;
 };
 
+// 52 min · 1 h 5 min
+export const durationText = (ms: number) => {
+  const minutes = Math.round(ms / 60_000);
+  return minutes < 60
+    ? `${minutes} min`
+    : `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+};
+
 // YYYY-MM-DD as a local day (a bare date string parses as UTC)
 const localDay = (date: string) => new Date(`${date}T00:00`);
 

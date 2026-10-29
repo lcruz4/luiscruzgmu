@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { HttpError } from './workoutApi';
-import type { LogEntry, Plan } from '@/types/workout';
+import type { DayLog, Plan } from '@/types/workout';
 
 export const workoutPool = new Pool({
   connectionString: process.env.WORKOUT_DB_URL,
@@ -40,6 +40,9 @@ export const SETS_JSON = `(
   WHERE s.workout_log_id = wl.id
 ) AS sets`;
 
+// to_json so it comes back as an ISO string, not a Date
+export const CREATED_AT_JSON = 'to_json(wl.created_at) AS "createdAt"';
+
 export const getActivePlan = async (email: string): Promise<Plan> => {
   const { rows } = await workoutPool.query<Plan>(
     'SELECT id, name FROM plans WHERE owner_email = $1 AND is_active',
@@ -71,15 +74,15 @@ export const assertOwnedPlanExercise = async (
 export const loadOrPruneLog = async (
   client: PoolClient,
   logId: number,
-): Promise<LogEntry | null> => {
+): Promise<DayLog | null> => {
   await client.query(
     `DELETE FROM workout_log wl
      WHERE wl.id = $1 AND wl.passed IS NULL AND wl.notes IS NULL
        AND NOT EXISTS (SELECT 1 FROM workout_log_sets s WHERE s.workout_log_id = wl.id)`,
     [logId],
   );
-  const { rows } = await client.query<LogEntry>(
-    `SELECT wl.id, wl.passed, wl.notes, ${SETS_JSON}
+  const { rows } = await client.query<DayLog>(
+    `SELECT wl.id, wl.passed, wl.notes, ${CREATED_AT_JSON}, ${SETS_JSON}
      FROM workout_log wl
      WHERE wl.id = $1`,
     [logId],

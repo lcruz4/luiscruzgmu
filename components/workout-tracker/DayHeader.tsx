@@ -8,6 +8,8 @@ interface DayHeaderProps {
   today: string | undefined;
   week: number;
   day: number;
+  /** Every exercise is logged */
+  done: boolean;
   /** The Change button */
   children: ReactNode;
 }
@@ -17,6 +19,7 @@ export const DayHeader = ({
   today,
   week,
   day,
+  done,
   children,
 }: DayHeaderProps) => (
   <header
@@ -31,6 +34,11 @@ export const DayHeader = ({
         {date === today && (
           <span className='rounded-full bg-mist-cyan px-2 py-0.5 tracking-[0.04em] text-mist-ink'>
             Today
+          </span>
+        )}
+        {done && (
+          <span className='rounded-full bg-mist-pink px-2 py-0.5 tracking-[0.04em] text-mist-ink motion-safe:animate-[celebrate-pop_0.4s_cubic-bezier(0.3,1.6,0.5,1)_both]'>
+            Done
           </span>
         )}
       </div>
