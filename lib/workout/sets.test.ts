@@ -1,8 +1,10 @@
 import {
   allSetsSaved,
+  detailsChanged,
   draftToLog,
   initialDraft,
   savedRows,
+  withDetails,
   withSavedSet,
 } from './sets';
 
@@ -127,5 +129,64 @@ describe('withSavedSet', () => {
       notes: '',
       passed: null,
     });
+  });
+});
+
+describe('withDetails', () => {
+  it('takes notes, pass/fail and saved rows from the draft, the rest from the log', () => {
+    expect(
+      withDetails(savedLog, {
+        sets: [
+          { weight: '40', reps: '10', notes: 'grip' },
+          { weight: '50', reps: '9', notes: 'heavy' },
+          planned,
+        ],
+        notes: 'hard',
+        passed: false,
+      }),
+    ).toEqual({
+      sets: [
+        { weight: '40', reps: '10', notes: 'grip' },
+        { weight: '45', reps: '9', notes: '' },
+      ],
+      notes: 'hard',
+      passed: false,
+    });
+  });
+});
+
+describe('detailsChanged', () => {
+  const savedDraft = initialDraft({ ...plan, log: savedLog });
+
+  it('ignores set edits that a set save would cover', () => {
+    expect(detailsChanged(savedLog, savedDraft)).toBe(false);
+    expect(
+      detailsChanged(savedLog, {
+        ...savedDraft,
+        sets: [savedDraft.sets[0], planned, planned],
+      }),
+    ).toBe(false);
+    expect(detailsChanged(null, initialDraft(plan))).toBe(false);
+  });
+
+  it("catches notes, pass/fail and saved rows' set notes", () => {
+    expect(detailsChanged(savedLog, { ...savedDraft, notes: 'hard' })).toBe(
+      true,
+    );
+    expect(detailsChanged(null, { ...initialDraft(plan), passed: true })).toBe(
+      true,
+    );
+    expect(
+      detailsChanged(savedLog, {
+        ...savedDraft,
+        sets: [{ ...savedDraft.sets[0], notes: 'grip' }, savedDraft.sets[1]],
+      }),
+    ).toBe(true);
+  });
+
+  it('ignores whitespace-only notes', () => {
+    expect(detailsChanged(savedLog, { ...savedDraft, notes: ' easy ' })).toBe(
+      false,
+    );
   });
 });

@@ -1,12 +1,14 @@
-import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Save, Timer } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   allSetsSaved,
+  detailsChanged,
   type ExerciseDraft,
   expectedLog,
   initialDraft,
   savedRows,
+  withDetails,
   withSavedSet,
 } from '@/lib/workout/sets';
 import type { DayExercise } from '@/types/workout';
@@ -30,7 +32,7 @@ interface ExerciseCardProps {
   onSetSave: (lastSet: boolean) => void;
   onToggle: () => void;
   /** Collapse this card and open the next one */
-  onFinish: () => void;
+  onComplete: () => void;
 }
 
 export const ExerciseCard = ({
@@ -42,15 +44,13 @@ export const ExerciseCard = ({
   onDraftChange,
   onSetSave,
   onToggle,
-  onFinish,
+  onComplete,
 }: ExerciseCardProps) => {
   const { name, position, isTimed, last, log } = exercise;
   const saveLog = useSaveLog(exercise.id, date);
-  // Row of the last set save, so Retry repeats it; undefined → Finish
+  // Row of the last set save, so Retry repeats it; undefined → Save
   const [retrySet, setRetrySet] = useState<number>();
   const unsaved = draft !== undefined;
-  // Set saves show right away, so only Finish holds the card
-  const finishing = saveLog.isPending && retrySet === undefined;
 
   if (!open) {
     return (
@@ -103,28 +103,9 @@ export const ExerciseCard = ({
   const update = (patch: Partial<ExerciseDraft>) =>
     onDraftChange({ ...current, ...patch });
 
-  // Nothing persists until here. Unchanged since the last save → just move on;
-  // nothing logged yet → saves the pre-filled plan.
-  const finish = () => {
-    setRetrySet(undefined);
-    if (log && !unsaved) return onFinish();
-    saveLog.mutate(current, {
-      onSuccess: () => {
-        onDraftChange(null);
-        onFinish();
-      },
-    });
-  };
-
-  // Saves one row; the rest of the card stays a draft. Shows as saved right
-  // away; a failed save puts the draft back so Retry has it. The last row with
-  // the rest saved saves the whole card and closes it, like Finish.
-  const saveSet = (index: number) => {
-    setRetrySet(index);
-    const completes =
-      index === current.sets.length - 1 &&
-      savedRows(log, current.sets).every((saved, i) => saved || i === index);
-    const saving = completes ? current : withSavedSet(log, current.sets, index);
+  // Shows as saved right away; a failed save puts the draft back so Retry
+  // has it.
+  const save = (saving: ExerciseDraft) => {
     const unchanged =
       JSON.stringify(current) ===
       JSON.stringify(
@@ -132,7 +113,23 @@ export const ExerciseCard = ({
       );
     onDraftChange(unchanged ? null : current);
     saveLog.mutate(saving, { onError: () => onDraftChange(current) });
-    if (completes) onFinish();
+  };
+
+  // Saves one row; the rest of the card stays a draft. The last row with the
+  // rest saved saves the whole card and closes it.
+  const saveSet = (index: number) => {
+    setRetrySet(index);
+    const completes =
+      index === current.sets.length - 1 &&
+      savedRows(log, current.sets).every((saved, i) => saved || i === index);
+    save(completes ? current : withSavedSet(log, current.sets, index));
+    if (completes) onComplete();
+  };
+
+  // Notes and pass/fail; rows not saved yet stay a draft
+  const saveDetails = () => {
+    setRetrySet(undefined);
+    save(withDetails(log, current));
   };
 
   return (
@@ -178,39 +175,38 @@ export const ExerciseCard = ({
         </dd>
       </dl>
       <div className='mr-1 h-px bg-mist-line' />
-      <fieldset
-        disabled={finishing}
-        className='m-0 flex min-w-0 flex-col gap-3 border-0 p-0'
-      >
-        <SetList
-          exercise={exercise}
-          sets={current.sets}
-          saved={savedRows(log, current.sets)}
-          onChange={(sets) => update({ sets })}
-          onSave={(index) => {
-            saveSet(index);
-            onSetSave(index === current.sets.length - 1);
-          }}
-        />
-        <ExerciseLogFields
-          planExerciseId={exercise.id}
-          notes={current.notes}
-          passed={current.passed}
-          onChange={update}
-        />
+      <SetList
+        exercise={exercise}
+        sets={current.sets}
+        saved={savedRows(log, current.sets)}
+        onChange={(sets) => update({ sets })}
+        onSave={(index) => {
+          saveSet(index);
+          onSetSave(index === current.sets.length - 1);
+        }}
+      />
+      <ExerciseLogFields
+        planExerciseId={exercise.id}
+        notes={current.notes}
+        passed={current.passed}
+        onChange={update}
+      />
+      {draft && detailsChanged(log, draft) && (
         <button
           type='button'
-          onClick={finish}
-          className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink disabled:opacity-60'
+          onClick={saveDetails}
+          className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink'
         >
-          <Check size={18} strokeWidth={3} aria-hidden />
-          {finishing ? 'Saving…' : 'Finish exercise'}
+          <Save size={18} strokeWidth={2.5} aria-hidden />
+          Save
         </button>
-      </fieldset>
+      )}
       <SaveStatus
         error={saveLog.error}
         paused={saveLog.isPaused}
-        onRetry={() => (retrySet === undefined ? finish() : saveSet(retrySet))}
+        onRetry={() =>
+          retrySet === undefined ? saveDetails() : saveSet(retrySet)
+        }
       />
     </section>
   );

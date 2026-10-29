@@ -42,7 +42,7 @@ const setsField = (value: unknown) => {
 };
 
 // Body: { planExerciseId, date, passed, notes, sets: [{ weight, reps, notes }] }.
-// Replaces that day's whole log for the exercise (sent on Finish exercise);
+// Replaces that day's whole log for the exercise (sent on every save);
 // set numbers follow the list order. Reps are seconds for timed exercises.
 const putLog = async (
   req: NextApiRequest,

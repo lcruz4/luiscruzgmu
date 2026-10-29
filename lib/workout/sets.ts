@@ -7,7 +7,7 @@ export interface DraftSet {
   notes: string;
 }
 
-/** An exercise card's inputs, kept locally until Finish exercise saves them */
+/** An exercise card's inputs not saved yet */
 export interface ExerciseDraft {
   sets: DraftSet[];
   notes: string;
@@ -118,3 +118,32 @@ export const withSavedSet = (
     passed: log?.passed ?? null,
   };
 };
+
+// The saved log with the draft's notes, pass/fail and saved rows' set notes.
+// Rows not saved yet stay as they were.
+export const withDetails = (
+  log: LogEntry | null,
+  draft: ExerciseDraft,
+): ExerciseDraft => {
+  const rows = savedRows(log, draft.sets);
+  return {
+    sets: (log?.sets ?? []).map((set, index) =>
+      rows[index] ? draft.sets[index] : toDraftSet(set),
+    ),
+    notes: draft.notes,
+    passed: draft.passed,
+  };
+};
+
+// The draft has notes or pass/fail that saving the sets alone wouldn't keep
+export const detailsChanged = (log: LogEntry | null, draft: ExerciseDraft) =>
+  JSON.stringify(draftToLog(withDetails(log, draft))) !==
+  JSON.stringify(
+    draftToLog(
+      withDetails(log, {
+        sets: [],
+        notes: log?.notes ?? '',
+        passed: log?.passed ?? null,
+      }),
+    ),
+  );
