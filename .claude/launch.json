@@ -6,6 +6,11 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "-p", "3333"],
       "port": 3333
+    },
+    {
+      "name": "next-dev-attach",
+      "url": "http://localhost:3333",
+      "port": 3333
     }
   ]
 }

@@ -24,7 +24,7 @@ export const workoutRoute =
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const email = await getAuthenticatedEmail(req.headers.cookie);
+    const email = await getAuthenticatedEmail(req, 'workout-tracker');
     if (!email) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

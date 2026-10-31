@@ -6,9 +6,8 @@ const SITEMAP = [
   { href: '/', label: 'Home' },
   { href: '/admin', label: 'Admin' },
   { href: '/projects/chess-review', label: 'Chess review' },
+  { href: '/projects/giant-order-tool', label: 'Giant order tool' },
   { href: '/projects/kuromasu', label: 'Kuromasu' },
-  { href: '/projects/reward-chart-landing', label: 'Reward chart landing' },
-  { href: '/projects/reward-chart', label: 'Reward chart' },
   { href: '/projects/workout-tracker', label: 'Workout tracker: Log' },
   {
     href: '/projects/workout-tracker/history',
@@ -42,6 +41,6 @@ const AdminPage = ({ email }: { email: string }) => (
   </main>
 );
 
-export const getServerSideProps = requireLogin;
+export const getServerSideProps = requireLogin('lcruz-dev');
 
 export default AdminPage;
