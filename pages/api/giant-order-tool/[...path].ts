@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { giantOwnerEmail } from '@/services/giantOrder';
+import { getAuthenticatedEmail } from '@/services/auth';
 import { logger } from '@/services/logger';
 
 // giant-cart serve's routes (giant-order-tool src/runner/httpApp.ts)
@@ -21,7 +21,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const path = Array.isArray(segments) ? segments.join('/') : '';
   if (!PATHS.has(path)) return res.status(404).json({ error: 'Not found' });
 
-  if (!(await giantOwnerEmail(req))) {
+  if (!(await getAuthenticatedEmail(req, 'giant-order-tool'))) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

@@ -7,7 +7,7 @@ import { ResultCard } from '@/components/giant-order/ResultCard';
 import { StartStage } from '@/components/giant-order/StartStage';
 import { secondaryButton } from '@/components/giant-order/styles';
 import { useCheckout, useList } from '@/components/giant-order/useGiant';
-import { requireGiantOwner } from '@/services/giantOrder';
+import { requireGiantLogin } from '@/services/giantOrder';
 import type { CartResponse, CheckoutResult } from '@/types/giantOrder';
 
 const Loading = () => (
@@ -68,6 +68,6 @@ const GiantOrderPage = () => (
   </GiantLayout>
 );
 
-export const getServerSideProps = requireGiantOwner;
+export const getServerSideProps = requireGiantLogin;
 
 export default GiantOrderPage;
