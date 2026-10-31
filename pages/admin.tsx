@@ -6,7 +6,7 @@ const SITEMAP = [
   { href: '/', label: 'Home' },
   { href: '/admin', label: 'Admin' },
   { href: '/projects/chess-review', label: 'Chess review' },
-  { href: '/projects/giant-order-tool', label: 'Giant order' },
+  { href: '/projects/giant-order-tool', label: 'Giant order tool' },
   { href: '/projects/kuromasu', label: 'Kuromasu' },
   { href: '/projects/workout-tracker', label: 'Workout tracker: Log' },
   {
