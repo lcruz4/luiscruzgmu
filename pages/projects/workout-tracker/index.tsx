@@ -42,6 +42,6 @@ const LogPage = ({ email }: LogPageProps) => (
   </WorkoutLayout>
 );
 
-export const getServerSideProps = requireLogin;
+export const getServerSideProps = requireLogin('workout-tracker');
 
 export default LogPage;

@@ -24,7 +24,7 @@ export class GiantApiError extends Error {
 }
 
 const call = async (method: string, path: string, body?: unknown) => {
-  const response = await fetch(`/api/giant-order/${path}`, {
+  const response = await fetch(`/api/giant-order-tool/${path}`, {
     method,
     headers:
       method === 'GET' ? undefined : { 'Content-Type': 'application/json' },

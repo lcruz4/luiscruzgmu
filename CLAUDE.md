@@ -17,13 +17,13 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 
 ## Structure
 
-- `pages/` — routes. `index.tsx` is the portfolio; `projects/*` are standalone apps (chess-review, reward-chart, kuromasu).
+- `pages/` — routes. `index.tsx` is the portfolio; `projects/*` are standalone apps (chess-review, kuromasu, workout-tracker, giant-order-tool).
 - `pages/api/` — API routes:
   - `chess-review` — Stockfish game analysis
-  - `*-sticker(s)` — reward-chart CRUD against Postgres (`pg`, `DB_URL`)
   - `kitty-sort`, `remember-that`, `sms-code` — MacroDroid automations, Basic auth via `verifyMacroDroid` (`lib/utils.ts`)
   - `contactMe` (Mailjet), `random-gif` (Giphy)
 - `components/<feature>/` — UI grouped by feature; `components/ui/` is shadcn.
+- `services/auth.ts` — `getAuthenticatedEmail(req, app)`: trusts the `x-authenticated-email` header nginx sets on paths it auth-checks (stripped elsewhere); otherwise calls `/auth/authorize` with the cookie + `X-Auth-App`. App names must match lcruz_auth (`workout-tracker`, `giant-order-tool`, `lcruz-dev`); nginx protects pages/APIs by path namespace.
 - `services/` — server-only singletons: `stockfish.ts` (pooled engine processes + Redis cache), `redis.ts` (`withCache` helper; no-ops gracefully if Redis is down), `logger.ts` (use instead of `console`; `LOG_LEVEL` env).
 - `lib/` — shared utils (`cn`, auth) and solvers. `helpers/` — constants, chess helpers. `types/` — shared types.
 - `store/` — Zustand (nav state). `themes/` — Emotion theme.

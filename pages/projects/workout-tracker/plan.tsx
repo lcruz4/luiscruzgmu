@@ -43,6 +43,6 @@ const PlanPage = ({ email }: PlanPageProps) => (
   </WorkoutLayout>
 );
 
-export const getServerSideProps = requireLogin;
+export const getServerSideProps = requireLogin('workout-tracker');
 
 export default PlanPage;

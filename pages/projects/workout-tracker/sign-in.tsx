@@ -71,7 +71,7 @@ export const getServerSideProps: GetServerSideProps = async ({
   req,
   query,
 }) => {
-  const email = await getAuthenticatedEmail(req.headers.cookie);
+  const email = await getAuthenticatedEmail(req, 'workout-tracker');
   if (!email) return { props: {} };
   return {
     redirect: { destination: safeReturnPath(query.returnTo), permanent: false },

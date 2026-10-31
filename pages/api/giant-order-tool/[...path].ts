@@ -21,7 +21,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const path = Array.isArray(segments) ? segments.join('/') : '';
   if (!PATHS.has(path)) return res.status(404).json({ error: 'Not found' });
 
-  if (!(await giantOwnerEmail(req.headers.cookie))) {
+  if (!(await giantOwnerEmail(req))) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -49,7 +49,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(response.status).setHeader('Content-Type', 'application/json');
     return res.send(text);
   } catch (error) {
-    logger.error(`${method} giant-order/${path} failed:`, error);
+    logger.error(`${method} giant-order-tool/${path} failed:`, error);
     return res
       .status(502)
       .json({ error: 'Couldn’t reach giant-cart serve on the Mac' });

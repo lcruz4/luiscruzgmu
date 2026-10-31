@@ -1,14 +1,14 @@
 import type { GetServerSideProps } from 'next';
 import { authLoginUrl } from '@/lib/auth';
-import { getAuthenticatedEmail } from './auth';
+import { type AuthRequest, getAuthenticatedEmail } from './auth';
 
 // It places real orders on one Giant account, so only its owner gets in.
 // Unset → nobody does.
 export const isGiantOwner = (email: string | null) =>
   !!email && email === process.env.GIANT_ORDER_EMAIL;
 
-export const giantOwnerEmail = async (cookie: string | undefined) => {
-  const email = await getAuthenticatedEmail(cookie);
+export const giantOwnerEmail = async (req: AuthRequest) => {
+  const email = await getAuthenticatedEmail(req, 'giant-order-tool');
   return isGiantOwner(email) ? email : null;
 };
 
@@ -18,7 +18,7 @@ export const requireGiantOwner: GetServerSideProps<{ email: string }> = async ({
   req,
   resolvedUrl,
 }) => {
-  const email = await getAuthenticatedEmail(req.headers.cookie);
+  const email = await getAuthenticatedEmail(req, 'giant-order-tool');
   if (!email) {
     const host = req.headers.host ?? '';
     const domain = host.split(':')[0];
