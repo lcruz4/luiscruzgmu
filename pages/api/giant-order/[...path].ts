@@ -26,8 +26,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const base = process.env.GIANT_ORDER_API_URL;
-  if (!base) {
-    return res.status(503).json({ error: 'GIANT_ORDER_API_URL is not set' });
+  const apiKey = process.env.GIANT_ORDER_TOOL_API_KEY;
+  if (!base || !apiKey) {
+    return res.status(503).json({
+      error: 'GIANT_ORDER_API_URL or GIANT_ORDER_TOOL_API_KEY is not set',
+    });
   }
 
   const method = req.method ?? 'GET';
@@ -35,7 +38,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const response = await fetch(`${base}/${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: hasBody ? JSON.stringify(req.body ?? null) : undefined,
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
