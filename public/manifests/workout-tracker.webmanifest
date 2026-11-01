@@ -4,7 +4,7 @@
   "short_name": "Workouts",
   "start_url": "/projects/workout-tracker",
   "scope": "/projects/workout-tracker",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#e2eff1",
   "theme_color": "#cdeaed",
   "icons": [

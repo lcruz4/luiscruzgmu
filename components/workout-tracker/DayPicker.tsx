@@ -56,7 +56,7 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
       <Dialog.Overlay className='fixed inset-0 z-50 bg-mist-text/45' />
       <Dialog.Content
         aria-describedby={undefined}
-        className='fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-md flex-col gap-4 rounded-t-[24px] border-t border-mist-line bg-mist-surface px-4 pt-2.5 pb-[max(24px,env(safe-area-inset-bottom))]'
+        className='fixed inset-x-0 bottom-0 z-50 mx-auto flex sm:max-w-md flex-col gap-4 rounded-t-[24px] border-t border-mist-line bg-mist-surface px-4 pt-2.5 pb-[max(24px,env(safe-area-inset-bottom))]'
       >
         <div
           aria-hidden
