@@ -1,0 +1,28 @@
+{
+  "id": "/projects/giant-order-tool",
+  "name": "Giant Order",
+  "short_name": "Giant Order",
+  "start_url": "/projects/giant-order-tool",
+  "scope": "/projects/giant-order-tool",
+  "display": "standalone",
+  "background_color": "#e2eff1",
+  "theme_color": "#e2eff1",
+  "icons": [
+    {
+      "src": "/images/pwa/giant-order-tool-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa/giant-order-tool-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa/giant-order-tool-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

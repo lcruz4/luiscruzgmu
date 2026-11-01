@@ -32,6 +32,13 @@ export const WorkoutLayout = ({
         href='/images/workout-tracker.svg'
         type='image/svg+xml'
       />
+      <link rel='manifest' href='/manifests/workout-tracker.webmanifest' />
+      <link
+        rel='apple-touch-icon'
+        href='/images/pwa/workout-tracker-apple-touch.png'
+      />
+      <meta name='apple-mobile-web-app-title' content='Workouts' />
+      <meta name='theme-color' content='#cdeaed' />
       {/* _app's body is black; this colours the overscroll area instead */}
       <style>{'html { background: var(--color-mist-ground); }'}</style>
     </Head>
