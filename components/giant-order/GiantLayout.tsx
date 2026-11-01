@@ -14,6 +14,17 @@ export const GiantLayout = ({ children }: { children: ReactNode }) => (
   >
     <Head>
       <title>Giant Order</title>
+      <link
+        rel='icon'
+        href='/images/giant-order-tool.svg'
+        type='image/svg+xml'
+      />
+      <link rel='manifest' href='/manifests/giant-order-tool.webmanifest' />
+      <link
+        rel='apple-touch-icon'
+        href='/images/pwa/giant-order-tool-apple-touch.png'
+      />
+      <meta name='theme-color' content='#e2eff1' />
       {/* _app's body is black; this colours the overscroll area instead */}
       <style>{'html { background: var(--color-mist-ground); }'}</style>
     </Head>
