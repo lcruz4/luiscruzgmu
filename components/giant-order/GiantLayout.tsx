@@ -28,7 +28,7 @@ export const GiantLayout = ({ children }: { children: ReactNode }) => (
       {/* _app's body is black; this colours the overscroll area instead */}
       <style>{'html { background: var(--color-mist-ground); }'}</style>
     </Head>
-    <div className='mx-auto flex min-h-dvh w-full max-w-md flex-col gap-4 px-4 py-5'>
+    <div className='mx-auto flex min-h-dvh w-full sm:max-w-md flex-col gap-4 px-4 py-5'>
       {children}
     </div>
   </div>

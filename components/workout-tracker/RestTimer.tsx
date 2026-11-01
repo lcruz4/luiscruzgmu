@@ -83,7 +83,7 @@ export const RestTimer = () => {
       <Dialog.Overlay className='fixed inset-0 z-50 bg-mist-ink/40' />
       <Dialog.Content
         aria-describedby={undefined}
-        className='fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-md flex-col items-center gap-5 rounded-t-2xl bg-mist-surface px-4 pt-4 pb-[max(20px,env(safe-area-inset-bottom))] text-mist-text'
+        className='fixed inset-x-0 bottom-0 z-50 mx-auto flex sm:max-w-md flex-col items-center gap-5 rounded-t-2xl bg-mist-surface px-4 pt-4 pb-[max(20px,env(safe-area-inset-bottom))] text-mist-text'
       >
         <div className='flex w-full items-center justify-between'>
           <Dialog.Title className='m-0 text-lg font-extrabold'>

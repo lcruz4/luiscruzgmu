@@ -42,7 +42,7 @@ export const WorkoutLayout = ({
       {/* _app's body is black; this colours the overscroll area instead */}
       <style>{'html { background: var(--color-mist-ground); }'}</style>
     </Head>
-    <div className='mx-auto flex min-h-dvh w-full max-w-md flex-col'>
+    <div className='mx-auto flex min-h-dvh w-full sm:max-w-md flex-col'>
       {children}
       {tabBar && (
         <>
