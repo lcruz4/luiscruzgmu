@@ -22,7 +22,12 @@ const UNREACHABLE = {
   reason: 'unreachable',
 };
 
-// Passes the request to giant-cart serve on the Mac and its answer back as is
+// Cloudflare swaps an origin's 502 or 504 for its own HTML page, losing the
+// JSON error, so those go out as 503
+const passThrough = (status: number) =>
+  status === 502 || status === 504 ? 503 : status;
+
+// Passes the request to giant-cart serve on the Mac and its answer back
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const segments = req.query.path;
   const path = Array.isArray(segments) ? segments.join('/') : '';
@@ -56,7 +61,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     await health.text();
   } catch (error) {
     logger.warn('giant-cart serve health check failed:', error);
-    return res.status(502).json(UNREACHABLE);
+    return res.status(503).json(UNREACHABLE);
   }
 
   try {
@@ -67,11 +72,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     const text = await response.text();
-    res.status(response.status).setHeader('Content-Type', 'application/json');
+    res
+      .status(passThrough(response.status))
+      .setHeader('Content-Type', 'application/json');
     return res.send(text);
   } catch (error) {
     logger.error(`${method} giant-order-tool/${path} failed:`, error);
-    return res.status(502).json(UNREACHABLE);
+    return res.status(503).json(UNREACHABLE);
   }
 };
 
