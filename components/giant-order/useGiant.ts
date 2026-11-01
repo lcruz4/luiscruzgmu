@@ -13,15 +13,22 @@ const LIST_KEY = ['giant-order', 'list'];
 const QUESTION_KEY = ['giant-order', 'question'];
 const CHECKOUT_KEY = ['giant-order', 'checkout'];
 
-// Its message is giant-cart serve's own `error`
+// Its message and reason are giant-cart serve's own `error` and `reason`, or
+// the proxy's when serve can't be reached
 export class GiantApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly reason?: string,
   ) {
     super(message);
   }
 }
+
+export const isUnreachable = (error: unknown) =>
+  error instanceof GiantApiError && error.reason === 'unreachable';
+
+export const RECONNECT_MS = 10_000;
 
 const call = async (method: string, path: string, body?: unknown) => {
   const response = await fetch(`/api/giant-order-tool/${path}`, {
@@ -37,6 +44,7 @@ const call = async (method: string, path: string, body?: unknown) => {
       typeof json?.error === 'string'
         ? json.error
         : `${method} ${path} failed: ${response.status}`,
+      typeof json?.reason === 'string' ? json.reason : undefined,
     );
   }
   return json;
@@ -50,6 +58,9 @@ export const useList = () =>
     queryKey: LIST_KEY,
     queryFn: async () => (await call('GET', 'list')).lines,
     ...once,
+    // Never touches Giant, so it's safe to keep checking until the Mac is back
+    refetchInterval: (query) =>
+      isUnreachable(query.state.error) ? RECONNECT_MS : false,
   });
 
 // Can open Giant (matching, searches), so only asked while the list has lines

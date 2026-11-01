@@ -6,7 +6,12 @@ import { ListStage } from '@/components/giant-order/ListStage';
 import { ResultCard } from '@/components/giant-order/ResultCard';
 import { StartStage } from '@/components/giant-order/StartStage';
 import { secondaryButton } from '@/components/giant-order/styles';
-import { useCheckout, useList } from '@/components/giant-order/useGiant';
+import { Unreachable } from '@/components/giant-order/Unreachable';
+import {
+  isUnreachable,
+  useCheckout,
+  useList,
+} from '@/components/giant-order/useGiant';
 import { requireGiantLogin } from '@/services/giantOrder';
 import type { CartResponse, CheckoutResult } from '@/types/giantOrder';
 
@@ -37,7 +42,19 @@ const GiantOrder = () => {
   const list = useList();
   const listEmpty = list.data?.length === 0;
   const checkout = useCheckout(listEmpty);
+  // Each reconnect check resets the list to loading, so hold on to
+  // Unreachable until a check answers
+  const [offline, setOffline] = useState(false);
+  const listUnreachable = isUnreachable(list.error);
+  if (!list.isFetching && offline !== listUnreachable) {
+    setOffline(listUnreachable);
+  }
 
+  if (offline || listUnreachable) {
+    return (
+      <Unreachable checking={list.isFetching} onRetry={() => list.refetch()} />
+    );
+  }
   if (list.error) return <LoadError message={list.error.message} />;
   if (!list.data) return <Loading />;
   if (list.data.length > 0) {

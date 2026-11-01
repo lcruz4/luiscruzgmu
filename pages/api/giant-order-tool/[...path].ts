@@ -14,6 +14,13 @@ const PATHS = new Set([
 
 // Opening a Giant tab and a checkout step can each take a while
 const TIMEOUT_MS = 180_000;
+// Through the tunnel, a sleeping Mac hangs rather than refuses
+const HEALTH_TIMEOUT_MS = 3_000;
+
+const UNREACHABLE = {
+  error: 'Couldn’t reach giant-cart serve on the Mac',
+  reason: 'unreachable',
+};
 
 // Passes the request to giant-cart serve on the Mac and its answer back as is
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -35,13 +42,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const method = req.method ?? 'GET';
   const hasBody = method !== 'GET' && method !== 'HEAD';
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  // Any answer means the Mac is awake, so the request below won't hang
+  try {
+    const health = await fetch(`${base}/health`, {
+      headers,
+      signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
+    });
+    await health.text();
+  } catch (error) {
+    logger.warn('giant-cart serve health check failed:', error);
+    return res.status(502).json(UNREACHABLE);
+  }
+
   try {
     const response = await fetch(`${base}/${path}`, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers,
       body: hasBody ? JSON.stringify(req.body ?? null) : undefined,
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -50,9 +71,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.send(text);
   } catch (error) {
     logger.error(`${method} giant-order-tool/${path} failed:`, error);
-    return res
-      .status(502)
-      .json({ error: 'Couldn’t reach giant-cart serve on the Mac' });
+    return res.status(502).json(UNREACHABLE);
   }
 };
 
