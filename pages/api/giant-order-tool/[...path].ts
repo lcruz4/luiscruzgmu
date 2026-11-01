@@ -12,8 +12,9 @@ const PATHS = new Set([
   'checkout/answer',
 ]);
 
-// Opening a Giant tab and a checkout step can each take a while
-const TIMEOUT_MS = 180_000;
+// Opening a Giant tab and a checkout step can each take a while. Under
+// Cloudflare's 100s cutoff, which answers with its own HTML page.
+const TIMEOUT_MS = 90_000;
 // Through the tunnel, a sleeping Mac hangs rather than refuses
 const HEALTH_TIMEOUT_MS = 3_000;
 
