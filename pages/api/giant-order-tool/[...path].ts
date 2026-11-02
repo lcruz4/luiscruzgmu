@@ -1,10 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAuthenticatedEmail } from '@/services/auth';
-import {
-  checkOrdered,
-  linkOpenList,
-  markAdded,
-} from '@/services/giantKeepLinks';
 import { logger } from '@/services/logger';
 
 // giant-cart serve's routes (giant-order-tool src/runner/httpApp.ts)
@@ -33,57 +28,7 @@ const UNREACHABLE = {
 const passThrough = (status: number) =>
   status === 502 || status === 504 ? 503 : status;
 
-type Json = Record<string, unknown>;
-
-const isJson = (value: unknown): value is Json =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const names = (rows: unknown, pick: (row: Json) => unknown) =>
-  Array.isArray(rows)
-    ? rows.flatMap((row) => {
-        const name = isJson(row) ? pick(row) : undefined;
-        return typeof name === 'string' ? [name] : [];
-      })
-    : [];
-
-// Keeps the Keep "Giant" list links in step with a successful giant-cart
-// answer; may add `keep` to a placed order's result
-const syncKeep = async (
-  route: string,
-  body: unknown,
-  json: Json,
-): Promise<Json> => {
-  if (route === 'PUT list') {
-    const fromKeep = isJson(body) && body.fromKeep === true;
-    await linkOpenList(fromKeep ? names(json.lines, (line) => line.name) : []);
-  } else if (route === 'DELETE list') {
-    await linkOpenList([]);
-  } else if (route === 'POST cart') {
-    const report = json.report;
-    if (isJson(report) && report.dryRun === false && !report.aborted) {
-      await markAdded(
-        names(report.added, (item) =>
-          isJson(item.input) ? item.input.name : undefined,
-        ),
-      );
-    }
-  } else if (route === 'POST checkout/answer') {
-    const result = json.result;
-    if (isJson(result) && result.kind === 'placed') {
-      return { ...json, result: { ...result, keep: await checkOrdered() } };
-    }
-  }
-  return json;
-};
-
 // Passes the request to giant-cart serve on the Mac and its answer back
-// `fromKeep` is ours, not giant-cart's
-const forwardBody = (body: unknown) => {
-  if (!isJson(body)) return body ?? null;
-  const { fromKeep: _, ...rest } = body;
-  return rest;
-};
-
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const segments = req.query.path;
   const path = Array.isArray(segments) ? segments.join('/') : '';
@@ -124,23 +69,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const response = await fetch(`${base}/${path}`, {
       method,
       headers,
-      body: hasBody ? JSON.stringify(forwardBody(req.body)) : undefined,
+      body: hasBody ? JSON.stringify(req.body ?? null) : undefined,
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    let text = await response.text();
-    if (response.ok) {
-      try {
-        const json: unknown = JSON.parse(text);
-        if (isJson(json)) {
-          text = JSON.stringify(
-            await syncKeep(`${method} ${path}`, req.body, json),
-          );
-        }
-      } catch (error) {
-        // Keep is a side job; the Giant answer still goes back
-        logger.error(`Keep sync for ${method} ${path} failed:`, error);
-      }
-    }
+    const text = await response.text();
     res
       .status(passThrough(response.status))
       .setHeader('Content-Type', 'application/json');

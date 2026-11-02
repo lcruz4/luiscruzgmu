@@ -9,6 +9,7 @@ import { secondaryButton } from '@/components/giant-order/styles';
 import { Unreachable } from '@/components/giant-order/Unreachable';
 import {
   isUnreachable,
+  useCheckKeep,
   useCheckout,
   useList,
 } from '@/components/giant-order/useGiant';
@@ -39,6 +40,11 @@ const LoadError = ({ message }: { message: string }) => (
 const GiantOrder = () => {
   const [filled, setFilled] = useState<CartResponse | null>(null);
   const [result, setResult] = useState<CheckoutResult | null>(null);
+  const checkKeep = useCheckKeep();
+  const onResult = (checkoutResult: CheckoutResult) => {
+    setResult(checkoutResult);
+    if (checkoutResult.kind === 'placed') checkKeep.mutate();
+  };
   const list = useList();
   const listEmpty = list.data?.length === 0;
   const checkout = useCheckout(listEmpty);
@@ -63,13 +69,15 @@ const GiantOrder = () => {
   if (checkout.error) return <LoadError message={checkout.error.message} />;
   if (checkout.data === undefined) return <Loading />;
   if (checkout.data) {
-    return <CheckoutStage question={checkout.data} onResult={setResult} />;
+    return <CheckoutStage question={checkout.data} onResult={onResult} />;
   }
   if (result) {
     return (
       <ResultCard
         result={result}
+        keep={checkKeep}
         onDone={() => {
+          checkKeep.reset();
           setResult(null);
           setFilled(null);
         }}

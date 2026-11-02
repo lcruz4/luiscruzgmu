@@ -163,8 +163,6 @@ export type CheckoutResult =
       card: string;
       total: number;
       cutoffTime: string | null;
-      // Added by the lcruz.dev proxy, not giant-cart
-      keep?: KeepCheck;
     }
   | { kind: 'cancelled'; reservedSlot: string | null };
 
