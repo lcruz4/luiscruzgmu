@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import type {
   Cart,
   CartResponse,
@@ -181,17 +182,61 @@ export const useFillCart = () => {
   });
 };
 
-// Every read opens Giant, so it's never polled: fetched on mount when
-// `enabled`, else only on refetch, and dropped on unmount
-export const useCart = (enabled: boolean) =>
-  useQuery<Cart>({
+const CART_STORAGE_KEY = 'giant-order:cart';
+
+const isCart = (value: unknown): value is Cart =>
+  typeof value === 'object' &&
+  value !== null &&
+  'cartId' in value &&
+  typeof value.cartId === 'string' &&
+  'items' in value &&
+  Array.isArray(value.items) &&
+  'subTotal' in value &&
+  typeof value.subTotal === 'number';
+
+const readCart = () => {
+  try {
+    const parsed: unknown = JSON.parse(
+      sessionStorage.getItem(CART_STORAGE_KEY) ?? 'null',
+    );
+    return isCart(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchCart = async (): Promise<Cart> => {
+  const cart: Cart = await call('GET', 'cart');
+  try {
+    sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch {
+    // Blocked storage: the next page load just reads Giant again
+  }
+  return cart;
+};
+
+// Every read opens Giant, so it's read once per browser tab (kept in
+// sessionStorage), then only on refetch or after a fill or placed order.
+// Storage is read after mount so the server render matches.
+export const useCart = () => {
+  const queryClient = useQueryClient();
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    const cached = readCart();
+    if (cached && !queryClient.getQueryData(CART_KEY)) {
+      queryClient.setQueryData(CART_KEY, cached);
+    }
+    setRestored(true);
+  }, [queryClient]);
+  return useQuery<Cart>({
     queryKey: CART_KEY,
-    queryFn: () => call('GET', 'cart'),
-    enabled,
-    gcTime: 0,
+    queryFn: fetchCart,
+    enabled: restored,
+    staleTime: Infinity,
     refetchOnWindowFocus: false,
     ...once,
   });
+};
 
 export const useSearch = (text: string) =>
   useQuery<SearchProduct[]>({
@@ -253,8 +298,12 @@ export const useAnswerCheckout = () => {
   return useMutation({
     mutationFn: (reply: CheckoutReply): Promise<CheckoutResponse> =>
       call('POST', 'checkout/answer', reply),
-    onSuccess: (data) =>
-      queryClient.setQueryData(CHECKOUT_KEY, data.question ?? null),
+    onSuccess: (data) => {
+      queryClient.setQueryData(CHECKOUT_KEY, data.question ?? null);
+      if (data.result?.kind === 'placed') {
+        void queryClient.invalidateQueries({ queryKey: CART_KEY });
+      }
+    },
     onError: () => queryClient.invalidateQueries({ queryKey: CHECKOUT_KEY }),
   });
 };

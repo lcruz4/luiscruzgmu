@@ -76,10 +76,9 @@ const CartReport = ({ report }: { report: Report }) => (
   </section>
 );
 
-// The active cart as Giant has it, however it was filled. Each read opens
-// Giant, so it loads on its own only right after a real fill.
-const CartPanel = ({ autoLoad }: { autoLoad: boolean }) => {
-  const cart = useCart(autoLoad);
+// The active cart as Giant has it, however it was filled
+const CartPanel = () => {
+  const cart = useCart();
   const below =
     cart.data?.minimum != null && cart.data.subTotal < cart.data.minimum;
   return (
@@ -97,7 +96,7 @@ const CartPanel = ({ autoLoad }: { autoLoad: boolean }) => {
           ) : (
             <RefreshCw size={15} aria-hidden />
           )}
-          {cart.isFetching ? 'Loading…' : cart.data ? 'Refresh' : 'Show cart'}
+          {cart.isFetching ? 'Loading…' : 'Refresh'}
         </button>
       </div>
       {cart.data && cart.data.items.length === 0 && (
@@ -340,7 +339,7 @@ export const StartStage = ({ filled }: { filled: CartResponse | null }) => {
         <p className='m-0 text-[15px] font-medium'>{filled.summary}</p>
       )}
       {report && <CartReport report={report} />}
-      <CartPanel autoLoad={!!report && !report.dryRun && !report.aborted} />
+      <CartPanel />
       {canCheckOut && (
         <div className='flex flex-col gap-2'>
           <button
