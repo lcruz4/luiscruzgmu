@@ -117,6 +117,43 @@ export type Report = {
 
 export type CartResponse = { report: Report | null; summary: string };
 
+// The active cart as Giant has it now
+export type Cart = {
+  cartId: string;
+  items: {
+    prodId: number;
+    name: string;
+    quantity: number;
+    price: number;
+    product: Product | null;
+  }[];
+  subTotal: number;
+  minimum: number | null;
+};
+
+export type SearchProduct = Product & {
+  boughtBefore: boolean;
+  // e.g. "out of stock"; can still be a default
+  unavailable: string | null;
+};
+
+// One `item_defaults` entry: what a list name means, plus its quantity rules
+export type ItemDefault = {
+  alias: string;
+  prodId: number;
+  product: string;
+  status: 'confident' | 'review';
+  note: string | null;
+  aliasOnly?: boolean;
+  // null = 1, or ask when alwaysAskQuantity
+  defaultQuantity: number | null;
+  alwaysAskQuantity: boolean;
+};
+
+export type DefaultChange = Partial<
+  Pick<ItemDefault, 'prodId' | 'defaultQuantity' | 'alwaysAskQuantity' | 'note'>
+>;
+
 export type CheckoutReply =
   | { kind: 'card'; capsId: number }
   | { kind: 'confirm'; yes: boolean }

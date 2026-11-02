@@ -1,20 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  Cart,
   CartResponse,
   CheckoutQuestion,
   CheckoutReply,
   CheckoutResponse,
+  DefaultChange,
   GroceryLine,
+  ItemDefault,
   KeepCheck,
   KeepList,
   QuestionResponse,
   Reply,
+  SearchProduct,
 } from '@/types/giantOrder';
 
 const LIST_KEY = ['giant-order', 'list'];
 const QUESTION_KEY = ['giant-order', 'question'];
 const CHECKOUT_KEY = ['giant-order', 'checkout'];
 const KEEP_KEY = ['giant-order', 'keep'];
+const CART_KEY = ['giant-order', 'cart'];
+const DEFAULTS_KEY = ['giant-order', 'defaults'];
 
 // Its message and reason are giant-cart serve's own `error` and `reason`, or
 // the proxy's when serve can't be reached
@@ -168,7 +174,68 @@ export const useFillCart = () => {
   return useMutation({
     mutationFn: (dryRun: boolean): Promise<CartResponse> =>
       call('POST', 'cart', { dryRun }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: LIST_KEY }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      void queryClient.invalidateQueries({ queryKey: CART_KEY });
+    },
+  });
+};
+
+// Every read opens Giant, so it's never polled: fetched on mount when
+// `enabled`, else only on refetch, and dropped on unmount
+export const useCart = (enabled: boolean) =>
+  useQuery<Cart>({
+    queryKey: CART_KEY,
+    queryFn: () => call('GET', 'cart'),
+    enabled,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    ...once,
+  });
+
+export const useSearch = (text: string) =>
+  useQuery<SearchProduct[]>({
+    queryKey: ['giant-order', 'search', text],
+    queryFn: async () =>
+      (await call('GET', `search?text=${encodeURIComponent(text)}`)).products,
+    enabled: text.length > 0,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    ...once,
+  });
+
+export const useDefaults = () =>
+  useQuery<ItemDefault[]>({
+    queryKey: DEFAULTS_KEY,
+    queryFn: async () => (await call('GET', 'defaults')).defaults,
+    ...once,
+    refetchInterval: (query) =>
+      isUnreachable(query.state.error) ? RECONNECT_MS : false,
+  });
+
+const defaultPath = (alias: string) => `defaults/${encodeURIComponent(alias)}`;
+
+// Only the fields in `change` are saved; a new alias needs a prodId
+export const usePutDefault = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      alias,
+      change,
+    }: {
+      alias: string;
+      change: DefaultChange;
+    }): Promise<ItemDefault> =>
+      (await call('PUT', defaultPath(alias), change)).default,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEFAULTS_KEY }),
+  });
+};
+
+export const useDeleteDefault = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (alias: string) => call('DELETE', defaultPath(alias)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEFAULTS_KEY }),
   });
 };
 

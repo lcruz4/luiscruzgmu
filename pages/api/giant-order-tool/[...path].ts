@@ -8,9 +8,21 @@ const PATHS = new Set([
   'question',
   'answer',
   'cart',
+  'search',
+  'defaults',
   'checkout',
   'checkout/answer',
 ]);
+
+// `defaults/<alias>`: the alias goes on as one URL-encoded segment
+const upstreamPath = (segments: string[]) => {
+  const path = segments.join('/');
+  if (PATHS.has(path)) return path;
+  if (segments.length === 2 && segments[0] === 'defaults') {
+    return `defaults/${encodeURIComponent(segments[1])}`;
+  }
+  return null;
+};
 
 // Opening a Giant tab and a checkout step can each take a while. Under
 // Cloudflare's 100s cutoff, which answers with its own HTML page.
@@ -31,8 +43,9 @@ const passThrough = (status: number) =>
 // Passes the request to giant-cart serve on the Mac and its answer back
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const segments = req.query.path;
-  const path = Array.isArray(segments) ? segments.join('/') : '';
-  if (!PATHS.has(path)) return res.status(404).json({ error: 'Not found' });
+  const path = Array.isArray(segments) ? upstreamPath(segments) : null;
+  if (!path) return res.status(404).json({ error: 'Not found' });
+  const search = new URL(req.url ?? '', 'http://localhost').search;
 
   if (!(await getAuthenticatedEmail(req, 'giant-order-tool'))) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -66,7 +79,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const response = await fetch(`${base}/${path}`, {
+    const response = await fetch(`${base}/${path}${search}`, {
       method,
       headers,
       body: hasBody ? JSON.stringify(req.body ?? null) : undefined,
