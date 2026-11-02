@@ -151,6 +151,9 @@ export type CheckoutQuestion =
       amount: number;
     };
 
+// Keep "Giant" items checked off once the order is placed
+export type KeepCheck = { checked: string[]; failed: string[] };
+
 export type CheckoutResult =
   | {
       kind: 'placed';

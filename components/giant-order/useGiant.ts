@@ -1,10 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  addedLinks,
+  forgetLinks,
+  type KeepList,
+  linkOpenList,
+  markAdded,
+} from '@/lib/giantKeepLinks';
 import type {
   CartResponse,
   CheckoutQuestion,
   CheckoutReply,
   CheckoutResponse,
   GroceryLine,
+  KeepCheck,
   QuestionResponse,
   Reply,
 } from '@/types/giantOrder';
@@ -88,13 +96,37 @@ const useListChange = () => {
   };
 };
 
-// `text` is the list as pasted, one item per line
+// The unchecked items of the Keep "Giant" list. Fetched on mount when
+// `enabled`, else only on refetch; dropped on unmount so a later visit pulls
+// fresh.
+export const useKeepList = (enabled: boolean) =>
+  useQuery<KeepList>({
+    queryKey: ['giant-order', 'keep'],
+    queryFn: () => call('GET', 'keep'),
+    enabled,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+// `text` is the list as pasted, one item per line. With `keep`, its lines are
+// linked to the Keep items they came from, checked once the order is placed.
 export const useSetList = () => {
   const onLines = useListChange();
   return useMutation({
-    mutationFn: async (text: string): Promise<GroceryLine[]> =>
-      (await call('PUT', 'list', { text })).lines,
-    onSuccess: onLines,
+    mutationFn: async ({
+      text,
+    }: {
+      text: string;
+      keep: KeepList | null;
+    }): Promise<GroceryLine[]> => (await call('PUT', 'list', { text })).lines,
+    onSuccess: (lines, { keep }) => {
+      onLines(lines);
+      linkOpenList(
+        lines.map((line) => line.name),
+        keep,
+      );
+    },
   });
 };
 
@@ -103,7 +135,10 @@ export const useClearList = () => {
   return useMutation({
     mutationFn: async (): Promise<GroceryLine[]> =>
       (await call('DELETE', 'list')).lines,
-    onSuccess: onLines,
+    onSuccess: (lines) => {
+      onLines(lines);
+      linkOpenList([], null);
+    },
   });
 };
 
@@ -125,6 +160,11 @@ export const useFillCart = () => {
   return useMutation({
     mutationFn: (dryRun: boolean): Promise<CartResponse> =>
       call('POST', 'cart', { dryRun }),
+    onSuccess: ({ report }) => {
+      if (report && !report.dryRun && !report.aborted) {
+        markAdded(report.added.map((item) => item.input.name));
+      }
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: LIST_KEY }),
   });
 };
@@ -157,3 +197,15 @@ export const useCancelCheckout = () => {
     onSuccess: () => queryClient.setQueryData(CHECKOUT_KEY, null),
   });
 };
+
+// Order placed: checks the ordered items in Keep. Null when none came from Keep.
+export const useCheckKeep = () =>
+  useMutation({
+    mutationFn: async (): Promise<KeepCheck | null> => {
+      const links = addedLinks();
+      if (links.length === 0) return null;
+      const result: KeepCheck = await call('POST', 'keep', { links });
+      forgetLinks(links);
+      return result;
+    },
+  });
