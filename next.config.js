@@ -13,14 +13,6 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
-  // Sign-in used to live under the workout tracker; the query (returnTo) carries over
-  redirects: async () => [
-    {
-      source: '/projects/workout-tracker/sign-in',
-      destination: '/sign-in',
-      permanent: true,
-    },
-  ],
 };
 
 module.exports = withSentryConfig(
