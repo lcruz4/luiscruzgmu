@@ -1,25 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  addedLinks,
-  forgetLinks,
-  type KeepList,
-  linkOpenList,
-  markAdded,
-} from '@/lib/giantKeepLinks';
+import { useEffect, useState } from 'react';
 import type {
+  Cart,
   CartResponse,
   CheckoutQuestion,
   CheckoutReply,
   CheckoutResponse,
+  DefaultChange,
   GroceryLine,
+  ItemDefault,
   KeepCheck,
+  KeepList,
   QuestionResponse,
   Reply,
+  SearchProduct,
 } from '@/types/giantOrder';
 
 const LIST_KEY = ['giant-order', 'list'];
 const QUESTION_KEY = ['giant-order', 'question'];
 const CHECKOUT_KEY = ['giant-order', 'checkout'];
+const KEEP_KEY = ['giant-order', 'keep'];
+const CART_KEY = ['giant-order', 'cart'];
+const DEFAULTS_KEY = ['giant-order', 'defaults'];
 
 // Its message and reason are giant-cart serve's own `error` and `reason`, or
 // the proxy's when serve can't be reached
@@ -101,7 +103,7 @@ const useListChange = () => {
 // fresh.
 export const useKeepList = (enabled: boolean) =>
   useQuery<KeepList>({
-    queryKey: ['giant-order', 'keep'],
+    queryKey: KEEP_KEY,
     queryFn: () => call('GET', 'keep'),
     enabled,
     gcTime: 0,
@@ -109,24 +111,40 @@ export const useKeepList = (enabled: boolean) =>
     retry: false,
   });
 
-// `text` is the list as pasted, one item per line. With `keep`, its lines are
-// linked to the Keep items they came from, checked once the order is placed.
+// Checks or unchecks one Keep item, showing the change right away
+export const useSetKeepChecked = () => {
+  const queryClient = useQueryClient();
+  const setItem = (itemId: string, checked: boolean) =>
+    queryClient.setQueryData<KeepList>(
+      KEEP_KEY,
+      (keep) =>
+        keep && {
+          ...keep,
+          items: keep.items.map((item) =>
+            item.id === itemId ? { ...item, checked } : item,
+          ),
+        },
+    );
+  return useMutation({
+    mutationFn: (body: { noteId: string; itemId: string; checked: boolean }) =>
+      call('PATCH', 'keep', body),
+    onMutate: ({ itemId, checked }) => setItem(itemId, checked),
+    onError: (_error, { itemId, checked }) => setItem(itemId, !checked),
+  });
+};
+
+// `text` is a pasted list; `lines` one per Keep item, so giant-cart hands
+// their ids back once the order is placed
+type ListBody =
+  | { text: string }
+  | { lines: { text: string; keepItemId: string }[] };
+
 export const useSetList = () => {
   const onLines = useListChange();
   return useMutation({
-    mutationFn: async ({
-      text,
-    }: {
-      text: string;
-      keep: KeepList | null;
-    }): Promise<GroceryLine[]> => (await call('PUT', 'list', { text })).lines,
-    onSuccess: (lines, { keep }) => {
-      onLines(lines);
-      linkOpenList(
-        lines.map((line) => line.name),
-        keep,
-      );
-    },
+    mutationFn: async (body: ListBody): Promise<GroceryLine[]> =>
+      (await call('PUT', 'list', body)).lines,
+    onSuccess: onLines,
   });
 };
 
@@ -135,10 +153,7 @@ export const useClearList = () => {
   return useMutation({
     mutationFn: async (): Promise<GroceryLine[]> =>
       (await call('DELETE', 'list')).lines,
-    onSuccess: (lines) => {
-      onLines(lines);
-      linkOpenList([], null);
-    },
+    onSuccess: onLines,
   });
 };
 
@@ -160,12 +175,112 @@ export const useFillCart = () => {
   return useMutation({
     mutationFn: (dryRun: boolean): Promise<CartResponse> =>
       call('POST', 'cart', { dryRun }),
-    onSuccess: ({ report }) => {
-      if (report && !report.dryRun && !report.aborted) {
-        markAdded(report.added.map((item) => item.input.name));
-      }
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      void queryClient.invalidateQueries({ queryKey: CART_KEY });
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: LIST_KEY }),
+  });
+};
+
+const CART_STORAGE_KEY = 'giant-order:cart';
+
+const isCart = (value: unknown): value is Cart =>
+  typeof value === 'object' &&
+  value !== null &&
+  'cartId' in value &&
+  typeof value.cartId === 'string' &&
+  'items' in value &&
+  Array.isArray(value.items) &&
+  'subTotal' in value &&
+  typeof value.subTotal === 'number';
+
+const readCart = () => {
+  try {
+    const parsed: unknown = JSON.parse(
+      sessionStorage.getItem(CART_STORAGE_KEY) ?? 'null',
+    );
+    return isCart(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchCart = async (): Promise<Cart> => {
+  const cart: Cart = await call('GET', 'cart');
+  try {
+    sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch {
+    // Blocked storage: the next page load just reads Giant again
+  }
+  return cart;
+};
+
+// Every read opens Giant, so it's read once per browser tab (kept in
+// sessionStorage), then only on refetch or after a fill or placed order.
+// Storage is read after mount so the server render matches.
+export const useCart = () => {
+  const queryClient = useQueryClient();
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    const cached = readCart();
+    if (cached && !queryClient.getQueryData(CART_KEY)) {
+      queryClient.setQueryData(CART_KEY, cached);
+    }
+    setRestored(true);
+  }, [queryClient]);
+  return useQuery<Cart>({
+    queryKey: CART_KEY,
+    queryFn: fetchCart,
+    enabled: restored,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    ...once,
+  });
+};
+
+export const useSearch = (text: string) =>
+  useQuery<SearchProduct[]>({
+    queryKey: ['giant-order', 'search', text],
+    queryFn: async () =>
+      (await call('GET', `search?text=${encodeURIComponent(text)}`)).products,
+    enabled: text.length > 0,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    ...once,
+  });
+
+export const useDefaults = () =>
+  useQuery<ItemDefault[]>({
+    queryKey: DEFAULTS_KEY,
+    queryFn: async () => (await call('GET', 'defaults')).defaults,
+    ...once,
+    refetchInterval: (query) =>
+      isUnreachable(query.state.error) ? RECONNECT_MS : false,
+  });
+
+const defaultPath = (alias: string) => `defaults/${encodeURIComponent(alias)}`;
+
+// Only the fields in `change` are saved; a new alias needs a prodId
+export const usePutDefault = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      alias,
+      change,
+    }: {
+      alias: string;
+      change: DefaultChange;
+    }): Promise<ItemDefault> =>
+      (await call('PUT', defaultPath(alias), change)).default,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEFAULTS_KEY }),
+  });
+};
+
+export const useDeleteDefault = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (alias: string) => call('DELETE', defaultPath(alias)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEFAULTS_KEY }),
   });
 };
 
@@ -183,8 +298,12 @@ export const useAnswerCheckout = () => {
   return useMutation({
     mutationFn: (reply: CheckoutReply): Promise<CheckoutResponse> =>
       call('POST', 'checkout/answer', reply),
-    onSuccess: (data) =>
-      queryClient.setQueryData(CHECKOUT_KEY, data.question ?? null),
+    onSuccess: (data) => {
+      queryClient.setQueryData(CHECKOUT_KEY, data.question ?? null);
+      if (data.result?.kind === 'placed') {
+        void queryClient.invalidateQueries({ queryKey: CART_KEY });
+      }
+    },
     onError: () => queryClient.invalidateQueries({ queryKey: CHECKOUT_KEY }),
   });
 };
@@ -201,11 +320,6 @@ export const useCancelCheckout = () => {
 // Order placed: checks the ordered items in Keep. Null when none came from Keep.
 export const useCheckKeep = () =>
   useMutation({
-    mutationFn: async (): Promise<KeepCheck | null> => {
-      const links = addedLinks();
-      if (links.length === 0) return null;
-      const result: KeepCheck = await call('POST', 'keep', { links });
-      forgetLinks(links);
-      return result;
-    },
+    mutationFn: async (itemIds: string[]): Promise<KeepCheck | null> =>
+      itemIds.length === 0 ? null : call('POST', 'keep', { itemIds }),
   });

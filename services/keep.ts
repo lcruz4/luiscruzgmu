@@ -63,5 +63,5 @@ export const getGiantList = async () => {
   return { noteId: note.id, items: note.unchecked ?? [] };
 };
 
-export const checkItem = (noteId: string, itemId: string) =>
-  call('PATCH', `/keep/${noteId}/${itemId}`, { checked: true });
+export const setChecked = (noteId: string, itemId: string, checked: boolean) =>
+  call('PATCH', `/keep/${noteId}/${itemId}`, { checked });

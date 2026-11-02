@@ -2,6 +2,7 @@ import { Minus, Plus, Search, SkipForward } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { PickChoice, Question, Reply } from '@/types/giantOrder';
+import { ProductThumb } from './ProductThumb';
 import { primaryButton, secondaryButton } from './styles';
 import { useAnswer } from './useGiant';
 
@@ -69,10 +70,14 @@ const ProductChoice = ({
     disabled={pending || !!choice.disabled}
     onClick={() => answer(choice.value)}
     className={cn(
-      'flex w-full cursor-pointer items-center gap-2 rounded-xl border border-mist-line bg-mist-surface px-3 py-2.5 text-left text-sm font-semibold disabled:cursor-default',
+      'flex w-full cursor-pointer items-center gap-3 rounded-xl border border-mist-line bg-mist-surface px-3 py-2.5 text-left text-sm font-semibold disabled:cursor-default',
       choice.disabled ? 'text-mist-muted' : 'hover:border-mist-cyan-line',
     )}
   >
+    <ProductThumb
+      product={choice.product}
+      className={cn('size-12', choice.disabled && 'opacity-50')}
+    />
     <span className='flex-1'>{choice.name}</span>
     {choice.disabled && (
       <span className='shrink-0 rounded-full bg-mist-warn-banner px-2 py-0.5 text-[11px] font-bold text-mist-warn-text'>

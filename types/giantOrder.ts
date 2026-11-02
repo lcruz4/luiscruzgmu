@@ -7,6 +7,7 @@ export type ProductImage = {
   xlarge: string;
 };
 
+// giant-cart's ProductCard
 export type Product = {
   prodId: number;
   name: string;
@@ -15,7 +16,7 @@ export type Product = {
   price: number;
   regularPrice: number;
   sale: boolean;
-  outOfStock: boolean;
+  saleTitle: string | null;
   unitPrice: number | null;
   unitMeasure: string | null;
   image: ProductImage | null;
@@ -32,7 +33,13 @@ export type Reply =
   | { kind: 'confirm'; yes: boolean }
   | { kind: 'quantity'; quantity: number };
 
-export type PickChoice = { name: string; value: PickReply; disabled?: string };
+export type PickChoice = {
+  name: string;
+  value: PickReply;
+  disabled?: string;
+  // Product choices only; missing when Giant no longer sells it
+  product?: Product & { boughtBefore: boolean };
+};
 
 export type Question =
   | {
@@ -64,6 +71,10 @@ export type GroceryLine = {
   prodId: number | null;
   status: LineStatus;
   question: Question | null;
+  // The Keep items it came from; merged lines keep them all
+  keepItemIds: string[];
+  // Null until it has one, or once Giant stops selling it
+  product: Product | null;
 };
 
 export type ReviewItem = {
@@ -105,6 +116,43 @@ export type Report = {
 };
 
 export type CartResponse = { report: Report | null; summary: string };
+
+// The active cart as Giant has it now
+export type Cart = {
+  cartId: string;
+  items: {
+    prodId: number;
+    name: string;
+    quantity: number;
+    price: number;
+    product: Product | null;
+  }[];
+  subTotal: number;
+  minimum: number | null;
+};
+
+export type SearchProduct = Product & {
+  boughtBefore: boolean;
+  // e.g. "out of stock"; can still be a default
+  unavailable: string | null;
+};
+
+// One `item_defaults` entry: what a list name means, plus its quantity rules
+export type ItemDefault = {
+  alias: string;
+  prodId: number;
+  product: string;
+  status: 'confident' | 'review';
+  note: string | null;
+  aliasOnly?: boolean;
+  // null = 1, or ask when alwaysAskQuantity
+  defaultQuantity: number | null;
+  alwaysAskQuantity: boolean;
+};
+
+export type DefaultChange = Partial<
+  Pick<ItemDefault, 'prodId' | 'defaultQuantity' | 'alwaysAskQuantity' | 'note'>
+>;
 
 export type CheckoutReply =
   | { kind: 'card'; capsId: number }
@@ -151,6 +199,10 @@ export type CheckoutQuestion =
       amount: number;
     };
 
+export type KeepItem = { id: string; text: string; checked: boolean };
+
+export type KeepList = { noteId: string; items: KeepItem[] };
+
 // Keep "Giant" items checked off once the order is placed
 export type KeepCheck = { checked: string[]; failed: string[] };
 
@@ -163,6 +215,8 @@ export type CheckoutResult =
       card: string;
       total: number;
       cutoffTime: string | null;
+      // Keep items to check off: the lines that went in this cart
+      keepItemIds: string[];
     }
   | { kind: 'cancelled'; reservedSlot: string | null };
 

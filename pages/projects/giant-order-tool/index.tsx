@@ -13,7 +13,7 @@ import {
   useCheckout,
   useList,
 } from '@/components/giant-order/useGiant';
-import { requireGiantLogin } from '@/services/giantOrder';
+import { requireLogin } from '@/services/auth';
 import type { CartResponse, CheckoutResult } from '@/types/giantOrder';
 
 const Loading = () => (
@@ -43,7 +43,9 @@ const GiantOrder = () => {
   const checkKeep = useCheckKeep();
   const onResult = (checkoutResult: CheckoutResult) => {
     setResult(checkoutResult);
-    if (checkoutResult.kind === 'placed') checkKeep.mutate();
+    if (checkoutResult.kind === 'placed') {
+      checkKeep.mutate(checkoutResult.keepItemIds);
+    }
   };
   const list = useList();
   const listEmpty = list.data?.length === 0;
@@ -93,6 +95,6 @@ const GiantOrderPage = () => (
   </GiantLayout>
 );
 
-export const getServerSideProps = requireGiantLogin;
+export const getServerSideProps = requireLogin('giant-order-tool');
 
 export default GiantOrderPage;

@@ -1,10 +1,14 @@
 import { LogIn } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
+import { Raleway } from 'next/font/google';
+import Head from 'next/head';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { WorkoutLayout } from '@/components/workout-tracker/WorkoutLayout';
 import { authLoginUrl, safeReturnPath } from '@/lib/auth';
-import { getAuthenticatedEmail } from '@/services/auth';
+import { cn } from '@/lib/utils';
+import { appForPath, getAuthenticatedEmail } from '@/services/auth';
+
+const raleway = Raleway({ subsets: ['latin'], variable: '--font-raleway' });
 
 const GoogleIcon = () => (
   <svg viewBox='0 0 48 48' className='size-5' aria-hidden>
@@ -39,15 +43,26 @@ const SignInPage = () => {
   const returnTo = searchParams.get('returnTo');
 
   return (
-    <WorkoutLayout tabBar={false}>
-      <main className='flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8 text-center'>
+    <div
+      className={cn(
+        raleway.variable,
+        'flex min-h-dvh bg-mist-ground font-ui text-mist-text',
+      )}
+    >
+      <Head>
+        <title>Sign In | lcruz.dev</title>
+        <meta name='theme-color' content='#e2eff1' />
+        {/* _app's body is black; this colours the overscroll area instead */}
+        <style>{'html { background: var(--color-mist-ground); }'}</style>
+      </Head>
+      <main className='mx-auto flex w-full sm:max-w-md flex-1 flex-col items-center justify-center gap-6 px-6 py-8 text-center'>
         <div className='flex size-[72px] items-center justify-center rounded-full border-2 border-dashed border-mist-dashed text-mist-muted'>
           <LogIn size={32} strokeWidth={2} aria-hidden />
         </div>
         <div className='flex flex-col gap-2'>
           <h1 className='m-0 text-[26px] leading-8 font-extrabold'>Sign In</h1>
           <p className='m-0 text-base leading-6 font-medium text-mist-muted'>
-            Sign in to log your workouts! 💪
+            Sign in to continue.
           </p>
         </div>
         <button
@@ -62,20 +77,19 @@ const SignInPage = () => {
           Back to lcruz.dev
         </Link>
       </main>
-    </WorkoutLayout>
+    </div>
   );
 };
 
-// Already signed in → skip straight to where they were going
+// Already signed in to the app being returned to → skip straight there
 export const getServerSideProps: GetServerSideProps = async ({
   req,
   query,
 }) => {
-  const email = await getAuthenticatedEmail(req, 'workout-tracker');
+  const returnTo = safeReturnPath(query.returnTo);
+  const email = await getAuthenticatedEmail(req, appForPath(returnTo));
   if (!email) return { props: {} };
-  return {
-    redirect: { destination: safeReturnPath(query.returnTo), permanent: false },
-  };
+  return { redirect: { destination: returnTo, permanent: false } };
 };
 
 export default SignInPage;

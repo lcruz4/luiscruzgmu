@@ -1,16 +1,30 @@
-import { Download } from 'lucide-react';
+import { Download, LoaderCircle, RefreshCw } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import type { KeepList } from '@/lib/giantKeepLinks';
 import { cn } from '@/lib/utils';
-import type { CartResponse, Report } from '@/types/giantOrder';
+import type { CartResponse, KeepList, Report } from '@/types/giantOrder';
 import {
   cardClass,
   labelClass,
+  linkButton,
   money,
   primaryButton,
   secondaryButton,
 } from './styles';
-import { useKeepList, useSetList, useStartCheckout } from './useGiant';
+import { ProductThumb } from './ProductThumb';
+import {
+  useCart,
+  useKeepList,
+  useSetKeepChecked,
+  useSetList,
+  useStartCheckout,
+} from './useGiant';
+
+const ErrorText = ({ error }: { error: Error | null }) =>
+  error && (
+    <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
+      {error.message}
+    </p>
+  );
 
 const ReportSection = ({ title, rows }: { title: string; rows: string[] }) =>
   rows.length === 0 ? null : (
@@ -26,20 +40,27 @@ const ReportSection = ({ title, rows }: { title: string; rows: string[] }) =>
     </div>
   );
 
-// What "Add to cart" did
+// What "Add to cart" did. A real fill's items show in the cart below, so
+// only what went wrong is listed.
 const CartReport = ({ report }: { report: Report }) => (
   <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
     <h2 className='m-0 text-[17px] font-extrabold'>
       {report.dryRun ? 'Dry run' : 'Added to cart'}
     </h2>
+    {!report.dryRun && (
+      <p className='m-0 text-sm font-medium'>
+        {report.added.length} {report.added.length === 1 ? 'item' : 'items'}{' '}
+        added
+      </p>
+    )}
     {report.aborted && (
       <p className='m-0 rounded-xl bg-mist-warn-banner p-3 text-sm font-semibold text-mist-warn-text'>
         Stopped ({report.aborted.reason}): {report.aborted.detail}
       </p>
     )}
     <ReportSection
-      title='Added'
-      rows={report.added.map(
+      title='Would add'
+      rows={(report.dryRun ? report.added : []).map(
         (item) =>
           `${item.qtyAfter} × ${item.name} (${item.size}) ${money(item.price)}`,
       )}
@@ -52,47 +73,197 @@ const CartReport = ({ report }: { report: Report }) => (
       title='Failed'
       rows={report.failed.map((item) => `${item.input.name}: ${item.error}`)}
     />
-    {report.cart && (
-      <p className='m-0 text-sm font-semibold'>
-        Cart: {report.cart.itemCount} items, {money(report.cart.subTotal)}
-        {report.cart.belowMinimum &&
-          ` (below the ${money(report.cart.minimum)} minimum)`}
-      </p>
-    )}
   </section>
 );
 
-// Secondary when "Check out" is the next step. `autoPull` fills it from Keep
-// on mount; "Pull from Keep" does it on demand.
-const PasteList = ({
+const CartSkeleton = () => (
+  <ul
+    className='m-0 flex list-none animate-pulse flex-col p-0'
+    aria-label='Loading the cart'
+  >
+    {[0, 1, 2].map((row) => (
+      <li
+        key={row}
+        className='flex items-center gap-3 border-b border-mist-line py-2 last:border-b-0'
+      >
+        <div className='size-10 shrink-0 rounded-lg bg-mist-skeleton' />
+        <div className='flex flex-1 flex-col gap-1.5'>
+          <div className='h-3.5 w-3/4 rounded-md bg-mist-skeleton-strong' />
+          <div className='h-3 w-1/3 rounded-md bg-mist-skeleton' />
+        </div>
+        <div className='h-3.5 w-14 rounded-md bg-mist-skeleton' />
+      </li>
+    ))}
+  </ul>
+);
+
+// The active cart as Giant has it, however it was filled
+const CartPanel = () => {
+  const cart = useCart();
+  const below =
+    cart.data?.minimum != null && cart.data.subTotal < cart.data.minimum;
+  return (
+    <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
+      <div className='flex items-center justify-between gap-2'>
+        <h2 className='m-0 text-[17px] font-extrabold'>Cart</h2>
+        <button
+          type='button'
+          onClick={() => cart.refetch()}
+          disabled={cart.isFetching}
+          className={linkButton}
+        >
+          {cart.isFetching ? (
+            <LoaderCircle size={15} className='animate-spin' aria-hidden />
+          ) : (
+            <RefreshCw size={15} aria-hidden />
+          )}
+          {cart.isFetching ? 'Loading…' : 'Refresh'}
+        </button>
+      </div>
+      {!cart.data && cart.isFetching && <CartSkeleton />}
+      {cart.data && cart.data.items.length === 0 && (
+        <p className='m-0 text-sm font-medium text-mist-muted'>
+          The cart is empty
+        </p>
+      )}
+      {cart.data && cart.data.items.length > 0 && (
+        <>
+          <ul className='m-0 flex list-none flex-col p-0'>
+            {cart.data.items.map((item) => (
+              <li
+                key={item.prodId}
+                className='flex items-center gap-3 border-b border-mist-line py-2 last:border-b-0'
+              >
+                <ProductThumb product={item.product ?? undefined} />
+                <div className='flex min-w-0 flex-1 flex-col'>
+                  <span className='text-sm font-bold'>{item.name}</span>
+                  {item.product && (
+                    <span className='text-[13px] font-medium text-mist-muted'>
+                      {item.product.size}
+                    </span>
+                  )}
+                </div>
+                <span className='text-right text-[13px] font-semibold tabular-nums'>
+                  {item.quantity} × {money(item.price)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className='m-0 text-sm font-semibold'>
+            Subtotal {money(cart.data.subTotal)}
+            {below &&
+              cart.data.minimum != null &&
+              ` (below the ${money(cart.data.minimum)} minimum)`}
+          </p>
+        </>
+      )}
+      <ErrorText error={cart.error} />
+    </section>
+  );
+};
+
+// The unchecked Keep items. Checking one off updates Keep, so stale items
+// can go before the list starts; the rest become the list.
+const KeepChecklist = ({
+  keep,
   primary,
-  autoPull,
+  pulling,
+  onPull,
+  onPaste,
+}: {
+  keep: KeepList;
+  primary: boolean;
+  pulling: boolean;
+  onPull: () => void;
+  onPaste: () => void;
+}) => {
+  const setChecked = useSetKeepChecked();
+  const setList = useSetList();
+  const open = keep.items.filter((item) => !item.checked);
+  const start = () =>
+    setList.mutate({
+      lines: open.map((item) => ({ text: item.text, keepItemId: item.id })),
+    });
+  return (
+    <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
+      <div className='flex items-center justify-between gap-2'>
+        <h2 className='m-0 text-[15px] font-bold'>Keep list</h2>
+        <button
+          type='button'
+          onClick={onPull}
+          disabled={pulling}
+          className={linkButton}
+        >
+          <RefreshCw size={15} aria-hidden />
+          {pulling ? 'Pulling…' : 'Pull again'}
+        </button>
+      </div>
+      <ul className='m-0 flex list-none flex-col p-0'>
+        {keep.items.map((item) => (
+          <li key={item.id}>
+            <label className='flex cursor-pointer items-center gap-3 py-2 text-[15px] font-semibold'>
+              <input
+                type='checkbox'
+                checked={item.checked}
+                onChange={(event) =>
+                  setChecked.mutate({
+                    noteId: keep.noteId,
+                    itemId: item.id,
+                    checked: event.target.checked,
+                  })
+                }
+                className='size-5 shrink-0 cursor-pointer accent-mist-cyan-text'
+              />
+              <span
+                className={cn(item.checked && 'text-mist-muted line-through')}
+              >
+                {item.text}
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <p className='m-0 text-[13px] font-medium text-mist-muted'>
+        Check off what you don’t need; ordered items get checked once the order
+        is placed
+      </p>
+      <ErrorText error={setChecked.error} />
+      <button
+        type='button'
+        className={primary ? primaryButton : secondaryButton}
+        disabled={setList.isPending || open.length === 0}
+        onClick={start}
+      >
+        {setList.isPending
+          ? 'Saving…'
+          : `Start with ${open.length} ${open.length === 1 ? 'item' : 'items'}`}
+      </button>
+      <ErrorText error={setList.error} />
+      <button
+        type='button'
+        onClick={onPaste}
+        className={cn(linkButton, 'self-center')}
+      >
+        Paste a list instead
+      </button>
+    </section>
+  );
+};
+
+const PasteForm = ({
+  primary,
+  keepList,
 }: {
   primary: boolean;
-  autoPull: boolean;
+  keepList: ReturnType<typeof useKeepList>;
 }) => {
   const [text, setText] = useState('');
   const [empty, setEmpty] = useState(false);
-  // Stays through edits, so quantities can be added after pulling
-  const [keep, setKeep] = useState<KeepList | null>(null);
   const setList = useSetList();
-  const keepList = useKeepList(autoPull);
-  // Fills the textarea each time a pull answers
-  const [pulledAt, setPulledAt] = useState(0);
-  if (keepList.data && keepList.dataUpdatedAt !== pulledAt) {
-    const { items } = keepList.data;
-    setPulledAt(keepList.dataUpdatedAt);
-    if (items.length > 0) {
-      setText(items.map((item) => item.text).join('\n'));
-      setKeep(keepList.data);
-      setEmpty(false);
-    }
-  }
-  const pullEmpty = keepList.data?.items.length === 0;
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!text.trim()) return setEmpty(true);
-    setList.mutate({ text, keep });
+    setList.mutate({ text });
   };
   return (
     <form
@@ -107,7 +278,7 @@ const PasteList = ({
           type='button'
           onClick={() => keepList.refetch()}
           disabled={keepList.isFetching}
-          className='flex cursor-pointer items-center gap-1.5 text-[13px] font-bold text-mist-cyan-text disabled:cursor-default disabled:opacity-50'
+          className={linkButton}
         >
           <Download size={15} aria-hidden />
           {keepList.isFetching ? 'Pulling…' : 'Pull from Keep'}
@@ -124,12 +295,7 @@ const PasteList = ({
         placeholder={'Oat milk\nSoy sauce\nCider TWO'}
         className='rounded-xl border border-mist-line bg-mist-surface p-3 text-[15px] leading-6'
       />
-      {keep && (
-        <p className='m-0 text-[13px] font-medium text-mist-muted'>
-          Ordered items get checked off in Keep
-        </p>
-      )}
-      {pullEmpty && !text && (
+      {keepList.data?.items.length === 0 && (
         <p className='m-0 text-[13px] font-medium text-mist-muted'>
           Nothing unchecked in Keep
         </p>
@@ -139,11 +305,7 @@ const PasteList = ({
           Add at least one item
         </p>
       )}
-      {keepList.error && (
-        <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
-          {keepList.error.message}
-        </p>
-      )}
+      <ErrorText error={keepList.error} />
       <button
         type='submit'
         className={primary ? primaryButton : secondaryButton}
@@ -151,13 +313,40 @@ const PasteList = ({
       >
         {setList.isPending ? 'Saving…' : 'Start'}
       </button>
-      {setList.error && (
-        <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
-          {setList.error.message}
-        </p>
-      )}
+      <ErrorText error={setList.error} />
     </form>
   );
+};
+
+// Secondary when "Check out" is the next step. `autoPull` pulls the Keep list
+// on mount; "Pull from Keep" does it on demand.
+const NewList = ({
+  primary,
+  autoPull,
+}: {
+  primary: boolean;
+  autoPull: boolean;
+}) => {
+  const keepList = useKeepList(autoPull);
+  const [pasting, setPasting] = useState(false);
+  // A new pull shows the checklist again
+  const [pulledAt, setPulledAt] = useState(0);
+  if (keepList.dataUpdatedAt !== pulledAt) {
+    setPulledAt(keepList.dataUpdatedAt);
+    setPasting(false);
+  }
+  if (!pasting && keepList.data && keepList.data.items.length > 0) {
+    return (
+      <KeepChecklist
+        keep={keepList.data}
+        primary={primary}
+        pulling={keepList.isFetching}
+        onPull={() => keepList.refetch()}
+        onPaste={() => setPasting(true)}
+      />
+    );
+  }
+  return <PasteForm primary={primary} keepList={keepList} />;
 };
 
 // No list open: what the last "Add to cart" did, checkout, or a new list
@@ -172,6 +361,7 @@ export const StartStage = ({ filled }: { filled: CartResponse | null }) => {
         <p className='m-0 text-[15px] font-medium'>{filled.summary}</p>
       )}
       {report && <CartReport report={report} />}
+      <CartPanel />
       {canCheckOut && (
         <div className='flex flex-col gap-2'>
           <button
@@ -193,7 +383,7 @@ export const StartStage = ({ filled }: { filled: CartResponse | null }) => {
           )}
         </div>
       )}
-      <PasteList primary={!report || !canCheckOut} autoPull={!filled} />
+      <NewList primary={!report || !canCheckOut} autoPull={!filled} />
     </>
   );
 };
