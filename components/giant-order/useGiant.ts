@@ -88,12 +88,26 @@ const useListChange = () => {
   };
 };
 
-// `text` is the list as pasted, one item per line
+// The unchecked items of the Keep "Giant" list
+export const usePullKeep = () =>
+  useMutation({
+    mutationFn: async (): Promise<string[]> =>
+      (await call('GET', 'keep')).items,
+  });
+
+// `text` is the list as pasted, one item per line. `fromKeep` links its lines
+// to the Keep items they came from, checked once the order is placed.
 export const useSetList = () => {
   const onLines = useListChange();
   return useMutation({
-    mutationFn: async (text: string): Promise<GroceryLine[]> =>
-      (await call('PUT', 'list', { text })).lines,
+    mutationFn: async ({
+      text,
+      fromKeep,
+    }: {
+      text: string;
+      fromKeep: boolean;
+    }): Promise<GroceryLine[]> =>
+      (await call('PUT', 'list', { text, fromKeep })).lines,
     onSuccess: onLines,
   });
 };

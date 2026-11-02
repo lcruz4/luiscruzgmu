@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { CheckoutResult } from '@/types/giantOrder';
+import type { CheckoutResult, KeepCheck } from '@/types/giantOrder';
 import { cardClass, money, primaryButton } from './styles';
 
 const cutoffLabel = (cutoff: string) =>
@@ -18,6 +18,20 @@ const Row = ({ label, value }: { label: string; value: string }) => (
     <span className='text-right font-semibold'>{value}</span>
   </div>
 );
+
+const KeepRows = ({ keep }: { keep: KeepCheck }) =>
+  keep.checked.length + keep.failed.length === 0 ? null : (
+    <div className='flex w-full flex-col gap-1 text-sm font-medium'>
+      {keep.checked.length > 0 && (
+        <p className='m-0'>Checked in Keep: {keep.checked.join(', ')}</p>
+      )}
+      {keep.failed.length > 0 && (
+        <p className='m-0 text-mist-pink-text'>
+          Couldn’t check in Keep: {keep.failed.join(', ')}
+        </p>
+      )}
+    </div>
+  );
 
 export const ResultCard = ({
   result,
@@ -47,6 +61,7 @@ export const ResultCard = ({
             <Row label='Edit until' value={cutoffLabel(result.cutoffTime)} />
           )}
         </div>
+        {result.keep && <KeepRows keep={result.keep} />}
       </>
     ) : (
       <div className='text-center'>

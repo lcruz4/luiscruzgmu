@@ -1,3 +1,4 @@
+import { Download } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { CartResponse, Report } from '@/types/giantOrder';
@@ -8,7 +9,7 @@ import {
   primaryButton,
   secondaryButton,
 } from './styles';
-import { useSetList, useStartCheckout } from './useGiant';
+import { usePullKeep, useSetList, useStartCheckout } from './useGiant';
 
 const ReportSection = ({ title, rows }: { title: string; rows: string[] }) =>
   rows.length === 0 ? null : (
@@ -64,20 +65,42 @@ const CartReport = ({ report }: { report: Report }) => (
 const PasteList = ({ primary }: { primary: boolean }) => {
   const [text, setText] = useState('');
   const [empty, setEmpty] = useState(false);
+  // Stays on through edits, so quantities can be added after pulling
+  const [fromKeep, setFromKeep] = useState(false);
   const setList = useSetList();
+  const pullKeep = usePullKeep();
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!text.trim()) return setEmpty(true);
-    setList.mutate(text);
+    setList.mutate({ text, fromKeep });
   };
+  const pull = () =>
+    pullKeep.mutate(undefined, {
+      onSuccess: (items) => {
+        setText(items.join('\n'));
+        setFromKeep(items.length > 0);
+        setEmpty(items.length === 0);
+      },
+    });
   return (
     <form
       onSubmit={submit}
       className={cn(cardClass, 'flex flex-col gap-3 p-4')}
     >
-      <label htmlFor='grocery-list' className='text-[15px] font-bold'>
-        Paste your list
-      </label>
+      <div className='flex items-center justify-between gap-2'>
+        <label htmlFor='grocery-list' className='text-[15px] font-bold'>
+          Paste your list
+        </label>
+        <button
+          type='button'
+          onClick={pull}
+          disabled={pullKeep.isPending}
+          className='flex cursor-pointer items-center gap-1.5 text-[13px] font-bold text-mist-cyan-text disabled:cursor-default disabled:opacity-50'
+        >
+          <Download size={15} aria-hidden />
+          {pullKeep.isPending ? 'Pulling…' : 'Pull from Keep'}
+        </button>
+      </div>
       <textarea
         id='grocery-list'
         rows={8}
@@ -89,9 +112,21 @@ const PasteList = ({ primary }: { primary: boolean }) => {
         placeholder={'Oat milk\nSoy sauce\nCider TWO'}
         className='rounded-xl border border-mist-line bg-mist-surface p-3 text-[15px] leading-6'
       />
+      {fromKeep && (
+        <p className='m-0 text-[13px] font-medium text-mist-muted'>
+          Ordered items get checked off in Keep
+        </p>
+      )}
       {empty && (
         <p className='m-0 text-[13px] text-mist-pink-text'>
-          Add at least one item
+          {pullKeep.isSuccess
+            ? 'Nothing unchecked in Keep'
+            : 'Add at least one item'}
+        </p>
+      )}
+      {pullKeep.error && (
+        <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
+          {pullKeep.error.message}
         </p>
       )}
       <button
