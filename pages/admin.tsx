@@ -14,10 +14,7 @@ const SITEMAP = [
     label: 'Workout tracker: History',
   },
   { href: '/projects/workout-tracker/plan', label: 'Workout tracker: Plan' },
-  {
-    href: '/projects/workout-tracker/sign-in',
-    label: 'Workout tracker: Sign in',
-  },
+  { href: '/sign-in', label: 'Sign in' },
 ];
 
 const AdminPage = ({ email }: { email: string }) => (

@@ -11,12 +11,12 @@ export const authLogoutUrl = (redirectTo: string) =>
     redirectTo,
   })}`;
 
-export const SIGN_IN_PATH = '/projects/workout-tracker/sign-in';
-const DEFAULT_RETURN_PATH = '/projects/workout-tracker';
+export const SIGN_IN_PATH = '/sign-in';
+const DEFAULT_RETURN_PATH = '/';
 const BASE = 'http://base.invalid';
 
 // Same-origin path from a `returnTo` param; anything else (`//evil.com`,
-// absolute URLs, arrays) falls back to the tracker.
+// absolute URLs, arrays) falls back to the home page.
 export const safeReturnPath = (returnTo: unknown) => {
   if (typeof returnTo !== 'string' || !returnTo) return DEFAULT_RETURN_PATH;
   try {

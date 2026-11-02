@@ -1,38 +1,18 @@
+import { ShoppingCart, SlidersHorizontal } from 'lucide-react';
 import { Raleway } from 'next/font/google';
 import Head from 'next/head';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
 import type { ReactNode } from 'react';
+import { TabBar } from '@/components/mist/TabBar';
 import { cn } from '@/lib/utils';
 
 const raleway = Raleway({ subsets: ['latin'], variable: '--font-raleway' });
 
-const TABS = [
-  { href: '/projects/giant-order-tool', label: 'Order' },
-  { href: '/projects/giant-order-tool/defaults', label: 'Defaults' },
-];
+const HOME = '/projects/giant-order-tool';
 
-const Tabs = () => {
-  const { pathname } = useRouter();
-  return (
-    <nav className='flex gap-1 rounded-[14px] bg-mist-header p-1'>
-      {TABS.map(({ href, label }) => (
-        <Link
-          key={href}
-          href={href}
-          aria-current={pathname === href ? 'page' : undefined}
-          className={cn(
-            'flex h-9 flex-1 items-center justify-center rounded-[10px] text-sm font-bold text-mist-muted no-underline',
-            pathname === href &&
-              'bg-mist-surface text-mist-text shadow-mist-card',
-          )}
-        >
-          {label}
-        </Link>
-      ))}
-    </nav>
-  );
-};
+const TABS = [
+  { href: HOME, label: 'Order', Icon: ShoppingCart },
+  { href: `${HOME}/defaults`, label: 'Defaults', Icon: SlidersHorizontal },
+];
 
 export const GiantLayout = ({ children }: { children: ReactNode }) => (
   <div
@@ -57,9 +37,9 @@ export const GiantLayout = ({ children }: { children: ReactNode }) => (
       {/* _app's body is black; this colours the overscroll area instead */}
       <style>{'html { background: var(--color-mist-ground); }'}</style>
     </Head>
-    <div className='mx-auto flex min-h-dvh w-full sm:max-w-md flex-col gap-4 px-4 py-5'>
-      <Tabs />
-      {children}
+    <div className='mx-auto flex min-h-dvh w-full sm:max-w-md flex-col'>
+      <main className='flex flex-1 flex-col gap-4 px-4 py-5'>{children}</main>
+      <TabBar label='Giant order' tabs={TABS} home={HOME} />
     </div>
   </div>
 );
