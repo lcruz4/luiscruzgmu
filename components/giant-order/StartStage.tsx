@@ -76,6 +76,27 @@ const CartReport = ({ report }: { report: Report }) => (
   </section>
 );
 
+const CartSkeleton = () => (
+  <ul
+    className='m-0 flex list-none animate-pulse flex-col p-0'
+    aria-label='Loading the cart'
+  >
+    {[0, 1, 2].map((row) => (
+      <li
+        key={row}
+        className='flex items-center gap-3 border-b border-mist-line py-2 last:border-b-0'
+      >
+        <div className='size-10 shrink-0 rounded-lg bg-mist-skeleton' />
+        <div className='flex flex-1 flex-col gap-1.5'>
+          <div className='h-3.5 w-3/4 rounded-md bg-mist-skeleton-strong' />
+          <div className='h-3 w-1/3 rounded-md bg-mist-skeleton' />
+        </div>
+        <div className='h-3.5 w-14 rounded-md bg-mist-skeleton' />
+      </li>
+    ))}
+  </ul>
+);
+
 // The active cart as Giant has it, however it was filled
 const CartPanel = () => {
   const cart = useCart();
@@ -99,6 +120,7 @@ const CartPanel = () => {
           {cart.isFetching ? 'Loading…' : 'Refresh'}
         </button>
       </div>
+      {!cart.data && cart.isFetching && <CartSkeleton />}
       {cart.data && cart.data.items.length === 0 && (
         <p className='m-0 text-sm font-medium text-mist-muted'>
           The cart is empty
