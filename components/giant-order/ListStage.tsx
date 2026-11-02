@@ -10,10 +10,10 @@ import { cn } from '@/lib/utils';
 import type {
   CartResponse,
   GroceryLine,
-  Product,
   Question,
   Review,
 } from '@/types/giantOrder';
+import { ProductThumb } from './ProductThumb';
 import { QuestionPanel } from './QuestionPanel';
 import { cardClass, money, primaryButton, secondaryButton } from './styles';
 import { useClearList, useFillCart, useQuestion } from './useGiant';
@@ -50,29 +50,16 @@ const statusText = (line: GroceryLine) => {
   return null;
 };
 
-const Thumb = ({ product }: { product: Product }) =>
-  product.image ? (
-    <img
-      src={product.image.small}
-      alt=''
-      className='size-10 shrink-0 rounded-lg bg-mist-surface object-contain'
-    />
-  ) : (
-    <div className='size-10 shrink-0 rounded-lg bg-mist-raised' />
-  );
-
 const LineRow = ({
   line,
-  product,
   question,
   initialQuantity,
 }: {
   line: GroceryLine;
-  // Known once every line is answered
-  product: Product | undefined;
   question: Question | null;
   initialQuantity: number;
 }) => {
+  const { product } = line;
   const open = question?.lineId === line.id;
   const merging =
     question?.kind === 'total' && question.mergeIds.includes(line.id);
@@ -81,7 +68,7 @@ const LineRow = ({
     <li className='flex flex-col gap-2 border-b border-mist-line py-3 last:border-b-0'>
       <div className='flex items-center gap-3'>
         {product ? (
-          <Thumb product={product} />
+          <ProductThumb product={product} />
         ) : (
           <StatusIcon line={line} open={open} />
         )}
@@ -102,7 +89,7 @@ const LineRow = ({
         </div>
         {product ? (
           <span className='text-right text-[13px] font-semibold tabular-nums'>
-            {line.quantity} × {money(product.price)}
+            {line.quantity ?? '?'} × {money(product.price)}
           </span>
         ) : merging ? (
           <span className='text-[13px] font-semibold text-mist-cyan-text'>
@@ -187,9 +174,6 @@ export const ListStage = ({
   const clear = useClearList();
   const question = data?.question ?? null;
   const review = data?.review ?? null;
-  const products = new Map(
-    review?.items.map((item) => [item.prodId, item.product]),
-  );
   const done = lines.filter(
     ({ status }) => status === 'resolved' || status === 'skipped',
   ).length;
@@ -251,9 +235,6 @@ export const ListStage = ({
             <LineRow
               key={line.id}
               line={line}
-              product={
-                line.prodId === null ? undefined : products.get(line.prodId)
-              }
               question={question}
               initialQuantity={initialQuantity}
             />

@@ -1,16 +1,21 @@
-import { Download } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import type { KeepList } from '@/lib/giantKeepLinks';
 import { cn } from '@/lib/utils';
-import type { CartResponse, Report } from '@/types/giantOrder';
+import type { CartResponse, KeepList, Report } from '@/types/giantOrder';
 import {
   cardClass,
   labelClass,
+  linkButton,
   money,
   primaryButton,
   secondaryButton,
 } from './styles';
-import { useKeepList, useSetList, useStartCheckout } from './useGiant';
+import {
+  useKeepList,
+  useSetKeepChecked,
+  useSetList,
+  useStartCheckout,
+} from './useGiant';
 
 const ReportSection = ({ title, rows }: { title: string; rows: string[] }) =>
   rows.length === 0 ? null : (
@@ -62,37 +67,115 @@ const CartReport = ({ report }: { report: Report }) => (
   </section>
 );
 
-// Secondary when "Check out" is the next step. `autoPull` fills it from Keep
-// on mount; "Pull from Keep" does it on demand.
-const PasteList = ({
+const ErrorText = ({ error }: { error: Error | null }) =>
+  error && (
+    <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
+      {error.message}
+    </p>
+  );
+
+// The unchecked Keep items. Checking one off updates Keep, so stale items
+// can go before the list starts; the rest become the list.
+const KeepChecklist = ({
+  keep,
   primary,
-  autoPull,
+  pulling,
+  onPull,
+  onPaste,
+}: {
+  keep: KeepList;
+  primary: boolean;
+  pulling: boolean;
+  onPull: () => void;
+  onPaste: () => void;
+}) => {
+  const setChecked = useSetKeepChecked();
+  const setList = useSetList();
+  const open = keep.items.filter((item) => !item.checked);
+  const start = () =>
+    setList.mutate({
+      lines: open.map((item) => ({ text: item.text, keepItemId: item.id })),
+    });
+  return (
+    <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
+      <div className='flex items-center justify-between gap-2'>
+        <h2 className='m-0 text-[15px] font-bold'>Keep list</h2>
+        <button
+          type='button'
+          onClick={onPull}
+          disabled={pulling}
+          className={linkButton}
+        >
+          <RefreshCw size={15} aria-hidden />
+          {pulling ? 'Pulling…' : 'Pull again'}
+        </button>
+      </div>
+      <ul className='m-0 flex list-none flex-col p-0'>
+        {keep.items.map((item) => (
+          <li key={item.id}>
+            <label className='flex cursor-pointer items-center gap-3 py-2 text-[15px] font-semibold'>
+              <input
+                type='checkbox'
+                checked={item.checked}
+                onChange={(event) =>
+                  setChecked.mutate({
+                    noteId: keep.noteId,
+                    itemId: item.id,
+                    checked: event.target.checked,
+                  })
+                }
+                className='size-5 shrink-0 cursor-pointer accent-mist-cyan-text'
+              />
+              <span
+                className={cn(item.checked && 'text-mist-muted line-through')}
+              >
+                {item.text}
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <p className='m-0 text-[13px] font-medium text-mist-muted'>
+        Check off what you don’t need; ordered items get checked once the order
+        is placed
+      </p>
+      <ErrorText error={setChecked.error} />
+      <button
+        type='button'
+        className={primary ? primaryButton : secondaryButton}
+        disabled={setList.isPending || open.length === 0}
+        onClick={start}
+      >
+        {setList.isPending
+          ? 'Saving…'
+          : `Start with ${open.length} ${open.length === 1 ? 'item' : 'items'}`}
+      </button>
+      <ErrorText error={setList.error} />
+      <button
+        type='button'
+        onClick={onPaste}
+        className={cn(linkButton, 'self-center')}
+      >
+        Paste a list instead
+      </button>
+    </section>
+  );
+};
+
+const PasteForm = ({
+  primary,
+  keepList,
 }: {
   primary: boolean;
-  autoPull: boolean;
+  keepList: ReturnType<typeof useKeepList>;
 }) => {
   const [text, setText] = useState('');
   const [empty, setEmpty] = useState(false);
-  // Stays through edits, so quantities can be added after pulling
-  const [keep, setKeep] = useState<KeepList | null>(null);
   const setList = useSetList();
-  const keepList = useKeepList(autoPull);
-  // Fills the textarea each time a pull answers
-  const [pulledAt, setPulledAt] = useState(0);
-  if (keepList.data && keepList.dataUpdatedAt !== pulledAt) {
-    const { items } = keepList.data;
-    setPulledAt(keepList.dataUpdatedAt);
-    if (items.length > 0) {
-      setText(items.map((item) => item.text).join('\n'));
-      setKeep(keepList.data);
-      setEmpty(false);
-    }
-  }
-  const pullEmpty = keepList.data?.items.length === 0;
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!text.trim()) return setEmpty(true);
-    setList.mutate({ text, keep });
+    setList.mutate({ text });
   };
   return (
     <form
@@ -107,7 +190,7 @@ const PasteList = ({
           type='button'
           onClick={() => keepList.refetch()}
           disabled={keepList.isFetching}
-          className='flex cursor-pointer items-center gap-1.5 text-[13px] font-bold text-mist-cyan-text disabled:cursor-default disabled:opacity-50'
+          className={linkButton}
         >
           <Download size={15} aria-hidden />
           {keepList.isFetching ? 'Pulling…' : 'Pull from Keep'}
@@ -124,12 +207,7 @@ const PasteList = ({
         placeholder={'Oat milk\nSoy sauce\nCider TWO'}
         className='rounded-xl border border-mist-line bg-mist-surface p-3 text-[15px] leading-6'
       />
-      {keep && (
-        <p className='m-0 text-[13px] font-medium text-mist-muted'>
-          Ordered items get checked off in Keep
-        </p>
-      )}
-      {pullEmpty && !text && (
+      {keepList.data?.items.length === 0 && (
         <p className='m-0 text-[13px] font-medium text-mist-muted'>
           Nothing unchecked in Keep
         </p>
@@ -139,11 +217,7 @@ const PasteList = ({
           Add at least one item
         </p>
       )}
-      {keepList.error && (
-        <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
-          {keepList.error.message}
-        </p>
-      )}
+      <ErrorText error={keepList.error} />
       <button
         type='submit'
         className={primary ? primaryButton : secondaryButton}
@@ -151,13 +225,40 @@ const PasteList = ({
       >
         {setList.isPending ? 'Saving…' : 'Start'}
       </button>
-      {setList.error && (
-        <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
-          {setList.error.message}
-        </p>
-      )}
+      <ErrorText error={setList.error} />
     </form>
   );
+};
+
+// Secondary when "Check out" is the next step. `autoPull` pulls the Keep list
+// on mount; "Pull from Keep" does it on demand.
+const NewList = ({
+  primary,
+  autoPull,
+}: {
+  primary: boolean;
+  autoPull: boolean;
+}) => {
+  const keepList = useKeepList(autoPull);
+  const [pasting, setPasting] = useState(false);
+  // A new pull shows the checklist again
+  const [pulledAt, setPulledAt] = useState(0);
+  if (keepList.dataUpdatedAt !== pulledAt) {
+    setPulledAt(keepList.dataUpdatedAt);
+    setPasting(false);
+  }
+  if (!pasting && keepList.data && keepList.data.items.length > 0) {
+    return (
+      <KeepChecklist
+        keep={keepList.data}
+        primary={primary}
+        pulling={keepList.isFetching}
+        onPull={() => keepList.refetch()}
+        onPaste={() => setPasting(true)}
+      />
+    );
+  }
+  return <PasteForm primary={primary} keepList={keepList} />;
 };
 
 // No list open: what the last "Add to cart" did, checkout, or a new list
@@ -193,7 +294,7 @@ export const StartStage = ({ filled }: { filled: CartResponse | null }) => {
           )}
         </div>
       )}
-      <PasteList primary={!report || !canCheckOut} autoPull={!filled} />
+      <NewList primary={!report || !canCheckOut} autoPull={!filled} />
     </>
   );
 };

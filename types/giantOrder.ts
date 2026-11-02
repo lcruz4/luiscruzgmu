@@ -7,6 +7,7 @@ export type ProductImage = {
   xlarge: string;
 };
 
+// giant-cart's ProductCard
 export type Product = {
   prodId: number;
   name: string;
@@ -15,7 +16,7 @@ export type Product = {
   price: number;
   regularPrice: number;
   sale: boolean;
-  outOfStock: boolean;
+  saleTitle: string | null;
   unitPrice: number | null;
   unitMeasure: string | null;
   image: ProductImage | null;
@@ -32,7 +33,13 @@ export type Reply =
   | { kind: 'confirm'; yes: boolean }
   | { kind: 'quantity'; quantity: number };
 
-export type PickChoice = { name: string; value: PickReply; disabled?: string };
+export type PickChoice = {
+  name: string;
+  value: PickReply;
+  disabled?: string;
+  // Product choices only; missing when Giant no longer sells it
+  product?: Product & { boughtBefore: boolean };
+};
 
 export type Question =
   | {
@@ -64,6 +71,10 @@ export type GroceryLine = {
   prodId: number | null;
   status: LineStatus;
   question: Question | null;
+  // The Keep items it came from; merged lines keep them all
+  keepItemIds: string[];
+  // Null until it has one, or once Giant stops selling it
+  product: Product | null;
 };
 
 export type ReviewItem = {
@@ -151,6 +162,10 @@ export type CheckoutQuestion =
       amount: number;
     };
 
+export type KeepItem = { id: string; text: string; checked: boolean };
+
+export type KeepList = { noteId: string; items: KeepItem[] };
+
 // Keep "Giant" items checked off once the order is placed
 export type KeepCheck = { checked: string[]; failed: string[] };
 
@@ -163,6 +178,8 @@ export type CheckoutResult =
       card: string;
       total: number;
       cutoffTime: string | null;
+      // Keep items to check off: the lines that went in this cart
+      keepItemIds: string[];
     }
   | { kind: 'cancelled'; reservedSlot: string | null };
 

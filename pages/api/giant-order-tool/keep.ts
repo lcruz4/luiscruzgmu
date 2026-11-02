@@ -1,70 +1,84 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAuthenticatedEmail } from '@/services/auth';
-import { checkItem, getGiantList, KeepApiError } from '@/services/keep';
+import { getGiantList, KeepApiError, setChecked } from '@/services/keep';
 import { logger } from '@/services/logger';
-import type { KeepCheck } from '@/types/giantOrder';
+import type { KeepCheck, KeepList } from '@/types/giantOrder';
 
-type CheckLink = { noteId: string; itemId: string; text: string };
+const isStrings = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
 
-const isCheckLink = (value: unknown): value is CheckLink =>
-  typeof value === 'object' &&
-  value !== null &&
-  'noteId' in value &&
-  typeof value.noteId === 'string' &&
-  'itemId' in value &&
-  typeof value.itemId === 'string' &&
-  'text' in value &&
-  typeof value.text === 'string';
-
-const checkLinks = async (links: CheckLink[]): Promise<KeepCheck> => {
+// giant-cart's placed order hands back the ids; ones no longer unchecked in
+// Keep (checked or deleted since) are skipped
+const checkOrdered = async (itemIds: string[]): Promise<KeepCheck> => {
+  const { noteId, items } = await getGiantList();
+  const ids = new Set(itemIds);
   const result: KeepCheck = { checked: [], failed: [] };
-  for (const link of links) {
+  for (const item of items) {
+    if (!ids.has(item.id)) continue;
     try {
-      await checkItem(link.noteId, link.itemId);
-      result.checked.push(link.text);
+      await setChecked(noteId, item.id, true);
+      result.checked.push(item.text);
     } catch (error) {
-      // Deleted in Keep since it was pulled: nothing left to check
       if (error instanceof KeepApiError && error.status === 404) continue;
-      logger.error(`Checking "${link.text}" in Keep failed:`, error);
-      result.failed.push(link.text);
+      logger.error(`Checking "${item.text}" in Keep failed:`, error);
+      result.failed.push(item.text);
     }
   }
   return result;
 };
 
-// GET: the unchecked items of the Keep "Giant" list, to fill the list.
-// POST `{ links }`: checks the ordered items in Keep.
+const sendError = (res: NextApiResponse, error: unknown) => {
+  logger.error('Keep request failed:', error);
+  if (error instanceof KeepApiError && error.status === 404) {
+    return res.status(404).json({ error: error.message });
+  }
+  return res.status(503).json({
+    error:
+      error instanceof KeepApiError ? error.message : 'Couldn’t reach Keep',
+  });
+};
+
+// GET: the unchecked items of the Keep "Giant" list.
+// PATCH `{ noteId, itemId, checked }`: checks or unchecks one item.
+// POST `{ itemIds }`: checks the ordered items.
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  if (req.method !== 'GET' && req.method !== 'POST') {
+  if (!['GET', 'PATCH', 'POST'].includes(req.method ?? '')) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   if (!(await getAuthenticatedEmail(req, 'giant-order-tool'))) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (req.method === 'POST') {
-    const links: unknown = req.body?.links;
-    if (!Array.isArray(links) || !links.every(isCheckLink)) {
-      return res.status(400).json({ error: 'Invalid links' });
-    }
-    return res.status(200).json(await checkLinks(links));
-  }
-
   try {
-    const { noteId, items } = await getGiantList();
-    return res.status(200).json({
-      noteId,
-      items: items.map(({ id, text }) => ({ id, text })),
-    });
-  } catch (error) {
-    logger.error('Pulling the Keep list failed:', error);
-    if (error instanceof KeepApiError && error.status === 404) {
-      return res.status(404).json({ error: error.message });
+    if (req.method === 'POST') {
+      const itemIds: unknown = req.body?.itemIds;
+      if (!isStrings(itemIds)) {
+        return res.status(400).json({ error: 'Invalid itemIds' });
+      }
+      return res.status(200).json(await checkOrdered(itemIds));
     }
-    return res.status(503).json({
-      error:
-        error instanceof KeepApiError ? error.message : 'Couldn’t reach Keep',
-    });
+
+    if (req.method === 'PATCH') {
+      const { noteId, itemId, checked } = req.body ?? {};
+      if (
+        typeof noteId !== 'string' ||
+        typeof itemId !== 'string' ||
+        typeof checked !== 'boolean'
+      ) {
+        return res.status(400).json({ error: 'Invalid item' });
+      }
+      await setChecked(noteId, itemId, checked);
+      return res.status(200).json({ checked });
+    }
+
+    const { noteId, items } = await getGiantList();
+    const list: KeepList = {
+      noteId,
+      items: items.map(({ id, text }) => ({ id, text, checked: false })),
+    };
+    return res.status(200).json(list);
+  } catch (error) {
+    return sendError(res, error);
   }
 };
 

@@ -43,7 +43,9 @@ const GiantOrder = () => {
   const checkKeep = useCheckKeep();
   const onResult = (checkoutResult: CheckoutResult) => {
     setResult(checkoutResult);
-    if (checkoutResult.kind === 'placed') checkKeep.mutate();
+    if (checkoutResult.kind === 'placed') {
+      checkKeep.mutate(checkoutResult.keepItemIds);
+    }
   };
   const list = useList();
   const listEmpty = list.data?.length === 0;

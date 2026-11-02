@@ -1,11 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  addedLinks,
-  forgetLinks,
-  type KeepList,
-  linkOpenList,
-  markAdded,
-} from '@/lib/giantKeepLinks';
 import type {
   CartResponse,
   CheckoutQuestion,
@@ -13,6 +6,7 @@ import type {
   CheckoutResponse,
   GroceryLine,
   KeepCheck,
+  KeepList,
   QuestionResponse,
   Reply,
 } from '@/types/giantOrder';
@@ -20,6 +14,7 @@ import type {
 const LIST_KEY = ['giant-order', 'list'];
 const QUESTION_KEY = ['giant-order', 'question'];
 const CHECKOUT_KEY = ['giant-order', 'checkout'];
+const KEEP_KEY = ['giant-order', 'keep'];
 
 // Its message and reason are giant-cart serve's own `error` and `reason`, or
 // the proxy's when serve can't be reached
@@ -101,7 +96,7 @@ const useListChange = () => {
 // fresh.
 export const useKeepList = (enabled: boolean) =>
   useQuery<KeepList>({
-    queryKey: ['giant-order', 'keep'],
+    queryKey: KEEP_KEY,
     queryFn: () => call('GET', 'keep'),
     enabled,
     gcTime: 0,
@@ -109,24 +104,40 @@ export const useKeepList = (enabled: boolean) =>
     retry: false,
   });
 
-// `text` is the list as pasted, one item per line. With `keep`, its lines are
-// linked to the Keep items they came from, checked once the order is placed.
+// Checks or unchecks one Keep item, showing the change right away
+export const useSetKeepChecked = () => {
+  const queryClient = useQueryClient();
+  const setItem = (itemId: string, checked: boolean) =>
+    queryClient.setQueryData<KeepList>(
+      KEEP_KEY,
+      (keep) =>
+        keep && {
+          ...keep,
+          items: keep.items.map((item) =>
+            item.id === itemId ? { ...item, checked } : item,
+          ),
+        },
+    );
+  return useMutation({
+    mutationFn: (body: { noteId: string; itemId: string; checked: boolean }) =>
+      call('PATCH', 'keep', body),
+    onMutate: ({ itemId, checked }) => setItem(itemId, checked),
+    onError: (_error, { itemId, checked }) => setItem(itemId, !checked),
+  });
+};
+
+// `text` is a pasted list; `lines` one per Keep item, so giant-cart hands
+// their ids back once the order is placed
+type ListBody =
+  | { text: string }
+  | { lines: { text: string; keepItemId: string }[] };
+
 export const useSetList = () => {
   const onLines = useListChange();
   return useMutation({
-    mutationFn: async ({
-      text,
-    }: {
-      text: string;
-      keep: KeepList | null;
-    }): Promise<GroceryLine[]> => (await call('PUT', 'list', { text })).lines,
-    onSuccess: (lines, { keep }) => {
-      onLines(lines);
-      linkOpenList(
-        lines.map((line) => line.name),
-        keep,
-      );
-    },
+    mutationFn: async (body: ListBody): Promise<GroceryLine[]> =>
+      (await call('PUT', 'list', body)).lines,
+    onSuccess: onLines,
   });
 };
 
@@ -135,10 +146,7 @@ export const useClearList = () => {
   return useMutation({
     mutationFn: async (): Promise<GroceryLine[]> =>
       (await call('DELETE', 'list')).lines,
-    onSuccess: (lines) => {
-      onLines(lines);
-      linkOpenList([], null);
-    },
+    onSuccess: onLines,
   });
 };
 
@@ -160,11 +168,6 @@ export const useFillCart = () => {
   return useMutation({
     mutationFn: (dryRun: boolean): Promise<CartResponse> =>
       call('POST', 'cart', { dryRun }),
-    onSuccess: ({ report }) => {
-      if (report && !report.dryRun && !report.aborted) {
-        markAdded(report.added.map((item) => item.input.name));
-      }
-    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: LIST_KEY }),
   });
 };
@@ -201,11 +204,6 @@ export const useCancelCheckout = () => {
 // Order placed: checks the ordered items in Keep. Null when none came from Keep.
 export const useCheckKeep = () =>
   useMutation({
-    mutationFn: async (): Promise<KeepCheck | null> => {
-      const links = addedLinks();
-      if (links.length === 0) return null;
-      const result: KeepCheck = await call('POST', 'keep', { links });
-      forgetLinks(links);
-      return result;
-    },
+    mutationFn: async (itemIds: string[]): Promise<KeepCheck | null> =>
+      itemIds.length === 0 ? null : call('POST', 'keep', { itemIds }),
   });

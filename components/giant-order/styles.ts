@@ -11,4 +11,7 @@ export const primaryButton = `${buttonBase} bg-mist-cyan font-extrabold text-mis
 
 export const secondaryButton = `${buttonBase} border border-mist-line bg-mist-surface text-mist-text`;
 
+export const linkButton =
+  'flex cursor-pointer items-center gap-1.5 text-[13px] font-bold text-mist-cyan-text disabled:cursor-default disabled:opacity-50';
+
 export const money = (value: number) => `$${value.toFixed(2)}`;
