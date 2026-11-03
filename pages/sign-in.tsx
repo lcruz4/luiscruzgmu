@@ -38,7 +38,13 @@ const logIn = (returnTo: string | null) => {
   );
 };
 
-const SignInPage = () => {
+const REQUEST_PLAN_HREF = `mailto:workouttrackerrequest@lcruz.dev?subject=${encodeURIComponent(
+  'Workout tracker free plan request',
+)}`;
+
+type Props = { workout: boolean };
+
+const SignInPage = ({ workout }: Props) => {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
 
@@ -62,7 +68,9 @@ const SignInPage = () => {
         <div className='flex flex-col gap-2'>
           <h1 className='m-0 text-[26px] leading-8 font-extrabold'>Sign In</h1>
           <p className='m-0 text-base leading-6 font-medium text-mist-muted'>
-            Sign in to continue.
+            {workout
+              ? 'Sign in to log your workouts! 💪'
+              : 'Sign in to continue.'}
           </p>
         </div>
         <button
@@ -73,6 +81,14 @@ const SignInPage = () => {
           <GoogleIcon />
           Log in with Google
         </button>
+        {workout && (
+          <a
+            href={REQUEST_PLAN_HREF}
+            className='flex items-center justify-center self-stretch rounded-[14px] border border-mist-line px-4 py-3.5 text-[15px] font-bold text-mist-cyan-text'
+          >
+            Request a free plan
+          </a>
+        )}
         <Link href='/' className='text-sm font-bold text-mist-cyan-text'>
           Back to lcruz.dev
         </Link>
@@ -82,13 +98,14 @@ const SignInPage = () => {
 };
 
 // Already signed in to the app being returned to → skip straight there
-export const getServerSideProps: GetServerSideProps = async ({
+export const getServerSideProps: GetServerSideProps<Props> = async ({
   req,
   query,
 }) => {
   const returnTo = safeReturnPath(query.returnTo);
-  const email = await getAuthenticatedEmail(req, appForPath(returnTo));
-  if (!email) return { props: {} };
+  const app = appForPath(returnTo);
+  const email = await getAuthenticatedEmail(req, app);
+  if (!email) return { props: { workout: app === 'workout-tracker' } };
   return { redirect: { destination: returnTo, permanent: false } };
 };
 
