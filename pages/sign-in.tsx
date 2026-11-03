@@ -4,6 +4,7 @@ import { Raleway } from 'next/font/google';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { RequestPlan } from '@/components/workout-tracker/RequestPlan';
 import { authLoginUrl, safeReturnPath } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { appForPath, getAuthenticatedEmail } from '@/services/auth';
@@ -38,7 +39,9 @@ const logIn = (returnTo: string | null) => {
   );
 };
 
-const SignInPage = () => {
+type Props = { workout: boolean };
+
+const SignInPage = ({ workout }: Props) => {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
 
@@ -62,7 +65,9 @@ const SignInPage = () => {
         <div className='flex flex-col gap-2'>
           <h1 className='m-0 text-[26px] leading-8 font-extrabold'>Sign In</h1>
           <p className='m-0 text-base leading-6 font-medium text-mist-muted'>
-            Sign in to continue.
+            {workout
+              ? 'Sign in to log your workouts! 💪'
+              : 'Sign in to continue.'}
           </p>
         </div>
         <button
@@ -73,6 +78,7 @@ const SignInPage = () => {
           <GoogleIcon />
           Log in with Google
         </button>
+        {workout && <RequestPlan />}
         <Link href='/' className='text-sm font-bold text-mist-cyan-text'>
           Back to lcruz.dev
         </Link>
@@ -82,13 +88,14 @@ const SignInPage = () => {
 };
 
 // Already signed in to the app being returned to → skip straight there
-export const getServerSideProps: GetServerSideProps = async ({
+export const getServerSideProps: GetServerSideProps<Props> = async ({
   req,
   query,
 }) => {
   const returnTo = safeReturnPath(query.returnTo);
-  const email = await getAuthenticatedEmail(req, appForPath(returnTo));
-  if (!email) return { props: {} };
+  const app = appForPath(returnTo);
+  const email = await getAuthenticatedEmail(req, app);
+  if (!email) return { props: { workout: app === 'workout-tracker' } };
   return { redirect: { destination: returnTo, permanent: false } };
 };
 
