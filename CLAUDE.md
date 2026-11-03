@@ -34,7 +34,7 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 - Arrow functions only (`eslint.config.mjs`, checked on staged files). Older files still have `function` declarations; convert them when you touch the file.
 - Styling is mixed: older portfolio components use Emotion `styled` + theme; newer project pages use Tailwind v4 + shadcn. Match the surrounding file.
 - Data fetching on the client via TanStack Query.
-- Sentry configured in `sentry.*.config.ts` and `next.config.js`.
+- Sentry configured in `instrumentation.ts` (server/edge), `instrumentation-client.ts`, `pages/_error.tsx` and `next.config.js`.
 
 ## Deploy
 

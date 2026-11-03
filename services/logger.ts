@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/nextjs';
+
 enum LogLevel {
   TRACE = 10,
   DEBUG = 20,
@@ -23,7 +25,7 @@ const levels = {
   [LogLevel.WARN]: 'WARN',
   [LogLevel.ERROR]: 'ERROR',
   [LogLevel.FATAL]: 'FATAL',
-}
+};
 
 const logColors = {
   reset: '\x1b[0m',
@@ -37,7 +39,7 @@ const logColors = {
 };
 
 const baseLogger = (level: LogLevel, ...args: unknown[]) => {
-  if (level < (LOG_LEVELS[process.env.LOG_LEVEL ?? 'INFO'])) {
+  if (level < LOG_LEVELS[process.env.LOG_LEVEL ?? 'INFO']) {
     return;
   }
   if (process.env.NODE_ENV === 'production' && level < LogLevel.WARN) {
@@ -59,7 +61,26 @@ const baseLogger = (level: LogLevel, ...args: unknown[]) => {
   }
 
   let logString = `[${timestamp}] ${color}${levels[level]}${reset}: ${logColor}`;
-  console.log(logString, ...args, reset);
+  if (level >= LogLevel.ERROR) {
+    console.error(logString, ...args, reset);
+    captureToSentry(level, args);
+  } else if (level >= LogLevel.WARN) {
+    console.warn(logString, ...args, reset);
+  } else {
+    console.log(logString, ...args, reset);
+  }
+};
+
+const captureToSentry = (level: LogLevel, args: unknown[]) => {
+  const message = args.filter((arg) => typeof arg === 'string').join(' ');
+  const error = args.find((arg) => arg instanceof Error);
+  const sentryLevel = level >= LogLevel.FATAL ? 'fatal' : 'error';
+
+  if (error) {
+    Sentry.captureException(error, { level: sentryLevel, extra: { message } });
+  } else {
+    Sentry.captureMessage(message, sentryLevel);
+  }
 };
 
 export const logger = {
