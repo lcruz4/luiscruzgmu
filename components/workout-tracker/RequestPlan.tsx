@@ -66,7 +66,7 @@ export const RequestPlan = ({ email }: { email?: string }) => {
         onClick={() => setOpen(true)}
         className={buttonClass}
       >
-        Request a free plan
+        Request access to Workout Tracker
       </button>
     );
   }
