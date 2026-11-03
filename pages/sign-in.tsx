@@ -4,6 +4,7 @@ import { Raleway } from 'next/font/google';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { RequestPlan } from '@/components/workout-tracker/RequestPlan';
 import { authLoginUrl, safeReturnPath } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { appForPath, getAuthenticatedEmail } from '@/services/auth';
@@ -37,10 +38,6 @@ const logIn = (returnTo: string | null) => {
     window.location.hostname,
   );
 };
-
-const REQUEST_PLAN_HREF = `mailto:workouttrackerrequest@lcruz.dev?subject=${encodeURIComponent(
-  'Workout tracker free plan request',
-)}`;
 
 type Props = { workout: boolean };
 
@@ -81,14 +78,7 @@ const SignInPage = ({ workout }: Props) => {
           <GoogleIcon />
           Log in with Google
         </button>
-        {workout && (
-          <a
-            href={REQUEST_PLAN_HREF}
-            className='flex items-center justify-center self-stretch rounded-[14px] border border-mist-line px-4 py-3.5 text-[15px] font-bold text-mist-cyan-text'
-          >
-            Request a free plan
-          </a>
-        )}
+        {workout && <RequestPlan />}
         <Link href='/' className='text-sm font-bold text-mist-cyan-text'>
           Back to lcruz.dev
         </Link>
