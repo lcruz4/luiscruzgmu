@@ -57,6 +57,8 @@ const AddRole = ({ email, held }: { email: string; held: AppRole[] }) => {
 
   const heldKeys = new Set(held.map(roleKey));
   const options = appRoles.filter((role) => !heldKeys.has(roleKey(role)));
+  // lcruz_auth only grants roles for apps in its apps table
+  const apps = [...new Set(appRoles.map(({ app }) => app))];
 
   const submit = (role: AppRole) =>
     grant.mutate(role, {
@@ -83,14 +85,22 @@ const AddRole = ({ email, held }: { email: string; held: AppRole[] }) => {
     <div>
       {selected === CUSTOM ? (
         <form onSubmit={onCustomSubmit} className='flex items-center gap-1.5'>
-          <input
-            autoFocus
-            placeholder='app'
+          <select
+            required
             value={custom.app}
             onChange={(e) => setCustom({ ...custom, app: e.target.value })}
-            className={`${INPUT} h-7 w-32 font-mono text-xs`}
-          />
+            className={`${INPUT} h-7 w-40 font-mono text-xs`}
+          >
+            <option value=''>app</option>
+            {apps.map((app) => (
+              <option key={app} value={app}>
+                {app}
+              </option>
+            ))}
+          </select>
           <input
+            autoFocus
+            required
             placeholder='role'
             value={custom.role}
             onChange={(e) => setCustom({ ...custom, role: e.target.value })}
@@ -107,7 +117,10 @@ const AddRole = ({ email, held }: { email: string; held: AppRole[] }) => {
           <button
             type='button'
             aria-label='Cancel'
-            onClick={() => setSelected('')}
+            onClick={() => {
+              setSelected('');
+              grant.reset();
+            }}
             className='rounded p-1 text-[#7b8bb0] hover:bg-[#ffffff0d]'
           >
             <X className='size-4' />
@@ -118,7 +131,7 @@ const AddRole = ({ email, held }: { email: string; held: AppRole[] }) => {
           value={selected}
           disabled={grant.isPending}
           onChange={(e) => onSelect(e.target.value)}
-          className='h-7 cursor-pointer rounded border border-dashed border-[#2b3a5c] bg-transparent px-2 font-mono text-xs text-[#7b8bb0] hover:border-[#22d3ee] hover:text-[#67e8f9] focus:outline-none'
+          className='h-7 w-28 cursor-pointer rounded border border-dashed border-[#2b3a5c] bg-transparent px-2 font-mono text-xs text-[#7b8bb0] hover:border-[#22d3ee] hover:text-[#67e8f9] focus:outline-none'
         >
           <option value=''>+ role</option>
           {options.map((role) => (
