@@ -1,42 +1,63 @@
+import { useState } from 'react';
 import Head from 'next/head';
-import Link from 'next/link';
+import { ScrollText, Users } from 'lucide-react';
 import { requireLogin } from '@/services/auth';
+import { AdminNav } from '@/components/admin/AdminNav';
+import { UsersPanel } from '@/components/admin/UsersPanel';
 
-const SITEMAP = [
-  { href: '/', label: 'Home' },
-  { href: '/admin', label: 'Admin' },
-  { href: '/projects/chess-review', label: 'Chess review' },
-  { href: '/projects/giant-order-tool', label: 'Giant order tool' },
-  { href: '/projects/kuromasu', label: 'Kuromasu' },
-  { href: '/projects/workout-tracker', label: 'Workout tracker: Log' },
-  {
-    href: '/projects/workout-tracker/history',
-    label: 'Workout tracker: History',
-  },
-  { href: '/projects/workout-tracker/plan', label: 'Workout tracker: Plan' },
-  { href: '/sign-in', label: 'Sign in' },
-];
+const TABS = [
+  { id: 'users', label: 'Users', Icon: Users },
+  { id: 'logs', label: 'Logs', Icon: ScrollText },
+] as const;
 
-const AdminPage = ({ email }: { email: string }) => (
-  <main className='mx-auto max-w-xl p-8 text-white'>
-    <Head>
-      <title>Luis Cruz | Admin</title>
-    </Head>
-    <h1 className='mb-1 text-3xl font-bold'>Admin</h1>
-    <p className='mb-6 text-sm text-gray-400'>Signed in as {email}</p>
-    <h2 className='mb-3 text-xl font-bold'>Sitemap</h2>
-    <ul className='flex flex-col gap-2'>
-      {SITEMAP.map(({ href, label }) => (
-        <li key={href}>
-          <Link href={href} className='text-red-300 hover:underline'>
-            {label}
-          </Link>{' '}
-          <span className='font-mono text-xs text-gray-500'>{href}</span>
-        </li>
-      ))}
-    </ul>
-  </main>
-);
+type TabId = (typeof TABS)[number]['id'];
+
+const AdminPage = ({ email }: { email: string }) => {
+  const [tab, setTab] = useState<TabId>('users');
+
+  return (
+    <div className='min-h-screen bg-[#0b0f1a] font-sans text-[#d6e2ff]'>
+      <Head>
+        <title>Luis Cruz | Admin</title>
+      </Head>
+      <AdminNav email={email} />
+      <main className='mx-auto max-w-7xl px-6 py-8'>
+        <div className='mb-6 flex items-end justify-between'>
+          <div>
+            <p className='font-mono text-xs tracking-[0.2em] text-[#4b5a7d]'>
+              SYS://DASHBOARD
+            </p>
+            <h1 className='mt-1 text-2xl font-semibold'>Control panel</h1>
+          </div>
+          <div className='flex gap-1 rounded-md border border-[#1e2a44] bg-[#070a12] p-1'>
+            {TABS.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type='button'
+                onClick={() => setTab(id)}
+                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm transition-colors ${
+                  tab === id
+                    ? 'bg-[#22d3ee1a] text-[#67e8f9]'
+                    : 'text-[#7b8bb0] hover:text-[#d6e2ff]'
+                }`}
+              >
+                <Icon className='size-4' />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {tab === 'users' ? (
+          <UsersPanel />
+        ) : (
+          <section className='rounded-lg border border-dashed border-[#1e2a44] px-4 py-16 text-center font-mono text-xs text-[#4b5a7d]'>
+            LOGS · coming soon
+          </section>
+        )}
+      </main>
+    </div>
+  );
+};
 
 export const getServerSideProps = requireLogin('lcruz-dev');
 
