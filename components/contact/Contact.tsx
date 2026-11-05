@@ -91,6 +91,7 @@ export const Contact = () => {
             try {
               const res = await fetch('/api/contact-me', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, message }),
               });
               const respObj = await res.json();
