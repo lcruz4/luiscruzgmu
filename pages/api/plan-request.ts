@@ -1,15 +1,20 @@
-import { emailRoute, isEmail } from '@/services/email';
-import { planRequestEmail } from '@/services/emailTemplates';
-
-const REQUEST_ADDRESS = 'workouttrackerrequest@lcruz.dev';
+import { emailRoute, escapeHtml, isEmail } from '@/services/email';
 
 // Public (sign-in page uses it), so it lives outside the auth-protected /api/workout-tracker namespace
-export default emailRoute(({ email }) => {
+export default emailRoute(({ email, route }) => {
   if (!isEmail(email)) return 'please provide a valid email';
   return {
-    from: `Workout Tracker <${REQUEST_ADDRESS}>`,
-    to: REQUEST_ADDRESS,
+    to: 'workouttrackerrequest@lcruz.dev',
     replyTo: email,
-    ...planRequestEmail({ email }),
+    template: {
+      id: 'workout-tracker-request',
+      variables: {
+        email: escapeHtml(email),
+        route:
+          typeof route === 'string' && route.startsWith('/')
+            ? escapeHtml(route.slice(0, 200))
+            : 'unknown',
+      },
+    },
   };
 });

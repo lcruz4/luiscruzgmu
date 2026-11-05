@@ -1,7 +1,4 @@
-import { emailRoute, isEmail } from '@/services/email';
-import { contactEmail } from '@/services/emailTemplates';
-
-const CONTACT_ADDRESS = 'contactform@lcruz.dev';
+import { emailRoute, escapeHtml, isEmail } from '@/services/email';
 
 export default emailRoute(({ name, email, message }) => {
   if (
@@ -14,9 +11,15 @@ export default emailRoute(({ name, email, message }) => {
     return 'please provide name, email, and message';
   }
   return {
-    from: `Contact Form <${CONTACT_ADDRESS}>`,
-    to: CONTACT_ADDRESS,
+    to: 'contactform@lcruz.dev',
     replyTo: email,
-    ...contactEmail({ name, email, message }),
+    template: {
+      id: 'lcruzdev-contact-form',
+      variables: {
+        NAME: escapeHtml(name),
+        EMAIL: escapeHtml(email),
+        MESSAGE: escapeHtml(message),
+      },
+    },
   };
 });

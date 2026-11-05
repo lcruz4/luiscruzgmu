@@ -11,7 +11,7 @@ const sendRequest = async (email: string) => {
   const response = await fetch('/api/plan-request', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, route: window.location.pathname }),
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
 };

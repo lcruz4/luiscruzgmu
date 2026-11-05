@@ -9,13 +9,20 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const isEmail = (value: unknown): value is string =>
   typeof value === 'string' && EMAIL_REGEX.test(value);
 
+// Resend templates insert {{{VARIABLES}}} unescaped
+export const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+// From and subject are set on the Resend template
 export const sendEmail = async (options: {
-  from: string;
   to: string;
   replyTo: string;
-  subject: string;
-  text: string;
-  html: string;
+  template: { id: string; variables: Record<string, string> };
 }) => {
   const { error } = await resend.emails.send(options);
   if (error) {
