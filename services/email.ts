@@ -15,6 +15,7 @@ export const sendEmail = async (options: {
   replyTo: string;
   subject: string;
   text: string;
+  html: string;
 }) => {
   const { error } = await resend.emails.send(options);
   if (error) {

@@ -1,4 +1,5 @@
 import { emailRoute, isEmail } from '@/services/email';
+import { planRequestEmail } from '@/services/emailTemplates';
 
 const REQUEST_ADDRESS = 'workouttrackerrequest@lcruz.dev';
 
@@ -9,7 +10,6 @@ export default emailRoute(({ email }) => {
     from: `Workout Tracker <${REQUEST_ADDRESS}>`,
     to: REQUEST_ADDRESS,
     replyTo: email,
-    subject: `Free plan request: ${email}`,
-    text: `${email} is requesting a free workout tracker plan.`,
+    ...planRequestEmail({ email }),
   };
 });
