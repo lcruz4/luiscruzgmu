@@ -16,9 +16,9 @@ export default emailRoute(({ name, email, message }) => {
     template: {
       id: 'lcruzdev-contact-form',
       variables: {
-        NAME: escapeHtml(name),
-        EMAIL: escapeHtml(email),
-        MESSAGE: escapeHtml(message),
+        name: escapeHtml(name),
+        email: escapeHtml(email),
+        message: escapeHtml(message),
       },
     },
   };
