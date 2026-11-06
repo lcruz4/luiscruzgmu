@@ -21,10 +21,20 @@ const AdminPage = ({ email }: { email: string }) => {
     <div className='min-h-screen bg-[#0b0f1a] font-sans text-[#d6e2ff]'>
       <Head>
         <title>Luis Cruz | Admin</title>
+        <link
+          key='icon'
+          rel='icon'
+          href='/images/admin.svg'
+          type='image/svg+xml'
+        />
+        <link rel='manifest' href='/manifests/admin.webmanifest' />
+        <link rel='apple-touch-icon' href='/images/pwa/admin-apple-touch.png' />
+        <meta name='apple-mobile-web-app-title' content='Admin' />
+        <meta name='theme-color' content='#070a12' />
       </Head>
       <AdminNav email={email} />
-      <main className='mx-auto max-w-7xl px-6 py-8'>
-        <div className='mb-6 flex items-end justify-between'>
+      <main className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
+        <div className='mb-6 flex flex-wrap items-end justify-between gap-4'>
           <div>
             <p className='font-mono text-xs tracking-[0.2em] text-[#4b5a7d]'>
               SYS://DASHBOARD

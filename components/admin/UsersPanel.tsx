@@ -278,7 +278,7 @@ export const UsersPanel = () => {
             placeholder='Filter users'
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className={`${INPUT} w-64 pl-7`}
+            className={`${INPUT} w-36 pl-7 sm:w-64`}
           />
         </div>
         <button
