@@ -360,8 +360,8 @@ export const PlanDetail = ({
 
   return (
     <>
-      <div className='flex items-center gap-3 border-b border-[#1e2a44] px-4 py-3'>
-        <div>
+      <div className='flex flex-wrap items-center gap-3 border-b border-[#1e2a44] px-4 py-3'>
+        <div className='min-w-0'>
           <h2 className='font-semibold'>
             {plan.name}{' '}
             <span className='font-mono text-xs font-normal text-[#4b5a7d]'>
@@ -397,7 +397,7 @@ export const PlanDetail = ({
           )}
         </div>
       </div>
-      <div className='flex items-center gap-6 px-4 py-3'>
+      <div className='flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3'>
         <Picker label='WEEK' count={WEEKS} value={week} onChange={setWeek} />
         <Picker
           label='DAY'
@@ -406,46 +406,48 @@ export const PlanDetail = ({
           onChange={setDay}
         />
       </div>
-      <table className='w-full table-fixed text-left text-sm'>
-        <thead>
-          <tr className={LABEL}>
-            <th className='w-16 px-3 py-2 font-normal'>#</th>
-            <th className='px-3 py-2 font-normal'>EXERCISE</th>
-            <th className='w-20 px-3 py-2 font-normal'>SETS</th>
-            <th className='w-20 px-3 py-2 font-normal'>REPS</th>
-            <th className='w-28 px-3 py-2 font-normal'>WEIGHT</th>
-            <th className='w-32 px-3 py-2' />
-          </tr>
-        </thead>
-        <tbody>
-          {dayRows.map((row) => (
-            <PlanRow key={row.id} row={row} />
-          ))}
-          {adding && (
-            <RowEditor
-              initial={{
-                week,
-                day,
-                position: nextPosition,
-                exerciseId: 0,
-                sets: 0,
-                reps: 0,
-                weight: null,
-                notes: null,
-              }}
-              pending={createRow.isPending}
-              error={createRow.error}
-              onSave={(input) =>
-                createRow.mutate(input, { onSuccess: () => setAdding(false) })
-              }
-              onCancel={() => {
-                setAdding(false);
-                createRow.reset();
-              }}
-            />
-          )}
-        </tbody>
-      </table>
+      <div className='overflow-x-auto'>
+        <table className='w-full min-w-[40rem] table-fixed text-left text-sm'>
+          <thead>
+            <tr className={LABEL}>
+              <th className='w-16 px-3 py-2 font-normal'>#</th>
+              <th className='px-3 py-2 font-normal'>EXERCISE</th>
+              <th className='w-20 px-3 py-2 font-normal'>SETS</th>
+              <th className='w-20 px-3 py-2 font-normal'>REPS</th>
+              <th className='w-28 px-3 py-2 font-normal'>WEIGHT</th>
+              <th className='w-32 px-3 py-2' />
+            </tr>
+          </thead>
+          <tbody>
+            {dayRows.map((row) => (
+              <PlanRow key={row.id} row={row} />
+            ))}
+            {adding && (
+              <RowEditor
+                initial={{
+                  week,
+                  day,
+                  position: nextPosition,
+                  exerciseId: 0,
+                  sets: 0,
+                  reps: 0,
+                  weight: null,
+                  notes: null,
+                }}
+                pending={createRow.isPending}
+                error={createRow.error}
+                onSave={(input) =>
+                  createRow.mutate(input, { onSuccess: () => setAdding(false) })
+                }
+                onCancel={() => {
+                  setAdding(false);
+                  createRow.reset();
+                }}
+              />
+            )}
+          </tbody>
+        </table>
+      </div>
       <div className='border-t border-[#1e2a44] px-4 py-3'>
         <button
           type='button'

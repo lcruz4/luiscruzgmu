@@ -13,7 +13,6 @@ import {
   useUsers,
 } from './api';
 import {
-  CELL,
   ConfirmButton,
   ErrorText,
   INPUT,
@@ -22,6 +21,8 @@ import {
 } from './ui';
 
 const CUSTOM = '__custom__';
+// Below md each row is a card: cells lose vertical padding and stack in a grid
+const STACK_CELL = 'block px-4 align-middle md:table-cell md:py-3';
 const roleKey = ({ app, role }: AppRole) => `${app}/${role}`;
 
 const RoleChip = ({ email, role }: { email: string; role: AppRole }) => {
@@ -163,12 +164,14 @@ const DeleteUser = ({ email }: { email: string }) => {
 const UserRow = ({ user }: { user: User }) => {
   const { data: roles = [], isPending, error } = useUserRoles(user.email);
   return (
-    <tr className='border-t border-[#1e2a44] hover:bg-[#ffffff05]'>
-      <td className={`${CELL} text-[#d6e2ff]`}>{user.name}</td>
-      <td className={`${CELL} font-mono text-sm text-[#7b8bb0]`}>
+    <tr className='grid grid-cols-[minmax(0,1fr)_auto] border-t border-[#1e2a44] py-2 hover:bg-[#ffffff05] md:table-row md:py-0'>
+      <td className={`${STACK_CELL} text-[#d6e2ff]`}>{user.name}</td>
+      <td
+        className={`${STACK_CELL} row-start-2 truncate font-mono text-sm text-[#7b8bb0] md:whitespace-normal`}
+      >
         {user.email}
       </td>
-      <td className={CELL}>
+      <td className={`${STACK_CELL} col-span-2 pt-2`}>
         <div className='flex flex-wrap items-center gap-1.5'>
           {isPending && (
             <Loader2 className='size-3.5 animate-spin text-[#4b5a7d]' />
@@ -180,7 +183,9 @@ const UserRow = ({ user }: { user: User }) => {
         </div>
         <ErrorText error={error} />
       </td>
-      <td className={`${CELL} text-right`}>
+      <td
+        className={`${STACK_CELL} col-start-2 row-span-2 row-start-1 self-center text-right`}
+      >
         <DeleteUser email={user.email} />
       </td>
     </tr>
@@ -190,6 +195,7 @@ const UserRow = ({ user }: { user: User }) => {
 const NewUserRow = ({ onDone }: { onDone: () => void }) => {
   const create = useCreateUser();
   const [user, setUser] = useState<User>({ email: '', name: '' });
+  const [closing, setClosing] = useState(false);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -199,8 +205,14 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
   };
 
   return (
-    <tr className='border-t border-[#22d3ee55] bg-[#22d3ee0a]'>
-      <td className={CELL}>
+    <tr
+      className={`grid gap-2 border-t border-[#22d3ee55] bg-[#22d3ee0a] py-3 duration-300 ease-out md:table-row md:py-0 ${
+        closing
+          ? 'animate-out fade-out slide-out-to-top-2 fill-mode-forwards'
+          : 'animate-in fade-in slide-in-from-top-2'
+      }`}
+    >
+      <td className={STACK_CELL}>
         <input
           form='new-user'
           autoFocus
@@ -211,7 +223,7 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
           className={`${INPUT} w-full`}
         />
       </td>
-      <td className={CELL}>
+      <td className={STACK_CELL}>
         <input
           form='new-user'
           required
@@ -222,11 +234,11 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
           className={`${INPUT} w-full font-mono`}
         />
       </td>
-      <td className={`${CELL} text-xs text-[#4b5a7d]`}>
+      <td className={`${STACK_CELL} text-xs text-[#4b5a7d]`}>
         Grant roles after saving
         <ErrorText error={create.error} />
       </td>
-      <td className={`${CELL} text-right`}>
+      <td className={`${STACK_CELL} md:text-right`}>
         <form
           id='new-user'
           onSubmit={submit}
@@ -244,7 +256,15 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
             )}
             Save
           </button>
-          <button type='button' onClick={onDone} className={SECONDARY_BTN}>
+          <button
+            type='button'
+            onClick={() => {
+              // Let the exit animation play before unmounting
+              setClosing(true);
+              setTimeout(onDone, 300);
+            }}
+            className={SECONDARY_BTN}
+          >
             Cancel
           </button>
         </form>
@@ -268,31 +288,31 @@ export const UsersPanel = () => {
 
   return (
     <section className='overflow-hidden rounded-lg border border-[#1e2a44] bg-[#111829]'>
-      <div className='flex items-center gap-4 border-b border-[#1e2a44] px-4 py-3'>
+      <div className='flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-[#1e2a44] px-4 py-3'>
         <h2 className='font-mono text-xs tracking-[0.2em] text-[#7b8bb0]'>
           USERS <span className='text-[#22d3ee]'>· {users.length}</span>
         </h2>
-        <div className='relative ml-auto'>
+        <div className='relative order-last basis-full sm:order-none sm:ml-auto sm:basis-auto'>
           <Search className='pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-[#4b5a7d]' />
           <input
             placeholder='Filter users'
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className={`${INPUT} w-64 pl-7`}
+            className={`${INPUT} w-full pl-7 sm:w-64`}
           />
         </div>
         <button
           type='button'
           onClick={() => setAdding(true)}
           disabled={adding}
-          className={PRIMARY_BTN}
+          className={`${PRIMARY_BTN} ml-auto sm:ml-0`}
         >
           <Plus className='size-3.5' />
           Add user
         </button>
       </div>
-      <table className='w-full text-left text-sm'>
-        <thead>
+      <table className='block w-full text-left text-sm md:table'>
+        <thead className='hidden md:table-header-group'>
           <tr className='font-mono text-[11px] tracking-[0.15em] text-[#4b5a7d]'>
             <th className='w-1/5 px-4 py-2 font-normal'>NAME</th>
             <th className='w-1/4 px-4 py-2 font-normal'>EMAIL</th>
@@ -300,7 +320,7 @@ export const UsersPanel = () => {
             <th className='w-44 px-4 py-2' />
           </tr>
         </thead>
-        <tbody>
+        <tbody className='block md:table-row-group'>
           {adding && <NewUserRow onDone={() => setAdding(false)} />}
           {shown.map((user) => (
             <UserRow key={user.email} user={user} />

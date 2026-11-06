@@ -28,6 +28,7 @@ export const WorkoutLayout = ({
     <Head>
       <title>Workout Tracker</title>
       <link
+        key='icon'
         rel='icon'
         href='/images/workout-tracker.svg'
         type='image/svg+xml'
