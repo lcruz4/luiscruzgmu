@@ -23,19 +23,16 @@ export const withTransaction = async <T>(
   }
 };
 
-export const PLAN_ROW_SELECT = `
-  SELECT pe.id, pe.week, pe.day, pe.position,
-    pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
-    pe.sets, pe.reps, pe.weight, pe.notes
-  FROM plan_exercises pe
-  JOIN exercises e ON e.id = pe.exercise_id`;
-
 export const getPlanRows = async (
   db: PoolClient | typeof workoutPool,
   planId: number,
 ) => {
   const { rows } = await db.query<PlanRow>(
-    `${PLAN_ROW_SELECT}
+    `SELECT pe.id, pe.week, pe.day, pe.position,
+       pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
+       pe.sets, pe.reps, pe.weight, pe.notes
+     FROM plan_exercises pe
+     JOIN exercises e ON e.id = pe.exercise_id
      WHERE pe.plan_id = $1
      ORDER BY pe.week, pe.day, pe.position`,
     [planId],

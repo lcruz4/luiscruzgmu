@@ -7,16 +7,14 @@ import type {
   AdminPlanRow,
 } from '@/types/workout';
 
-export const ADMIN_PLAN_SELECT = `
-  SELECT id, name, owner_email AS "ownerEmail", is_active AS "isActive"
-  FROM plans`;
-
 export const getAdminPlan = async (
   db: PoolClient | typeof workoutPool,
   planId: number,
 ): Promise<AdminPlanResponse> => {
   const { rows } = await db.query<AdminPlan>(
-    `${ADMIN_PLAN_SELECT} WHERE id = $1`,
+    `SELECT id, name, owner_email AS "ownerEmail", is_active AS "isActive"
+     FROM plans
+     WHERE id = $1`,
     [planId],
   );
   const plan = rows.at(0);

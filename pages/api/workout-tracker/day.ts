@@ -9,7 +9,6 @@ import { dateField, intField, workoutRoute } from '@/services/workoutApi';
 import {
   CREATED_AT_JSON,
   getActivePlan,
-  PLAN_ROW_SELECT,
   SETS_JSON,
   workoutPool,
 } from '@/services/workoutDb';
@@ -48,7 +47,11 @@ const getDay = async (
         };
 
   const { rows: planRows } = await workoutPool.query<PlanRow>(
-    `${PLAN_ROW_SELECT}
+    `SELECT pe.id, pe.week, pe.day, pe.position,
+       pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
+       pe.sets, pe.reps, pe.weight, pe.notes
+     FROM plan_exercises pe
+     JOIN exercises e ON e.id = pe.exercise_id
      WHERE pe.plan_id = $1 AND pe.week = $2 AND pe.day = $3
      ORDER BY pe.position`,
     [plan.id, week, day],
