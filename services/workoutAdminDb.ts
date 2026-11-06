@@ -51,3 +51,23 @@ export const planRowFields = (body: Record<string, unknown>) => ({
   weight: textField(body.weight, 'weight', 50),
   notes: textField(body.notes, 'notes', 1000),
 });
+
+// One active plan per owner; deactivate the current one first
+export const assertNoActivePlan = async (
+  client: PoolClient,
+  ownerEmail: string,
+  exceptPlanId: number | null = null,
+) => {
+  const { rows } = await client.query<{ id: number }>(
+    `SELECT id FROM plans
+     WHERE owner_email = $1 AND is_active AND id IS DISTINCT FROM $2`,
+    [ownerEmail, exceptPlanId],
+  );
+  const active = rows.at(0);
+  if (active) {
+    throw new HttpError(
+      409,
+      `Plan ${active.id} is already active for ${ownerEmail}`,
+    );
+  }
+};

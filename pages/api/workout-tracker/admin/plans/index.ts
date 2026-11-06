@@ -6,7 +6,7 @@ import {
   textField,
   workoutAdminRoute,
 } from '@/services/workoutApi';
-import { getAdminPlan } from '@/services/workoutAdminDb';
+import { assertNoActivePlan, getAdminPlan } from '@/services/workoutAdminDb';
 import { withTransaction, workoutPool } from '@/services/workoutDb';
 import type { AdminPlanResponse, AdminPlanSummary } from '@/types/workout';
 
@@ -48,7 +48,7 @@ const listPlans = async (
 
 // Body: { ownerEmail, name, sourcePlanId?, blank?, activate? }. Copies the
 // source plan's exercises; blank resets sets/reps to 0 and clears weight/notes.
-// activate deactivates the owner's current active plan.
+// activate 409s if the owner already has an active plan.
 const createPlan = async (req: NextApiRequest): Promise<AdminPlanResponse> => {
   const body = bodyOf(req);
   const ownerEmail = emailField(body.ownerEmail, 'ownerEmail');
@@ -62,12 +62,7 @@ const createPlan = async (req: NextApiRequest): Promise<AdminPlanResponse> => {
   const activate = booleanField(body.activate, 'activate');
 
   return withTransaction(async (client) => {
-    if (activate) {
-      await client.query(
-        'UPDATE plans SET is_active = false WHERE owner_email = $1 AND is_active',
-        [ownerEmail],
-      );
-    }
+    if (activate) await assertNoActivePlan(client, ownerEmail);
     const { rows } = await client.query<{ id: number }>(
       `INSERT INTO plans (owner_email, name, is_active)
        VALUES ($1, $2, $3)
