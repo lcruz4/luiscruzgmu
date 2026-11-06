@@ -1,8 +1,9 @@
 import type { PoolClient } from 'pg';
 import { HttpError, idField, intField, textField } from './workoutApi';
-import { getPlanRows, workoutPool } from './workoutDb';
+import { workoutPool } from './workoutDb';
 import type {
   AdminPlan,
+  AdminPlanDetailRow,
   AdminPlanResponse,
   AdminPlanRow,
 } from '@/types/workout';
@@ -19,7 +20,20 @@ export const getAdminPlan = async (
   );
   const plan = rows.at(0);
   if (!plan) throw new HttpError(404, 'Plan not found');
-  return { plan, rows: await getPlanRows(db, planId) };
+  // hasLogs: logs reference the row, so it can't be deleted
+  const { rows: planRows } = await db.query<AdminPlanDetailRow>(
+    `SELECT pe.id, pe.week, pe.day, pe.position,
+       pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
+       pe.sets, pe.reps, pe.weight, pe.notes,
+       EXISTS (SELECT 1 FROM workout_log wl WHERE wl.plan_exercise_id = pe.id)
+         AS "hasLogs"
+     FROM plan_exercises pe
+     JOIN exercises e ON e.id = pe.exercise_id
+     WHERE pe.plan_id = $1
+     ORDER BY pe.week, pe.day, pe.position`,
+    [planId],
+  );
+  return { plan, rows: planRows };
 };
 
 export const getAdminPlanRow = async (
@@ -52,22 +66,13 @@ export const planRowFields = (body: Record<string, unknown>) => ({
   notes: textField(body.notes, 'notes', 1000),
 });
 
-// One active plan per owner; deactivate the current one first
-export const assertNoActivePlan = async (
+// One active plan per owner, so activating a plan deactivates the others
+export const deactivateOwnerPlans = async (
   client: PoolClient,
   ownerEmail: string,
-  exceptPlanId: number | null = null,
 ) => {
-  const { rows } = await client.query<{ id: number }>(
-    `SELECT id FROM plans
-     WHERE owner_email = $1 AND is_active AND id IS DISTINCT FROM $2`,
-    [ownerEmail, exceptPlanId],
+  await client.query(
+    'UPDATE plans SET is_active = false WHERE owner_email = $1 AND is_active',
+    [ownerEmail],
   );
-  const active = rows.at(0);
-  if (active) {
-    throw new HttpError(
-      409,
-      `Plan ${active.id} is already active for ${ownerEmail}`,
-    );
-  }
 };

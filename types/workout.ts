@@ -85,9 +85,19 @@ export interface AdminPlan extends Plan {
   isActive: boolean;
 }
 
+export interface AdminPlanDetailRow extends PlanRow {
+  hasLogs: boolean;
+}
+
 export interface AdminPlanResponse {
   plan: AdminPlan;
-  rows: PlanRow[];
+  rows: AdminPlanDetailRow[];
+}
+
+export interface AdminExercise {
+  id: number;
+  name: string;
+  isTimed: boolean;
 }
 
 export interface AdminPlanSummary extends AdminPlan {

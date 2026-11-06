@@ -5,11 +5,11 @@ import {
   idField,
   workoutAdminRoute,
 } from '@/services/workoutApi';
-import { assertNoActivePlan } from '@/services/workoutAdminDb';
+import { deactivateOwnerPlans } from '@/services/workoutAdminDb';
 import { withTransaction } from '@/services/workoutDb';
 import type { AdminPlan } from '@/types/workout';
 
-// Body: { active }. Activating 409s if the owner has another active plan.
+// Body: { active }. Activating deactivates the owner's current active plan.
 const setActive = async (req: NextApiRequest): Promise<{ plan: AdminPlan }> => {
   const id = idField(req.query.id, 'id');
   const { active } = bodyOf(req);
@@ -24,7 +24,7 @@ const setActive = async (req: NextApiRequest): Promise<{ plan: AdminPlan }> => {
     );
     const owner = owners.at(0);
     if (!owner) throw new HttpError(404, 'Plan not found');
-    if (active) await assertNoActivePlan(client, owner.ownerEmail, id);
+    if (active) await deactivateOwnerPlans(client, owner.ownerEmail);
 
     const { rows } = await client.query<AdminPlan>(
       `UPDATE plans SET is_active = $2 WHERE id = $1
