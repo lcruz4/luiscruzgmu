@@ -28,7 +28,7 @@ const PlanList = ({
   onSelect: (id: number) => void;
   onNew: () => void;
 }) => (
-  <aside className={`${PANEL} self-start`}>
+  <aside className={`${PANEL} self-start lg:max-h-full lg:overflow-y-auto`}>
     <div className='flex items-center border-b border-[#1e2a44] px-4 py-3'>
       <h2 className='font-mono text-xs tracking-[0.2em] text-[#7b8bb0]'>
         PLANS <span className='text-[#22d3ee]'>· {plans.length}</span>
@@ -123,7 +123,7 @@ const NewPlanForm = ({
   return (
     <form
       onSubmit={submit}
-      className='mt-4 rounded-lg border border-[#22d3ee55] bg-[#22d3ee0a] p-4'
+      className='rounded-lg border border-[#22d3ee55] bg-[#22d3ee0a] p-4'
     >
       <h2 className={`${LABEL} mb-3`}>NEW PLAN</h2>
       <div className='grid grid-cols-3 gap-3'>
@@ -226,6 +226,12 @@ export const WorkoutPanel = () => {
   const { data: plans = [], isPending, error } = usePlans();
   const [picked, setPicked] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
+  // Remounts the form so it opens empty
+  const [formKey, setFormKey] = useState(0);
+  const closeForm = () => {
+    setAdding(false);
+    setFormKey((key) => key + 1);
+  };
   const selectedId =
     plans.find((plan) => plan.id === picked)?.id ?? plans.at(0)?.id ?? null;
 
@@ -247,16 +253,18 @@ export const WorkoutPanel = () => {
     );
   }
 
+  // Desktop: fills the viewport, and the new plan form rises from the bottom
+  // while the grid shrinks to make room
   return (
-    <>
-      <div className='grid grid-cols-[18rem_minmax(0,1fr)] gap-4'>
+    <div className='flex flex-col lg:h-[calc(100vh-12rem)]'>
+      <div className='grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[18rem_minmax(0,1fr)]'>
         <PlanList
           plans={plans}
           selectedId={selectedId}
           onSelect={setPicked}
           onNew={() => setAdding(true)}
         />
-        <section className={`${PANEL} overflow-hidden`}>
+        <section className={`${PANEL} overflow-hidden lg:overflow-y-auto`}>
           {selectedId === null ? (
             <p className='px-4 py-16 text-center font-mono text-xs text-[#4b5a7d]'>
               No plans yet
@@ -271,16 +279,34 @@ export const WorkoutPanel = () => {
           )}
         </section>
       </div>
-      {adding && (
-        <NewPlanForm
-          plans={plans}
-          onCreated={(id) => {
-            setPicked(id);
-            setAdding(false);
-          }}
-          onCancel={() => setAdding(false)}
-        />
-      )}
-    </>
+      <div
+        className={`grid shrink-0 lg:transition-[grid-template-rows] lg:duration-300 lg:ease-out ${
+          adding ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        {/* invisible once closed keeps the hidden form out of tab order */}
+        <div
+          className={`min-h-0 overflow-hidden transition-[visibility] duration-300 ${
+            adding ? 'visible' : 'invisible'
+          }`}
+        >
+          <div
+            className={`pt-4 lg:transition-transform lg:duration-300 lg:ease-out ${
+              adding ? 'translate-y-0' : 'lg:translate-y-full'
+            }`}
+          >
+            <NewPlanForm
+              key={formKey}
+              plans={plans}
+              onCreated={(id) => {
+                setPicked(id);
+                closeForm();
+              }}
+              onCancel={closeForm}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

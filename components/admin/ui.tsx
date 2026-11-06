@@ -9,6 +9,10 @@ export const GHOST_BTN =
 export const PRIMARY_BTN = `${GHOST_BTN} border-[#22d3ee] bg-[#22d3ee] text-[#04202a] hover:bg-[#67e8f9]`;
 export const SECONDARY_BTN = `${GHOST_BTN} border-[#1e2a44] text-[#7b8bb0] hover:text-[#d6e2ff]`;
 export const CELL = 'px-4 py-3 align-middle';
+export const OUTLINE_ACCENT =
+  'border-[#22d3ee55] text-[#67e8f9] hover:bg-[#22d3ee1a]';
+export const OUTLINE_DANGER =
+  'border-[#f472b666] text-[#f472b6] hover:bg-[#f472b61f]';
 export const LABEL = 'font-mono text-[11px] tracking-[0.15em] text-[#4b5a7d]';
 
 export const ErrorText = ({ error }: { error: Error | null }) =>
@@ -26,7 +30,8 @@ const TONES = {
 };
 
 // The first click arms it (showing confirmLabel for 3s), the second acts.
-// Without confirm it acts on the first click.
+// Without confirm it acts on the first click. idle overrides the tone's
+// unarmed look.
 export const ConfirmButton = ({
   icon,
   label,
@@ -36,6 +41,7 @@ export const ConfirmButton = ({
   error,
   tone = 'danger',
   confirm = true,
+  idle,
 }: {
   icon: ReactNode;
   label: string;
@@ -45,6 +51,7 @@ export const ConfirmButton = ({
   error: Error | null;
   tone?: keyof typeof TONES;
   confirm?: boolean;
+  idle?: string;
 }) => {
   const [armed, setArmed] = useState(false);
 
@@ -67,7 +74,7 @@ export const ConfirmButton = ({
         disabled={pending}
         onClick={onClick}
         className={`${GHOST_BTN} ${
-          armed ? TONES[tone].armed : TONES[tone].idle
+          armed ? TONES[tone].armed : idle ?? TONES[tone].idle
         }`}
       >
         {pending ? <Loader2 className='size-3.5 animate-spin' /> : icon}

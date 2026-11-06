@@ -13,7 +13,15 @@ import {
 } from 'lucide-react';
 import { DAYS_PER_WEEK, WEEKS } from '@/lib/workout/schedule';
 import type { AdminPlanDetailRow, AdminPlanSummary } from '@/types/workout';
-import { ConfirmButton, ErrorText, GHOST_BTN, INPUT, LABEL } from './ui';
+import {
+  ConfirmButton,
+  ErrorText,
+  GHOST_BTN,
+  INPUT,
+  LABEL,
+  OUTLINE_ACCENT,
+  OUTLINE_DANGER,
+} from './ui';
 import {
   type PlanRowInput,
   useCreatePlanRow,
@@ -284,6 +292,7 @@ const ActiveToggle = ({
         label='Active'
         confirmLabel='Deactivate'
         tone='accent'
+        idle={OUTLINE_ACCENT}
         onConfirm={() => setActive.mutate(false)}
         pending={setActive.isPending}
         error={setActive.error}
@@ -370,7 +379,7 @@ export const PlanDetail = ({
           {hasLogs ? (
             <span
               title='Has logged workouts; deactivate it instead'
-              className={`${GHOST_BTN} border-transparent text-[#4b5a7d]`}
+              className={`${GHOST_BTN} cursor-not-allowed border-[#1e2a44] text-[#4b5a7d]`}
             >
               <Lock className='size-3.5' />
               Delete
@@ -380,6 +389,7 @@ export const PlanDetail = ({
               icon={<Trash2 className='size-3.5' />}
               label='Delete'
               confirmLabel='Confirm'
+              idle={OUTLINE_DANGER}
               onConfirm={() => remove.mutate(plan.id, { onSuccess: onDeleted })}
               pending={remove.isPending}
               error={remove.error}
