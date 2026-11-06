@@ -3,6 +3,7 @@ import { Global, css } from '@emotion/react';
 import theme from '../themes';
 
 import '../styles/globals.css';
+import Head from 'next/head';
 import Script from 'next/script';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -40,6 +41,10 @@ export const App = ({
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
+        <Head>
+          {/* default; pages override it with the same key */}
+          <link key='icon' rel='icon' href='/images/favicon.ico' />
+        </Head>
         <Script src='/lib/DragDropTouch.js' />
         <Global styles={globalStyles} />
         <Component {...pageProps} />

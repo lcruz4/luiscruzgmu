@@ -24,6 +24,7 @@ export const GiantLayout = ({ children }: { children: ReactNode }) => (
     <Head>
       <title>Giant Order</title>
       <link
+        key='icon'
         rel='icon'
         href='/images/giant-order-tool.svg'
         type='image/svg+xml'

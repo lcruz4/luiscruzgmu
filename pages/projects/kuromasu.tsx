@@ -556,7 +556,12 @@ const Kuromasu = () => {
     <>
       <Head>
         <title>Luis Cruz | Kuromasu Solver</title>
-        <link rel='icon' href='/images/kuromasu.ico' type='image/gif' />
+        <link
+          key='icon'
+          rel='icon'
+          href='/images/kuromasu.ico'
+          type='image/gif'
+        />
         <style>
           {`
           html, body {

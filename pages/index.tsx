@@ -45,7 +45,12 @@ const Home = () => {
     <>
       <Head>
         <title>Luis Cruz | Software Engineer</title>
-        <link rel='icon' href='/images/favicon.ico' type='image/gif' />
+        <link
+          key='icon'
+          rel='icon'
+          href='/images/favicon.ico'
+          type='image/gif'
+        />
         <link
           rel='stylesheet'
           href='https://fonts.googleapis.com/css?family=Raleway'

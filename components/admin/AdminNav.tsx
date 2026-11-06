@@ -5,25 +5,18 @@ import { authLogoutUrl } from '@/lib/auth';
 type NavItem = { label: string; href?: string; children?: NavItem[] };
 
 const NAV: NavItem[] = [
-  { label: 'Home', href: '/' },
+  { label: 'Admin', href: '/admin' },
+  { label: 'Chess review', href: '/projects/chess-review' },
+  { label: 'Giant order tool', href: '/projects/giant-order-tool' },
+  { label: 'Kuromasu', href: '/projects/kuromasu' },
   {
-    label: 'Projects',
+    label: 'Workout tracker',
     children: [
-      { label: 'Chess review', href: '/projects/chess-review' },
-      { label: 'Giant order tool', href: '/projects/giant-order-tool' },
-      { label: 'Kuromasu', href: '/projects/kuromasu' },
-      {
-        label: 'Workout tracker',
-        href: '/projects/workout-tracker',
-        children: [
-          { label: 'Log', href: '/projects/workout-tracker' },
-          { label: 'History', href: '/projects/workout-tracker/history' },
-          { label: 'Plan', href: '/projects/workout-tracker/plan' },
-        ],
-      },
+      { label: 'Log', href: '/projects/workout-tracker' },
+      { label: 'History', href: '/projects/workout-tracker/history' },
+      { label: 'Plan', href: '/projects/workout-tracker/plan' },
     ],
   },
-  { label: 'Sign in', href: '/sign-in' },
 ];
 
 const signOut = () => {
@@ -66,7 +59,7 @@ const SubMenuItem = ({ item }: { item: NavItem }) => {
 
 const TopItem = ({ item }: { item: NavItem }) => {
   const base =
-    'flex h-full items-center gap-1 px-3 text-sm text-[#7b8bb0] hover:text-[#67e8f9]';
+    'flex h-full items-center gap-1 px-3 text-sm whitespace-nowrap text-[#7b8bb0] hover:text-[#67e8f9]';
   if (!item.children) {
     return (
       <Link href={item.href ?? '#'} className={base}>
@@ -93,7 +86,7 @@ export const AdminNav = ({ email }: { email: string }) => (
   <header className='sticky top-0 z-10 border-b border-[#22d3ee40] bg-[#070a12]/95 backdrop-blur'>
     <nav className='mx-auto flex h-12 max-w-7xl items-center gap-4 px-6'>
       <Link
-        href='/admin'
+        href='/'
         className='mr-4 font-mono text-sm font-semibold tracking-[0.2em] text-[#22d3ee]'
       >
         ◆ LCRUZ//ADMIN
