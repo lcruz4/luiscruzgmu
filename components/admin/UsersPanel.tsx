@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Check, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import {
@@ -12,18 +12,17 @@ import {
   useUserRoles,
   useUsers,
 } from './api';
+import {
+  CELL,
+  ConfirmButton,
+  ErrorText,
+  INPUT,
+  PRIMARY_BTN,
+  SECONDARY_BTN,
+} from './ui';
 
 const CUSTOM = '__custom__';
 const roleKey = ({ app, role }: AppRole) => `${app}/${role}`;
-
-const INPUT =
-  'h-8 rounded border border-[#1e2a44] bg-[#0b0f1a] px-2 text-sm text-[#d6e2ff] placeholder:text-[#4b5a7d] focus:border-[#22d3ee] focus:outline-none';
-const GHOST_BTN =
-  'inline-flex h-8 items-center gap-1.5 rounded border px-2.5 text-xs font-medium transition-colors disabled:opacity-50';
-const CELL = 'px-4 py-3 align-middle';
-
-const ErrorText = ({ error }: { error: Error | null }) =>
-  error ? <p className='mt-1 text-xs text-[#f472b6]'>{error.message}</p> : null;
 
 const RoleChip = ({ email, role }: { email: string; role: AppRole }) => {
   const revoke = useRevokeRole(email);
@@ -149,37 +148,15 @@ const AddRole = ({ email, held }: { email: string; held: AppRole[] }) => {
 
 const DeleteUser = ({ email }: { email: string }) => {
   const remove = useDeleteUser();
-  const [confirming, setConfirming] = useState(false);
-
-  useEffect(() => {
-    if (!confirming) return;
-    const timeout = setTimeout(() => setConfirming(false), 3000);
-    return () => clearTimeout(timeout);
-  }, [confirming]);
-
   return (
-    <div className='flex flex-col items-end'>
-      <button
-        type='button'
-        disabled={remove.isPending}
-        onClick={() =>
-          confirming ? remove.mutate(email) : setConfirming(true)
-        }
-        className={`${GHOST_BTN} ${
-          confirming
-            ? 'border-[#f472b6] bg-[#f472b61f] text-[#f472b6]'
-            : 'border-transparent text-[#7b8bb0] hover:border-[#f472b666] hover:text-[#f472b6]'
-        }`}
-      >
-        {remove.isPending ? (
-          <Loader2 className='size-3.5 animate-spin' />
-        ) : (
-          <Trash2 className='size-3.5' />
-        )}
-        {confirming ? 'Confirm' : 'Delete'}
-      </button>
-      <ErrorText error={remove.error} />
-    </div>
+    <ConfirmButton
+      icon={<Trash2 className='size-3.5' />}
+      label='Delete'
+      confirmLabel='Confirm'
+      onConfirm={() => remove.mutate(email)}
+      pending={remove.isPending}
+      error={remove.error}
+    />
   );
 };
 
@@ -258,7 +235,7 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
           <button
             type='submit'
             disabled={create.isPending}
-            className={`${GHOST_BTN} border-[#22d3ee] bg-[#22d3ee] text-[#04202a] hover:bg-[#67e8f9]`}
+            className={PRIMARY_BTN}
           >
             {create.isPending ? (
               <Loader2 className='size-3.5 animate-spin' />
@@ -267,11 +244,7 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
             )}
             Save
           </button>
-          <button
-            type='button'
-            onClick={onDone}
-            className={`${GHOST_BTN} border-[#1e2a44] text-[#7b8bb0] hover:text-[#d6e2ff]`}
-          >
+          <button type='button' onClick={onDone} className={SECONDARY_BTN}>
             Cancel
           </button>
         </form>
@@ -312,7 +285,7 @@ export const UsersPanel = () => {
           type='button'
           onClick={() => setAdding(true)}
           disabled={adding}
-          className={`${GHOST_BTN} border-[#22d3ee] bg-[#22d3ee] text-[#04202a] hover:bg-[#67e8f9]`}
+          className={PRIMARY_BTN}
         >
           <Plus className='size-3.5' />
           Add user

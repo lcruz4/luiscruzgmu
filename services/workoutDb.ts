@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { HttpError } from './workoutApi';
-import type { DayLog, Plan } from '@/types/workout';
+import type { DayLog, Plan, PlanRow } from '@/types/workout';
 
 export const workoutPool = new Pool({
   connectionString: process.env.WORKOUT_DB_URL,
@@ -23,25 +23,22 @@ export const withTransaction = async <T>(
   }
 };
 
-export const PLAN_ROW_SELECT = `
-  SELECT pe.id, pe.week, pe.day, pe.position,
-    pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
-    pe.sets, pe.reps, pe.weight, pe.notes
-  FROM plan_exercises pe
-  JOIN exercises e ON e.id = pe.exercise_id`;
-
-// Sets of the workout_log aliased `wl`, as a LogSet[] column
-export const SETS_JSON = `(
-  SELECT coalesce(json_agg(json_build_object(
-    'id', s.id, 'setNumber', s.set_number,
-    'weight', s.weight, 'reps', s.reps, 'notes', s.notes
-  ) ORDER BY s.set_number), '[]')
-  FROM workout_log_sets s
-  WHERE s.workout_log_id = wl.id
-) AS sets`;
-
-// to_json so it comes back as an ISO string, not a Date
-export const CREATED_AT_JSON = 'to_json(wl.created_at) AS "createdAt"';
+export const getPlanRows = async (
+  db: PoolClient | typeof workoutPool,
+  planId: number,
+) => {
+  const { rows } = await db.query<PlanRow>(
+    `SELECT pe.id, pe.week, pe.day, pe.position,
+       pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
+       pe.sets, pe.reps, pe.weight, pe.notes
+     FROM plan_exercises pe
+     JOIN exercises e ON e.id = pe.exercise_id
+     WHERE pe.plan_id = $1
+     ORDER BY pe.week, pe.day, pe.position`,
+    [planId],
+  );
+  return rows;
+};
 
 export const getActivePlan = async (email: string): Promise<Plan> => {
   const { rows } = await workoutPool.query<Plan>(
@@ -81,8 +78,17 @@ export const loadOrPruneLog = async (
        AND NOT EXISTS (SELECT 1 FROM workout_log_sets s WHERE s.workout_log_id = wl.id)`,
     [logId],
   );
+  // to_json so createdAt comes back as an ISO string, not a Date
   const { rows } = await client.query<DayLog>(
-    `SELECT wl.id, wl.passed, wl.notes, ${CREATED_AT_JSON}, ${SETS_JSON}
+    `SELECT wl.id, wl.passed, wl.notes, to_json(wl.created_at) AS "createdAt",
+       (
+         SELECT coalesce(json_agg(json_build_object(
+           'id', s.id, 'setNumber', s.set_number,
+           'weight', s.weight, 'reps', s.reps, 'notes', s.notes
+         ) ORDER BY s.set_number), '[]')
+         FROM workout_log_sets s
+         WHERE s.workout_log_id = wl.id
+       ) AS sets
      FROM workout_log wl
      WHERE wl.id = $1`,
     [logId],

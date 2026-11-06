@@ -1,10 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 export type User = { email: string; name: string };
 export type AppRole = { app: string; role: string };
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`/api/admin/${path}`, {
+export const fetchJson = async <T>(
+  url: string,
+  init?: RequestInit,
+): Promise<T> => {
+  const response = await fetch(url, {
     ...init,
     headers: { 'Content-Type': 'application/json' },
   });
@@ -15,8 +23,11 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   return body;
 };
 
+const request = <T>(path: string, init?: RequestInit) =>
+  fetchJson<T>(`/api/admin/${path}`, init);
+
 // Admin errors should surface right away rather than after retries
-const retry = false;
+export const retry = false;
 
 const userPath = (email: string) => `users/${encodeURIComponent(email)}`;
 
@@ -46,6 +57,21 @@ export const useUserRoles = (email: string) =>
     queryFn: () => request<AppRole[]>(`${userPath(email)}/roles`),
     retry,
   });
+
+// Users holding any role for the app
+export const useUsersWithApp = (app: string) => {
+  const { data: users = [] } = useUsers();
+  const roles = useQueries({
+    queries: users.map(({ email }) => ({
+      queryKey: KEYS.userRoles(email),
+      queryFn: () => request<AppRole[]>(`${userPath(email)}/roles`),
+      retry,
+    })),
+  });
+  return users.filter(
+    (_, index) => roles[index]?.data?.some((role) => role.app === app),
+  );
+};
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();

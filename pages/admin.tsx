@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import Head from 'next/head';
-import { ScrollText, Users } from 'lucide-react';
+import { Dumbbell, ScrollText, Users } from 'lucide-react';
 import { requireLogin } from '@/services/auth';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { UsersPanel } from '@/components/admin/UsersPanel';
+import { WorkoutPanel } from '@/components/admin/WorkoutPanel';
 
 const TABS = [
   { id: 'users', label: 'Users', Icon: Users },
+  { id: 'workout', label: 'Workout', Icon: Dumbbell },
   { id: 'logs', label: 'Logs', Icon: ScrollText },
 ] as const;
 
@@ -47,9 +49,9 @@ const AdminPage = ({ email }: { email: string }) => {
             ))}
           </div>
         </div>
-        {tab === 'users' ? (
-          <UsersPanel />
-        ) : (
+        {tab === 'users' && <UsersPanel />}
+        {tab === 'workout' && <WorkoutPanel />}
+        {tab === 'logs' && (
           <section className='rounded-lg border border-dashed border-[#1e2a44] px-4 py-16 text-center font-mono text-xs text-[#4b5a7d]'>
             LOGS · coming soon
           </section>

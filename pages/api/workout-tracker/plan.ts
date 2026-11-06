@@ -1,5 +1,4 @@
 import type { NextApiRequest } from 'next';
-import type { PoolClient } from 'pg';
 import {
   idsToSync,
   PLAN_FIELDS,
@@ -17,24 +16,11 @@ import {
 } from '@/services/workoutApi';
 import {
   getActivePlan,
-  PLAN_ROW_SELECT,
+  getPlanRows,
   withTransaction,
   workoutPool,
 } from '@/services/workoutDb';
 import type { PlanResponse, PlanRow } from '@/types/workout';
-
-const getPlanRows = async (
-  db: PoolClient | typeof workoutPool,
-  planId: number,
-) => {
-  const { rows } = await db.query<PlanRow>(
-    `${PLAN_ROW_SELECT}
-     WHERE pe.plan_id = $1
-     ORDER BY pe.week, pe.day, pe.position`,
-    [planId],
-  );
-  return rows;
-};
 
 const getPlan = async (
   _req: NextApiRequest,
