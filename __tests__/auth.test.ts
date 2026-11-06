@@ -54,7 +54,7 @@ describe('getAuthenticatedEmail', () => {
     await expect(
       getAuthenticatedEmail(
         { headers: { 'x-authenticated-email': '' } },
-        'lcruz-dev',
+        'admin',
       ),
     ).resolves.toBeNull();
     expect(fetchMock).toHaveBeenCalled();
@@ -64,10 +64,10 @@ describe('getAuthenticatedEmail', () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 403 }));
 
     await expect(
-      getAuthenticatedEmail({ headers: {} }, 'lcruz-dev'),
+      getAuthenticatedEmail({ headers: {} }, 'admin'),
     ).resolves.toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(expect.any(String), {
-      headers: { cookie: '', 'X-Auth-App': 'lcruz-dev' },
+      headers: { cookie: '', 'X-Auth-App': 'admin' },
     });
   });
 
