@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { HttpError, idField, intField, textField } from './workoutApi';
-import { getPlanRows, PLAN_ROW_SELECT, workoutPool } from './workoutDb';
+import { getPlanRows, workoutPool } from './workoutDb';
 import type {
   AdminPlan,
   AdminPlanResponse,
@@ -29,7 +29,11 @@ export const getAdminPlanRow = async (
   id: number,
 ): Promise<AdminPlanRow> => {
   const { rows } = await db.query<AdminPlanRow>(
-    `${PLAN_ROW_SELECT.replace('SELECT', 'SELECT pe.plan_id AS "planId",')}
+    `SELECT pe.id, pe.plan_id AS "planId", pe.week, pe.day, pe.position,
+       pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
+       pe.sets, pe.reps, pe.weight, pe.notes
+     FROM plan_exercises pe
+     JOIN exercises e ON e.id = pe.exercise_id
      WHERE pe.id = $1`,
     [id],
   );
