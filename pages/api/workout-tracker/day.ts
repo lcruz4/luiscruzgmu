@@ -6,12 +6,7 @@ import {
   WEEKS,
 } from '@/lib/workout/schedule';
 import { dateField, intField, workoutRoute } from '@/services/workoutApi';
-import {
-  CREATED_AT_JSON,
-  getActivePlan,
-  SETS_JSON,
-  workoutPool,
-} from '@/services/workoutDb';
+import { getActivePlan, workoutPool } from '@/services/workoutDb';
 import type {
   DayLog,
   DayResponse,
@@ -58,9 +53,17 @@ const getDay = async (
   );
 
   const [{ rows: logs }, { rows: lasts }] = await Promise.all([
+    // to_json so createdAt comes back as an ISO string, not a Date
     workoutPool.query<DayLog & { planExerciseId: number }>(
       `SELECT wl.id, wl.plan_exercise_id AS "planExerciseId", wl.passed, wl.notes,
-         ${CREATED_AT_JSON}, ${SETS_JSON}
+         to_json(wl.created_at) AS "createdAt", (
+           SELECT coalesce(json_agg(json_build_object(
+             'id', s.id, 'setNumber', s.set_number,
+             'weight', s.weight, 'reps', s.reps, 'notes', s.notes
+           ) ORDER BY s.set_number), '[]')
+           FROM workout_log_sets s
+           WHERE s.workout_log_id = wl.id
+         ) AS sets
        FROM workout_log wl
        WHERE wl.plan_exercise_id = ANY($1) AND wl.date = $2`,
       [planRows.map((row) => row.id), date],
@@ -69,7 +72,14 @@ const getDay = async (
     workoutPool.query<LastPerformance & { exerciseId: number }>(
       `SELECT DISTINCT ON (pe.exercise_id)
          pe.exercise_id AS "exerciseId", wl.id, wl.date::text AS date,
-         pe.week, pe.day, wl.passed, wl.notes, ${SETS_JSON}
+         pe.week, pe.day, wl.passed, wl.notes, (
+           SELECT coalesce(json_agg(json_build_object(
+             'id', s.id, 'setNumber', s.set_number,
+             'weight', s.weight, 'reps', s.reps, 'notes', s.notes
+           ) ORDER BY s.set_number), '[]')
+           FROM workout_log_sets s
+           WHERE s.workout_log_id = wl.id
+         ) AS sets
        FROM workout_log wl
        JOIN plan_exercises pe ON pe.id = wl.plan_exercise_id
        JOIN plans p ON p.id = pe.plan_id

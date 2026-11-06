@@ -31,6 +31,7 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 ## Conventions
 
 - Path alias `@/*` → repo root.
+- Write each SQL query in full where it's used; no shared SQL fragment constants.
 - Arrow functions only (`eslint.config.mjs`, checked on staged files). Older files still have `function` declarations; convert them when you touch the file.
 - Styling is mixed: older portfolio components use Emotion `styled` + theme; newer project pages use Tailwind v4 + shadcn. Match the surrounding file.
 - Data fetching on the client via TanStack Query.
