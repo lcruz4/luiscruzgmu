@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getAuthenticatedEmail } from './auth';
+import { DatabaseError } from 'pg';
+import { getAuthenticatedEmail, getAuthenticatedRoles } from './auth';
 import { logger } from './logger';
 
 export class HttpError extends Error {
@@ -11,11 +12,16 @@ export class HttpError extends Error {
   }
 }
 
+const UNIQUE_VIOLATION = '23505';
+const FK_VIOLATION = '23503';
+
 type MethodHandler = (req: NextApiRequest, email: string) => Promise<unknown>;
 
-// Method check → login check → handler. The handler's return value is sent
-// as 200 JSON; HttpError → its status; anything else → logged 500.
-export const workoutRoute =
+// Method check → auth check (returns the email or throws an HttpError) →
+// handler. The handler's return value is sent as 200 JSON; HttpError → its
+// status; unique/foreign key violations → 409; anything else → logged 500.
+const route =
+  (authenticate: (req: NextApiRequest) => Promise<string>) =>
   (handlers: Partial<Record<string, MethodHandler>>) =>
   async (req: NextApiRequest, res: NextApiResponse) => {
     const handler = req.method ? handlers[req.method] : undefined;
@@ -24,21 +30,37 @@ export const workoutRoute =
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const email = await getAuthenticatedEmail(req, 'workout-tracker');
-    if (!email) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     try {
+      const email = await authenticate(req);
       return res.status(200).json(await handler(req, email));
     } catch (error) {
       if (error instanceof HttpError) {
         return res.status(error.status).json({ error: error.message });
       }
+      if (
+        error instanceof DatabaseError &&
+        (error.code === UNIQUE_VIOLATION || error.code === FK_VIOLATION)
+      ) {
+        return res.status(409).json({ error: error.detail ?? error.message });
+      }
       logger.error(`${req.method} ${req.url} failed:`, error);
       return res.status(500).json({ error: 'Internal server error' });
     }
   };
+
+export const workoutRoute = route(async (req) => {
+  const email = await getAuthenticatedEmail(req, 'workout-tracker');
+  if (!email) throw new HttpError(401, 'Unauthorized');
+  return email;
+});
+
+// Needs the admin role for workout-tracker
+export const workoutAdminRoute = route(async (req) => {
+  const auth = await getAuthenticatedRoles(req, 'workout-tracker');
+  if (!auth) throw new HttpError(401, 'Unauthorized');
+  if (!auth.roles.includes('admin')) throw new HttpError(403, 'Forbidden');
+  return auth.email;
+});
 
 const badRequest = (message: string) => new HttpError(400, message);
 

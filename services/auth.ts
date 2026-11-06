@@ -15,6 +15,19 @@ export const appForPath = (path: string): AuthApp => {
 
 export type AuthRequest = { headers: IncomingHttpHeaders };
 
+const authorize = async (req: AuthRequest, app: AuthApp) => {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/authorize`,
+      { headers: { cookie: req.headers.cookie || '', 'X-Auth-App': app } },
+    );
+    return response.headers;
+  } catch (error) {
+    logger.error('Auth check failed:', error);
+    return null;
+  }
+};
+
 // nginx runs the auth check on the paths it protects and forwards the email;
 // it strips the header everywhere else. Without it (local dev, or a path nginx
 // doesn't check) ask the auth service directly.
@@ -25,16 +38,20 @@ export const getAuthenticatedEmail = async (
   const forwarded = req.headers['x-authenticated-email'];
   if (typeof forwarded === 'string' && forwarded) return forwarded;
 
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_AUTH_DOMAIN}/auth/authorize`,
-      { headers: { cookie: req.headers.cookie || '', 'X-Auth-App': app } },
-    );
-    return response.headers.get('x-authenticated-email') || null;
-  } catch (error) {
-    logger.error('Auth check failed:', error);
-    return null;
-  }
+  return (await authorize(req, app))?.get('x-authenticated-email') || null;
+};
+
+// The user's email and roles for the app; null when signed out. Always asks
+// the auth service so a client-sent roles header is never trusted.
+export const getAuthenticatedRoles = async (
+  req: AuthRequest,
+  app: AuthApp,
+): Promise<{ email: string; roles: string[] } | null> => {
+  const headers = await authorize(req, app);
+  const email = headers?.get('x-authenticated-email');
+  if (!headers || !email) return null;
+  const roles = headers.get('x-authenticated-roles') ?? '';
+  return { email, roles: roles.split(',').filter(Boolean) };
 };
 
 // Page login check. Signed out → the sign-in page, which comes back to this

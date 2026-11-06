@@ -79,3 +79,21 @@ export interface PlanResponse {
   rows: PlanRow[];
   dayData?: DayResponse | null;
 }
+
+export interface AdminPlan extends Plan {
+  ownerEmail: string;
+  isActive: boolean;
+}
+
+export interface AdminPlanResponse {
+  plan: AdminPlan;
+  rows: PlanRow[];
+}
+
+export interface AdminPlanSummary extends AdminPlan {
+  exerciseCount: number;
+}
+
+export interface AdminPlanRow extends PlanRow {
+  planId: number;
+}

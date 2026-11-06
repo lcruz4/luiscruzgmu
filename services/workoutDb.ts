@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { HttpError } from './workoutApi';
-import type { DayLog, Plan } from '@/types/workout';
+import type { DayLog, Plan, PlanRow } from '@/types/workout';
 
 export const workoutPool = new Pool({
   connectionString: process.env.WORKOUT_DB_URL,
@@ -29,6 +29,19 @@ export const PLAN_ROW_SELECT = `
     pe.sets, pe.reps, pe.weight, pe.notes
   FROM plan_exercises pe
   JOIN exercises e ON e.id = pe.exercise_id`;
+
+export const getPlanRows = async (
+  db: PoolClient | typeof workoutPool,
+  planId: number,
+) => {
+  const { rows } = await db.query<PlanRow>(
+    `${PLAN_ROW_SELECT}
+     WHERE pe.plan_id = $1
+     ORDER BY pe.week, pe.day, pe.position`,
+    [planId],
+  );
+  return rows;
+};
 
 // Sets of the workout_log aliased `wl`, as a LogSet[] column
 export const SETS_JSON = `(
