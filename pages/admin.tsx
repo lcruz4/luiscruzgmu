@@ -61,6 +61,6 @@ const AdminPage = ({ email }: { email: string }) => {
   );
 };
 
-export const getServerSideProps = requireLogin('lcruz-dev');
+export const getServerSideProps = requireLogin('admin');
 
 export default AdminPage;

@@ -4,13 +4,13 @@ import { SIGN_IN_PATH } from '@/lib/auth';
 import { logger } from './logger';
 
 // lcruz_auth app names; a user needs a role for the app to get through
-export type AuthApp = 'workout-tracker' | 'giant-order-tool' | 'lcruz-dev';
+export type AuthApp = 'workout-tracker' | 'giant-order-tool' | 'admin';
 
 // The app whose login a page needs, by its path namespace
 export const appForPath = (path: string): AuthApp => {
   if (path.startsWith('/projects/workout-tracker')) return 'workout-tracker';
   if (path.startsWith('/projects/giant-order-tool')) return 'giant-order-tool';
-  return 'lcruz-dev';
+  return 'admin';
 };
 
 export type AuthRequest = { headers: IncomingHttpHeaders };
