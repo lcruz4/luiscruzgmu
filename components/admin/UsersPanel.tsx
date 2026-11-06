@@ -195,6 +195,7 @@ const UserRow = ({ user }: { user: User }) => {
 const NewUserRow = ({ onDone }: { onDone: () => void }) => {
   const create = useCreateUser();
   const [user, setUser] = useState<User>({ email: '', name: '' });
+  const [closing, setClosing] = useState(false);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -204,7 +205,13 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
   };
 
   return (
-    <tr className='grid gap-2 border-t border-[#22d3ee55] bg-[#22d3ee0a] py-3 md:table-row md:py-0'>
+    <tr
+      className={`grid gap-2 border-t border-[#22d3ee55] bg-[#22d3ee0a] py-3 duration-300 ease-out md:table-row md:py-0 ${
+        closing
+          ? 'animate-out fade-out slide-out-to-top-2 fill-mode-forwards'
+          : 'animate-in fade-in slide-in-from-top-2'
+      }`}
+    >
       <td className={STACK_CELL}>
         <input
           form='new-user'
@@ -249,7 +256,15 @@ const NewUserRow = ({ onDone }: { onDone: () => void }) => {
             )}
             Save
           </button>
-          <button type='button' onClick={onDone} className={SECONDARY_BTN}>
+          <button
+            type='button'
+            onClick={() => {
+              // Let the exit animation play before unmounting
+              setClosing(true);
+              setTimeout(onDone, 300);
+            }}
+            className={SECONDARY_BTN}
+          >
             Cancel
           </button>
         </form>

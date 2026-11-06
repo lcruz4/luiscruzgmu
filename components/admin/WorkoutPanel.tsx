@@ -262,8 +262,8 @@ export const WorkoutPanel = () => {
   }
 
   // Desktop: fills the viewport, and the new plan form rises from the bottom
-  // while the grid shrinks to make room. Stacked, the form opens on top so
-  // it shows up next to the New button
+  // while the grid shrinks to make room. Stacked, the form drops down from
+  // the top so it shows up next to the New button
   return (
     <div className='flex flex-col lg:h-[calc(100vh-12rem)]'>
       <div className='grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[18rem_minmax(0,1fr)]'>
@@ -289,7 +289,7 @@ export const WorkoutPanel = () => {
         </section>
       </div>
       <div
-        className={`order-first grid shrink-0 lg:order-none lg:transition-[grid-template-rows] lg:duration-300 lg:ease-out ${
+        className={`order-first grid shrink-0 lg:order-none transition-[grid-template-rows] duration-300 ease-out ${
           adding ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
@@ -300,8 +300,8 @@ export const WorkoutPanel = () => {
           }`}
         >
           <div
-            className={`pb-4 lg:pt-4 lg:pb-0 lg:transition-transform lg:duration-300 lg:ease-out ${
-              adding ? 'translate-y-0' : 'lg:translate-y-full'
+            className={`pb-4 transition-transform duration-300 ease-out lg:pt-4 lg:pb-0 ${
+              adding ? 'translate-y-0' : '-translate-y-full lg:translate-y-full'
             }`}
           >
             <NewPlanForm
