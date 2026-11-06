@@ -157,12 +157,20 @@ const NewPlanForm = ({
           <span className={LABEL}>COPY FROM</span>
           <select
             value={plan.sourcePlanId ?? ''}
-            onChange={(e) =>
+            onChange={(e) => {
+              const source = plans.find(
+                ({ id }) => id === Number(e.target.value),
+              );
+              const previous = plans.find(({ id }) => id === plan.sourcePlanId);
+              // Fill an empty name, or one still matching the last source
+              const autofill =
+                !plan.name.trim() || plan.name === previous?.name;
               setPlan({
                 ...plan,
-                sourcePlanId: e.target.value ? Number(e.target.value) : null,
-              })
-            }
+                sourcePlanId: source?.id ?? null,
+                name: autofill ? source?.name ?? '' : plan.name,
+              });
+            }}
             className={INPUT}
           >
             <option value=''>Empty plan</option>
