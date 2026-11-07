@@ -11,6 +11,8 @@ interface SetListProps {
   saved: boolean[];
   onChange: (sets: DraftSet[]) => void;
   onSave: (index: number) => void;
+  /** A set note lost focus */
+  onNoteBlur: () => void;
 }
 
 export const SetList = ({
@@ -19,6 +21,7 @@ export const SetList = ({
   saved,
   onChange,
   onSave,
+  onNoteBlur,
 }: SetListProps) => {
   // One set's note panel open at a time, by row index
   const [openNote, setOpenNote] = useState<number>();
@@ -51,6 +54,7 @@ export const SetList = ({
               onChange(sets.map((row, i) => (i === index ? changed : row)))
             }
             onSave={() => onSave(index)}
+            onNoteBlur={onNoteBlur}
             onRemove={() => {
               setOpenNote(undefined);
               onChange(sets.filter((_row, i) => i !== index));
