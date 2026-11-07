@@ -35,8 +35,11 @@ export class GiantApiError extends Error {
   }
 }
 
+// giant-cart serve answers 503 `error` when it's up but can't drive Chrome
 export const isUnreachable = (error: unknown) =>
-  error instanceof GiantApiError && error.reason === 'unreachable';
+  error instanceof GiantApiError &&
+  (error.reason === 'unreachable' ||
+    (error.status === 503 && error.reason === 'error'));
 
 export const RECONNECT_MS = 10_000;
 
