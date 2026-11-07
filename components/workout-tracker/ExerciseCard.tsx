@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp, Save, Timer } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -105,14 +105,14 @@ export const ExerciseCard = ({
 
   // Shows as saved right away; a failed save puts the draft back so Retry
   // has it.
-  const save = (saving: ExerciseDraft) => {
+  const save = (next: ExerciseDraft, saving: ExerciseDraft) => {
     const unchanged =
-      JSON.stringify(current) ===
+      JSON.stringify(next) ===
       JSON.stringify(
         initialDraft({ ...exercise, log: expectedLog(log, saving) }),
       );
-    onDraftChange(unchanged ? null : current);
-    saveLog.mutate(saving, { onError: () => onDraftChange(current) });
+    onDraftChange(unchanged ? null : next);
+    saveLog.mutate(saving, { onError: () => onDraftChange(next) });
   };
 
   // Saves one row; the rest of the card stays a draft. The last row with the
@@ -122,14 +122,18 @@ export const ExerciseCard = ({
     const completes =
       index === current.sets.length - 1 &&
       savedRows(log, current.sets).every((saved, i) => saved || i === index);
-    save(completes ? current : withSavedSet(log, current.sets, index));
+    save(current, completes ? current : withSavedSet(log, current.sets, index));
     if (completes) onComplete();
   };
 
   // Notes and pass/fail; rows not saved yet stay a draft
-  const saveDetails = () => {
+  const saveDetails = (next: ExerciseDraft) => {
+    if (!detailsChanged(log, next)) {
+      onDraftChange(next);
+      return;
+    }
     setRetrySet(undefined);
-    save(withDetails(log, current));
+    save(next, withDetails(log, next));
   };
 
   return (
@@ -184,28 +188,21 @@ export const ExerciseCard = ({
           saveSet(index);
           onSetSave(index === current.sets.length - 1);
         }}
+        onNoteBlur={() => draft && saveDetails(draft)}
       />
       <ExerciseLogFields
         planExerciseId={exercise.id}
         notes={current.notes}
         passed={current.passed}
-        onChange={update}
+        onNotesChange={(notes) => update({ notes })}
+        onNotesBlur={() => draft && saveDetails(draft)}
+        onPassedChange={(passed) => saveDetails({ ...current, passed })}
       />
-      {draft && detailsChanged(log, draft) && (
-        <button
-          type='button'
-          onClick={saveDetails}
-          className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink'
-        >
-          <Save size={18} strokeWidth={2.5} aria-hidden />
-          Save
-        </button>
-      )}
       <SaveStatus
         error={saveLog.error}
         paused={saveLog.isPaused}
         onRetry={() =>
-          retrySet === undefined ? saveDetails() : saveSet(retrySet)
+          retrySet === undefined ? saveDetails(current) : saveSet(retrySet)
         }
       />
     </section>

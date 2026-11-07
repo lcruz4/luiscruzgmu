@@ -1,13 +1,16 @@
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ExerciseDraft } from '@/lib/workout/sets';
 import { labelClass } from './styles';
 
 interface ExerciseLogFieldsProps {
   planExerciseId: number;
   notes: string;
   passed: boolean | null;
-  onChange: (patch: Partial<ExerciseDraft>) => void;
+  onNotesChange: (notes: string) => void;
+  /** Saves the note */
+  onNotesBlur: () => void;
+  /** Saves right away */
+  onPassedChange: (passed: boolean | null) => void;
 }
 
 // Exercise note + pass/fail check
@@ -15,7 +18,9 @@ export const ExerciseLogFields = ({
   planExerciseId,
   notes,
   passed,
-  onChange,
+  onNotesChange,
+  onNotesBlur,
+  onPassedChange,
 }: ExerciseLogFieldsProps) => {
   const checkButton = (value: boolean) => {
     const pressed = passed === value;
@@ -24,7 +29,7 @@ export const ExerciseLogFields = ({
         type='button'
         aria-pressed={pressed}
         // Tapping the pressed one clears it
-        onClick={() => onChange({ passed: pressed ? null : value })}
+        onClick={() => onPassedChange(pressed ? null : value)}
         className={cn(
           'relative z-10 flex cursor-pointer items-center justify-center gap-2 text-[15px] font-bold transition-colors',
           pressed ? 'text-mist-ink' : 'text-mist-muted',
@@ -51,7 +56,8 @@ export const ExerciseLogFields = ({
           value={notes}
           placeholder='Optional'
           maxLength={1000}
-          onChange={(event) => onChange({ notes: event.target.value })}
+          onChange={(event) => onNotesChange(event.target.value)}
+          onBlur={onNotesBlur}
           className='box-border h-12 w-full rounded-[12px] border border-mist-line bg-mist-raised px-3.5 text-base font-medium text-mist-text placeholder:text-mist-muted'
         />
       </div>
