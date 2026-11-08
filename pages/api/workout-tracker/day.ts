@@ -3,7 +3,6 @@ import {
   autoNext,
   DAYS_PER_WEEK,
   type LoggedDay,
-  WEEKS,
 } from '@/lib/workout/schedule';
 import { dateField, intField, workoutRoute } from '@/services/workoutApi';
 import { getActivePlan, workoutPool } from '@/services/workoutDb';
@@ -35,9 +34,9 @@ const getDay = async (
 
   const { week, day } =
     req.query.week === undefined && req.query.day === undefined
-      ? autoNext(lastDone.at(0), date)
+      ? autoNext(lastDone.at(0), date, plan.weeks)
       : {
-          week: intField(req.query.week, 'week', 1, WEEKS),
+          week: intField(req.query.week, 'week', 1, plan.weeks),
           day: intField(req.query.day, 'day', 1, DAYS_PER_WEEK),
         };
 

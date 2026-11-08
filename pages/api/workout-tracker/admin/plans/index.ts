@@ -35,7 +35,7 @@ const listPlans = async (
       ? null
       : emailField(req.query.ownerEmail, 'ownerEmail');
   const { rows } = await workoutPool.query<AdminPlanSummary>(
-    `SELECT p.id, p.name, p.owner_email AS "ownerEmail", p.is_active AS "isActive",
+    `SELECT p.id, p.name, p.weeks, p.owner_email AS "ownerEmail", p.is_active AS "isActive",
        (SELECT count(*)::int FROM plan_exercises pe WHERE pe.plan_id = p.id)
          AS "exerciseCount"
      FROM plans p
@@ -47,7 +47,7 @@ const listPlans = async (
 };
 
 // Body: { ownerEmail, name, sourcePlanId?, blank?, activate? }. Copies the
-// source plan's exercises; blank resets sets/reps to 0 and clears weight/notes.
+// source plan's weeks and exercises; blank resets sets/reps to 0 and clears weight/notes.
 // activate deactivates the owner's current active plan.
 const createPlan = async (req: NextApiRequest): Promise<AdminPlanResponse> => {
   const body = bodyOf(req);
@@ -64,10 +64,11 @@ const createPlan = async (req: NextApiRequest): Promise<AdminPlanResponse> => {
   return withTransaction(async (client) => {
     if (activate) await deactivateOwnerPlans(client, ownerEmail);
     const { rows } = await client.query<{ id: number }>(
-      `INSERT INTO plans (owner_email, name, is_active)
-       VALUES ($1, $2, $3)
+      `INSERT INTO plans (owner_email, name, is_active, weeks)
+       VALUES ($1, $2, $3,
+         coalesce((SELECT weeks FROM plans WHERE id = $4), 2))
        RETURNING id`,
-      [ownerEmail, name, activate],
+      [ownerEmail, name, activate, sourcePlanId],
     );
     const planId = rows[0].id;
 

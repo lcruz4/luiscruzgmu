@@ -7,6 +7,10 @@ export const DAY_TITLES = [
   'Shoulders · Arms',
 ];
 
+// Week 2 · Day 3, or Day 3 on a 1-week plan
+export const weekDayText = (week: number, day: number, weeks: number) =>
+  weeks === 1 ? `Day ${day}` : `Week ${week} · Day ${day}`;
+
 // Numbers are lb; bands ('rb -1.5') and 'BW' stay as typed
 export const isPounds = (weight: string) => /^[\d./]+$/.test(weight);
 

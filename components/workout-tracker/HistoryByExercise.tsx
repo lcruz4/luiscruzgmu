@@ -58,7 +58,8 @@ export const HistoryByExercise = ({ entries }: { entries: HistoryEntry[] }) => {
           <li key={entry.id} className='flex flex-col gap-1 px-4 py-3.5'>
             <div className='flex items-center justify-between gap-2'>
               <span className='text-xs font-bold tracking-[0.08em] text-mist-muted uppercase'>
-                {longDate(entry.date)} · W{entry.week} D{entry.day}
+                {longDate(entry.date)} ·{' '}
+                {entry.planWeeks === 1 ? '' : `W${entry.week} `}D{entry.day}
               </span>
               <PassFail passed={entry.passed} />
             </div>

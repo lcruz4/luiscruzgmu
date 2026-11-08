@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/types/workout';
 import { EntryNotes, PassFail } from './EntryDetails';
-import { DAY_TITLES, longDate, setsText } from './format';
+import { DAY_TITLES, longDate, setsText, weekDayText } from './format';
 import { cardClass } from './styles';
 import { getToday } from './useDay';
 
@@ -12,6 +12,7 @@ interface DayGroup {
   date: string;
   week: number;
   day: number;
+  planWeeks: number;
   entries: HistoryEntry[];
 }
 
@@ -19,11 +20,11 @@ interface DayGroup {
 const groupByDay = (entries: HistoryEntry[]) => {
   const groups: DayGroup[] = [];
   for (const entry of entries) {
-    const { date, week, day } = entry;
+    const { date, week, day, planWeeks } = entry;
     const key = `${date} W${week}D${day}`;
     const group = groups.at(-1);
     if (group?.key === key) group.entries.push(entry);
-    else groups.push({ key, date, week, day, entries: [entry] });
+    else groups.push({ key, date, week, day, planWeeks, entries: [entry] });
   }
   return groups;
 };
@@ -54,7 +55,7 @@ interface DayGroupCardProps {
 }
 
 const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
-  const { date, week, day, entries } = group;
+  const { date, week, day, planWeeks, entries } = group;
   const Chevron = open ? ChevronUp : ChevronDown;
   return (
     <section className={cardClass}>
@@ -72,7 +73,7 @@ const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
             {date === today ? `Today · ${longDate(date)}` : longDate(date)}
           </span>
           <span className='text-base leading-[22px] font-extrabold'>
-            Week {week} · Day {day} · {DAY_TITLES[day - 1]}
+            {weekDayText(week, day, planWeeks)} · {DAY_TITLES[day - 1]}
           </span>
           {!open && (
             <span className='text-[13px] font-semibold text-mist-muted'>

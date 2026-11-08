@@ -3,13 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { autoNext, type WeekDay, WEEKS } from '@/lib/workout/schedule';
+import { autoNext, type WeekDay } from '@/lib/workout/schedule';
 import type { DayResponse } from '@/types/workout';
-import { DAY_TITLES, shortDate } from './format';
+import { DAY_TITLES, shortDate, weekDayText } from './format';
 import { accentBorder, labelClass } from './styles';
 import type { Selection } from './useSelection';
-
-const WEEK_NUMBERS = Array.from({ length: WEEKS }, (_, index) => index + 1);
 
 interface DayPickerProps {
   shown: DayResponse;
@@ -22,7 +20,9 @@ interface DayPickerProps {
 export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const next = today ? autoNext(shown.lastDone.at(0), today) : undefined;
+  const { weeks } = shown.plan;
+  const weekNumbers = Array.from({ length: weeks }, (_, index) => index + 1);
+  const next = today ? autoNext(shown.lastDone.at(0), today, weeks) : undefined;
 
   const changeOpen = (value: boolean) => {
     setOpen(value);
@@ -73,17 +73,19 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
             <X size={22} strokeWidth={2.25} aria-hidden />
           </Dialog.Close>
         </div>
-        {WEEK_NUMBERS.map((week) => (
+        {weekNumbers.map((week) => (
           <div key={week} className='flex flex-col gap-2'>
-            <div className={cn(labelClass, 'flex items-center gap-2')}>
-              <span
-                className={cn(
-                  'size-2 rounded-full',
-                  week % 2 === 0 ? 'bg-mist-pink' : 'bg-mist-cyan',
-                )}
-              />
-              Week {week}
-            </div>
+            {weeks > 1 && (
+              <div className={cn(labelClass, 'flex items-center gap-2')}>
+                <span
+                  className={cn(
+                    'size-2 rounded-full',
+                    week % 2 === 0 ? 'bg-mist-pink' : 'bg-mist-cyan',
+                  )}
+                />
+                Week {week}
+              </div>
+            )}
             <div className='grid grid-cols-4 gap-2'>
               {DAY_TITLES.map((title, index) => {
                 const day = index + 1;
@@ -97,7 +99,11 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
                     key={day}
                     type='button'
                     aria-current={current || undefined}
-                    aria-label={`Week ${week} Day ${day}, ${shortTitle}, ${
+                    aria-label={`${weekDayText(
+                      week,
+                      day,
+                      weeks,
+                    )}, ${shortTitle}, ${
                       lastDate
                         ? `last done ${shortDate(lastDate)}`
                         : 'not done yet'

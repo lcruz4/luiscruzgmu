@@ -28,7 +28,7 @@ const setActive = async (req: NextApiRequest): Promise<{ plan: AdminPlan }> => {
 
     const { rows } = await client.query<AdminPlan>(
       `UPDATE plans SET is_active = $2 WHERE id = $1
-       RETURNING id, name, owner_email AS "ownerEmail", is_active AS "isActive"`,
+       RETURNING id, name, weeks, owner_email AS "ownerEmail", is_active AS "isActive"`,
       [id, active],
     );
     return { plan: rows[0] };

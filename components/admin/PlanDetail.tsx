@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { DAYS_PER_WEEK, WEEKS } from '@/lib/workout/schedule';
+import { DAYS_PER_WEEK, MAX_WEEKS } from '@/lib/workout/schedule';
 import type { AdminPlanDetailRow, AdminPlanSummary } from '@/types/workout';
 import {
   ConfirmButton,
@@ -30,6 +30,7 @@ import {
   useExercises,
   usePlan,
   useSetPlanActive,
+  useSetPlanWeeks,
   useUpdatePlanRow,
 } from './workoutApi';
 
@@ -325,6 +326,7 @@ export const PlanDetail = ({
   const { data, isPending, error } = usePlan(planId);
   const remove = useDeletePlan();
   const createRow = useCreatePlanRow(planId);
+  const setWeeks = useSetPlanWeeks(planId);
   const [week, setWeek] = useState(1);
   const [day, setDay] = useState(1);
   const [adding, setAdding] = useState(false);
@@ -348,7 +350,11 @@ export const PlanDetail = ({
   }
 
   const { plan, rows } = data;
-  const dayRows = rows.filter((row) => row.week === week && row.day === day);
+  // The plan may have dropped the picked week
+  const shownWeek = Math.min(week, plan.weeks);
+  const dayRows = rows.filter(
+    (row) => row.week === shownWeek && row.day === day,
+  );
   const otherActive = plans.find(
     (other) =>
       other.ownerEmail === plan.ownerEmail &&
@@ -398,13 +404,27 @@ export const PlanDetail = ({
         </div>
       </div>
       <div className='flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3'>
-        <Picker label='WEEK' count={WEEKS} value={week} onChange={setWeek} />
+        <Picker
+          label='WEEKS'
+          count={MAX_WEEKS}
+          value={plan.weeks}
+          onChange={(weeks) => setWeeks.mutate(weeks)}
+        />
+        {plan.weeks > 1 && (
+          <Picker
+            label='WEEK'
+            count={plan.weeks}
+            value={shownWeek}
+            onChange={setWeek}
+          />
+        )}
         <Picker
           label='DAY'
           count={DAYS_PER_WEEK}
           value={day}
           onChange={setDay}
         />
+        <ErrorText error={setWeeks.error} />
       </div>
       <div className='overflow-x-auto'>
         <table className='w-full min-w-[40rem] table-fixed text-left text-sm'>
@@ -425,7 +445,7 @@ export const PlanDetail = ({
             {adding && (
               <RowEditor
                 initial={{
-                  week,
+                  week: shownWeek,
                   day,
                   position: nextPosition,
                   exerciseId: 0,

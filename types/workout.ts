@@ -3,6 +3,8 @@ import type { LoggedDay } from '@/lib/workout/schedule';
 export interface Plan {
   id: number;
   name: string;
+  /** Weeks in the rotation, 1–MAX_WEEKS */
+  weeks: number;
 }
 
 export interface PlanRow {
@@ -64,6 +66,8 @@ export interface LogResponse {
 }
 
 export interface HistoryEntry extends LastPerformance {
+  /** Weeks of the plan the log belongs to */
+  planWeeks: number;
   exerciseId: number;
   name: string;
   isTimed: boolean;
