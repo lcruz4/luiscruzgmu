@@ -15,8 +15,14 @@ import type {
 } from '@/types/giantOrder';
 import { ProductThumb } from './ProductThumb';
 import { QuestionPanel } from './QuestionPanel';
+import { ReviewList } from './ReviewList';
 import { cardClass, money, primaryButton, secondaryButton } from './styles';
-import { useClearList, useFillCart, useQuestion } from './useGiant';
+import {
+  useClearList,
+  useEditLine,
+  useFillCart,
+  useQuestion,
+} from './useGiant';
 
 const questionKey = (question: Question) =>
   `${question.kind}-${question.lineId}-${question.message}`;
@@ -45,7 +51,6 @@ const StatusIcon = ({ line, open }: { line: GroceryLine; open: boolean }) => {
 
 const statusText = (line: GroceryLine) => {
   if (line.status === 'skipped') return 'Skipped';
-  if (line.status === 'quantity') return 'Needs quantity';
   if (line.status === 'match') return 'Not checked';
   return null;
 };
@@ -53,16 +58,12 @@ const statusText = (line: GroceryLine) => {
 const LineRow = ({
   line,
   question,
-  initialQuantity,
 }: {
   line: GroceryLine;
   question: Question | null;
-  initialQuantity: number;
 }) => {
   const { product } = line;
   const open = question?.lineId === line.id;
-  const merging =
-    question?.kind === 'total' && question.mergeIds.includes(line.id);
   const status = statusText(line);
   return (
     <li className='flex flex-col gap-2 border-b border-mist-line py-3 last:border-b-0'>
@@ -89,11 +90,7 @@ const LineRow = ({
         </div>
         {product ? (
           <span className='text-right text-[13px] font-semibold tabular-nums'>
-            {line.quantity ?? '?'} × {money(product.price)}
-          </span>
-        ) : merging ? (
-          <span className='text-[13px] font-semibold text-mist-cyan-text'>
-            Merging
+            {line.quantity ?? 1} × {money(product.price)}
           </span>
         ) : (
           !open && (
@@ -104,11 +101,7 @@ const LineRow = ({
         )}
       </div>
       {open && question && (
-        <QuestionPanel
-          key={questionKey(question)}
-          question={question}
-          initialQuantity={initialQuantity}
-        />
+        <QuestionPanel key={questionKey(question)} question={question} />
       )}
     </li>
   );
@@ -116,12 +109,15 @@ const LineRow = ({
 
 const ReviewFooter = ({
   review,
+  editing,
   onFilled,
 }: {
   review: Review;
+  editing: boolean;
   onFilled: (response: CartResponse) => void;
 }) => {
   const fill = useFillCart();
+  const disabled = fill.isPending || editing;
   return (
     <div className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
       <div className='flex items-baseline justify-between'>
@@ -138,7 +134,7 @@ const ReviewFooter = ({
       <button
         type='button'
         className={primaryButton}
-        disabled={fill.isPending}
+        disabled={disabled}
         onClick={() => fill.mutate(false, { onSuccess: onFilled })}
       >
         <ShoppingCart size={18} aria-hidden />
@@ -147,7 +143,7 @@ const ReviewFooter = ({
       <button
         type='button'
         className={secondaryButton}
-        disabled={fill.isPending}
+        disabled={disabled}
         onClick={() => fill.mutate(true, { onSuccess: onFilled })}
       >
         Dry run
@@ -172,19 +168,12 @@ export const ListStage = ({
 }) => {
   const { data, error, isFetching, refetch } = useQuestion(true);
   const clear = useClearList();
+  const edit = useEditLine();
   const question = data?.question ?? null;
   const review = data?.review ?? null;
   const done = lines.filter(
     ({ status }) => status === 'resolved' || status === 'skipped',
   ).length;
-
-  const initialQuantity = (() => {
-    if (question?.kind !== 'total') return 1;
-    const ids = [question.lineId, ...question.mergeIds];
-    return lines
-      .filter((line) => ids.includes(line.id))
-      .reduce((sum, line) => sum + (line.quantity ?? 1), 0);
-  })();
 
   const startOver = () => {
     if (window.confirm('Clear the whole list?')) clear.mutate();
@@ -228,21 +217,26 @@ export const ListStage = ({
         </div>
       )}
 
-      <section className={cn(cardClass, 'px-4 py-1')}>
-        <h2 className='sr-only'>Items</h2>
-        <ul className='m-0 list-none p-0'>
-          {lines.map((line) => (
-            <LineRow
-              key={line.id}
-              line={line}
-              question={question}
-              initialQuantity={initialQuantity}
-            />
-          ))}
-        </ul>
-      </section>
+      {review ? (
+        <ReviewList review={review} edit={edit} />
+      ) : (
+        <section className={cn(cardClass, 'px-4 py-1')}>
+          <h2 className='sr-only'>Items</h2>
+          <ul className='m-0 list-none p-0'>
+            {lines.map((line) => (
+              <LineRow key={line.id} line={line} question={question} />
+            ))}
+          </ul>
+        </section>
+      )}
 
-      {review && <ReviewFooter review={review} onFilled={onFilled} />}
+      {review && (
+        <ReviewFooter
+          review={review}
+          editing={edit.isPending}
+          onFilled={onFilled}
+        />
+      )}
     </>
   );
 };

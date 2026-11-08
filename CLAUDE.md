@@ -49,4 +49,4 @@ Never use the Slack skill when pushing changes or opening PRs in this project.
 
 ## GitHub CLI
 
-The active `gh` account (luiscruzih) isn't a collaborator on this repo. Run every `gh` command as lcruz4: `GH_TOKEN=$(gh auth token --user lcruz4) gh ...`. Don't switch the active account.
+Run every `gh` command as lcruz4: `GH_TOKEN=$(gh auth token --user lcruz4) gh ...`. Don't switch the active account.

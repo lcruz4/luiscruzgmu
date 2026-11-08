@@ -14,13 +14,15 @@ const PATHS = new Set([
   'checkout/answer',
 ]);
 
-// `defaults/<alias>`: the alias goes on as one URL-encoded segment
+// `defaults/<alias>`: the alias goes on as one URL-encoded segment;
+// `list/<lineId>`: a review item
 const upstreamPath = (segments: string[]) => {
   const path = segments.join('/');
   if (PATHS.has(path)) return path;
-  if (segments.length === 2 && segments[0] === 'defaults') {
-    return `defaults/${encodeURIComponent(segments[1])}`;
-  }
+  if (segments.length !== 2) return null;
+  const [route, param] = segments;
+  if (route === 'defaults') return `defaults/${encodeURIComponent(param)}`;
+  if (route === 'list' && /^\d+$/.test(param)) return `list/${param}`;
   return null;
 };
 

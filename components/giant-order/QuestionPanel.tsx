@@ -1,4 +1,4 @@
-import { Minus, Plus, Search, SkipForward } from 'lucide-react';
+import { Search, SkipForward } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { PickChoice, Question, Reply } from '@/types/giantOrder';
@@ -7,54 +7,6 @@ import { primaryButton, secondaryButton } from './styles';
 import { useAnswer } from './useGiant';
 
 type Answer = (reply: Reply) => void;
-
-const QuantityStepper = ({
-  initial,
-  pending,
-  onSave,
-}: {
-  initial: number;
-  pending: boolean;
-  onSave: (quantity: number) => void;
-}) => {
-  const [quantity, setQuantity] = useState(initial);
-  const stepClass =
-    'flex size-11 cursor-pointer items-center justify-center rounded-full border border-mist-line bg-mist-surface disabled:cursor-default disabled:opacity-40';
-  return (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center justify-center gap-5'>
-        <button
-          type='button'
-          aria-label='Fewer'
-          className={stepClass}
-          disabled={quantity <= 1}
-          onClick={() => setQuantity(quantity - 1)}
-        >
-          <Minus size={18} aria-hidden />
-        </button>
-        <span className='min-w-10 text-center text-[28px] font-extrabold tabular-nums'>
-          {quantity}
-        </span>
-        <button
-          type='button'
-          aria-label='More'
-          className={stepClass}
-          onClick={() => setQuantity(quantity + 1)}
-        >
-          <Plus size={18} aria-hidden />
-        </button>
-      </div>
-      <button
-        type='button'
-        className={primaryButton}
-        disabled={pending}
-        onClick={() => onSave(quantity)}
-      >
-        Save {quantity}
-      </button>
-    </div>
-  );
-};
 
 const ProductChoice = ({
   choice,
@@ -180,14 +132,7 @@ const SearchForm = ({
 };
 
 // The list's one open question, shown under its line
-export const QuestionPanel = ({
-  question,
-  initialQuantity,
-}: {
-  question: Question;
-  // For a total: what the merged lines add up to
-  initialQuantity: number;
-}) => {
+export const QuestionPanel = ({ question }: { question: Question }) => {
   const { mutate, isPending, error } = useAnswer();
 
   const body = () => {
@@ -228,15 +173,6 @@ export const QuestionPanel = ({
               Just this time
             </button>
           </div>
-        );
-      case 'quantity':
-      case 'total':
-        return (
-          <QuantityStepper
-            initial={initialQuantity}
-            pending={isPending}
-            onSave={(quantity) => mutate({ kind: 'quantity', quantity })}
-          />
         );
     }
   };
