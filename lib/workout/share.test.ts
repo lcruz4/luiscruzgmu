@@ -41,7 +41,7 @@ const set = (
 });
 
 describe('dayTable', () => {
-  it('lists logged exercises without weights', () => {
+  it('lists exercises without weights, planned sets when not logged', () => {
     expect(
       dayTable('Sat, Nov 7 · Day 3 · Legs', [
         exercise('Front squat', {
@@ -58,6 +58,7 @@ describe('dayTable', () => {
         '| --- | --- | --- | --- |',
         '| Front squat | 8/8/7 | Pass |  |',
         '| Dead hang | 60/45 s |  |  |',
+        '| Not done | 10/10/10 |  |  |',
       ].join('\n'),
     );
   });

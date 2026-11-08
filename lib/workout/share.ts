@@ -15,21 +15,21 @@ const noteText = ({ log }: DayExercise) => {
 const resultText = (passed: boolean | null) =>
   passed === null ? '' : passed ? 'Pass' : 'Fail';
 
-// Logged exercises as a markdown table (Slack renders it), no weights:
+// The day as a markdown table (Slack renders it), no weights. Exercises not
+// logged yet show their planned sets.
 // *heading*
 // | Exercise | Reps | Result | Note |
 export const dayTable = (heading: string, exercises: DayExercise[]) => {
-  const rows = exercises.flatMap((exercise) => {
+  const rows = exercises.map((exercise) => {
     const { log, name, isTimed } = exercise;
-    if (!log) return [];
-    const reps = log.sets.map((set) => set.reps ?? '–').join('/');
+    const reps = log
+      ? log.sets.map((set) => set.reps ?? '–')
+      : Array.from({ length: exercise.sets }, () => exercise.reps);
     return [
-      [
-        name,
-        `${reps}${isTimed ? ' s' : ''}`,
-        resultText(log.passed),
-        noteText(exercise),
-      ],
+      name,
+      `${reps.join('/')}${isTimed ? ' s' : ''}`,
+      resultText(log?.passed ?? null),
+      noteText(exercise),
     ];
   });
   return [
