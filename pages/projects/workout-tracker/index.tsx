@@ -2,7 +2,6 @@ import { DayPicker } from '@/components/workout-tracker/DayPicker';
 import { LoadError } from '@/components/workout-tracker/LoadError';
 import { LogSkeleton } from '@/components/workout-tracker/LogSkeleton';
 import { NoPlan } from '@/components/workout-tracker/NoPlan';
-import { ShareButton } from '@/components/workout-tracker/ShareButton';
 import { getToday, useDay } from '@/components/workout-tracker/useDay';
 import { useRestTimer } from '@/components/workout-tracker/useRestTimer';
 import { useSelection } from '@/components/workout-tracker/useSelection';
@@ -29,10 +28,7 @@ const LogContent = ({ email }: LogPageProps) => {
         today={today}
         onSetSave={restartTimer}
       >
-        <div className='flex shrink-0 items-center gap-2'>
-          <ShareButton shown={data} />
-          <DayPicker shown={data} today={today} onPick={select} />
-        </div>
+        <DayPicker shown={data} today={today} onPick={select} />
       </WorkoutDay>
     );
   }

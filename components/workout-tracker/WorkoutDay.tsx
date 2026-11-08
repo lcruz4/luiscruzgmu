@@ -4,6 +4,7 @@ import type { DayResponse } from '@/types/workout';
 import { Celebration, type CelebrationPhase } from './Celebration';
 import { DayHeader } from './DayHeader';
 import { ExerciseList } from './ExerciseList';
+import { ShareButton } from './ShareButton';
 import { useDrafts } from './useDrafts';
 
 // The clock starts at the first save, so the first set itself isn't counted
@@ -21,7 +22,7 @@ interface WorkoutDayProps {
   today: string | undefined;
   /** A set's save button was tapped, except the workout's last set */
   onSetSave: () => void;
-  /** The header buttons */
+  /** The Change button */
   children: ReactNode;
 }
 
@@ -59,7 +60,10 @@ export const WorkoutDay = ({
         title={data.plan.dayTitles[data.day - 1] ?? ''}
         done={done && phase !== 'trophy'}
       >
-        {children}
+        <div className='flex shrink-0 items-center gap-2'>
+          <ShareButton shown={data} drafts={drafts} />
+          {children}
+        </div>
       </DayHeader>
       <ExerciseList
         exercises={data.exercises}

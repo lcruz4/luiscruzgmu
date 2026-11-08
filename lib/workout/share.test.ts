@@ -1,5 +1,5 @@
 import type { DayExercise, DayLog } from '@/types/workout';
-import { dayTable } from './share';
+import { currentSet, dayTable } from './share';
 
 const exercise = (
   name: string,
@@ -73,5 +73,52 @@ describe('dayTable', () => {
         }),
       ]).split('\n')[3],
     ).toBe('| Dips | 10/– | Fail | a \\| b c; Set 2: elbow |');
+  });
+
+  it('adds a Now column marking the current set', () => {
+    expect(
+      dayTable('Day 1', [exercise('Dips', null)], { id: 1, set: 2 }).split(
+        '\n',
+      ),
+    ).toEqual([
+      '*Day 1*',
+      '| Exercise | Reps | Result | Note | Now |',
+      '| --- | --- | --- | --- | --- |',
+      '| Dips | 10/10/10 |  |  | ▶ Set 2 |',
+    ]);
+  });
+});
+
+describe('currentSet', () => {
+  const draftSet = (reps: string) => ({ weight: '50', reps, notes: '' });
+  const withId = (id: number, ex: DayExercise) => ({ ...ex, id });
+
+  it('is the first set not saved on the first unfinished exercise', () => {
+    const done = withId(1, exercise('Done', { sets: [set(1, 8)] }));
+    const partial = withId(
+      2,
+      exercise('Partial', { sets: [set(1, 10), set(2, 10)] }),
+    );
+    const drafts = {
+      2: {
+        sets: [draftSet('10'), draftSet('10'), draftSet('9')],
+        notes: '',
+        passed: null,
+      },
+    };
+    expect(currentSet([done, partial], drafts)).toEqual({ id: 2, set: 3 });
+  });
+
+  it('starts at set 1 of an exercise with nothing saved', () => {
+    expect(currentSet([withId(5, exercise('New', null))], {})).toEqual({
+      id: 5,
+      set: 1,
+    });
+  });
+
+  it('is undefined once every exercise is saved', () => {
+    expect(
+      currentSet([exercise('Done', { sets: [set(1, 8)] })], {}),
+    ).toBeUndefined();
   });
 });

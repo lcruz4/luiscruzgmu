@@ -1,11 +1,19 @@
 import { Check, Share2 } from 'lucide-react';
 import { useState } from 'react';
-import { dayTable } from '@/lib/workout/share';
+import { currentSet, dayTable } from '@/lib/workout/share';
+import type { ExerciseDraft } from '@/lib/workout/sets';
 import type { DayResponse } from '@/types/workout';
 import { longDate, weekDayText } from './format';
 
 // Copies the day as a table for Slack
-export const ShareButton = ({ shown }: { shown: DayResponse }) => {
+export const ShareButton = ({
+  shown,
+  drafts,
+}: {
+  shown: DayResponse;
+  /** Unsaved cards, to find the current set */
+  drafts: Record<number, ExerciseDraft>;
+}) => {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   const { date, week, day, plan, exercises } = shown;
@@ -19,7 +27,9 @@ export const ShareButton = ({ shown }: { shown: DayResponse }) => {
       .filter(Boolean)
       .join(' · ');
     try {
-      await navigator.clipboard.writeText(dayTable(heading, exercises));
+      await navigator.clipboard.writeText(
+        dayTable(heading, exercises, currentSet(exercises, drafts)),
+      );
       setFailed(false);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
