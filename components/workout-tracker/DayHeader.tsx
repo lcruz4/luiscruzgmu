@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { DAY_TITLES, longDate } from './format';
+import { longDate, weekDayText } from './format';
 import { accentBorder } from './styles';
 
 interface DayHeaderProps {
@@ -8,6 +8,10 @@ interface DayHeaderProps {
   today: string | undefined;
   week: number;
   day: number;
+  /** Weeks in the plan */
+  weeks: number;
+  /** The plan's title for the day; '' = none */
+  title: string;
   /** Every exercise is logged */
   done: boolean;
   /** The Change button */
@@ -19,6 +23,8 @@ export const DayHeader = ({
   today,
   week,
   day,
+  weeks,
+  title,
   done,
   children,
 }: DayHeaderProps) => (
@@ -43,11 +49,13 @@ export const DayHeader = ({
         )}
       </div>
       <h1 className='m-0 text-[26px] leading-8 font-extrabold'>
-        Week {week} · Day {day}
+        {weekDayText(week, day, weeks)}
       </h1>
-      <div className='flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-semibold text-mist-muted'>
-        <span>{DAY_TITLES[day - 1]}</span>
-      </div>
+      {title && (
+        <div className='flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-semibold text-mist-muted'>
+          <span>{title}</span>
+        </div>
+      )}
     </div>
     {children}
   </header>

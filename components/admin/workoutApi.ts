@@ -97,6 +97,20 @@ export const useDeletePlan = () => {
   });
 };
 
+export type PlanSettings = Pick<AdminPlan, 'weeks' | 'dayTitles'>;
+
+export const useUpdatePlanSettings = (id: number) => {
+  const invalidate = useInvalidatePlans();
+  return useMutation({
+    mutationFn: (settings: PlanSettings) =>
+      request<AdminPlanResponse>(`plans/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(settings),
+      }),
+    onSuccess: invalidate,
+  });
+};
+
 export const useSetPlanActive = (id: number) => {
   const invalidate = useInvalidatePlans();
   return useMutation({

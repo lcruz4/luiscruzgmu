@@ -2,11 +2,9 @@ import { LinkIcon, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { PlanResponse, PlanRow } from '@/types/workout';
-import { DAY_TITLES, targetText } from './format';
+import { shortTitle, targetText } from './format';
 import { PlanRowEditor } from './PlanRowEditor';
 import { badgeClass, cardClass } from './styles';
-
-const WEEKS = [1, 2];
 
 const RowList = ({
   rows,
@@ -42,6 +40,7 @@ const RowList = ({
   );
 
 export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
+  const weekNumbers = Array.from({ length: plan.weeks }, (_, i) => i + 1);
   const [week, setWeek] = useState(dayData?.week ?? 1);
   const [day, setDay] = useState(dayData?.day ?? 1);
   const [editingId, setEditingId] = useState<number>();
@@ -65,34 +64,36 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
         </div>
       </header>
       <main className='flex flex-1 flex-col gap-3 p-4'>
-        <div
-          role='group'
-          aria-label='Week'
-          className='grid grid-cols-2 gap-1 rounded-[14px] border border-mist-line bg-mist-surface p-1'
-        >
-          {WEEKS.map((w) => (
-            <button
-              key={w}
-              type='button'
-              aria-pressed={w === week}
-              onClick={() => select(w, day)}
-              className={cn(
-                'h-11 cursor-pointer rounded-[10px] text-[15px]',
-                w === week
-                  ? cn(
-                      'font-extrabold text-mist-ink',
-                      w === 2 ? 'bg-mist-pink' : 'bg-mist-cyan',
-                    )
-                  : 'font-bold text-mist-muted',
-              )}
-            >
-              Week {w}
-            </button>
-          ))}
-        </div>
+        {plan.weeks > 1 && (
+          <div
+            role='group'
+            aria-label='Week'
+            className='grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-1 rounded-[14px] border border-mist-line bg-mist-surface p-1'
+          >
+            {weekNumbers.map((w) => (
+              <button
+                key={w}
+                type='button'
+                aria-pressed={w === week}
+                onClick={() => select(w, day)}
+                className={cn(
+                  'h-11 cursor-pointer rounded-[10px] text-[15px]',
+                  w === week
+                    ? cn(
+                        'font-extrabold text-mist-ink',
+                        w % 2 === 0 ? 'bg-mist-pink' : 'bg-mist-cyan',
+                      )
+                    : 'font-bold text-mist-muted',
+                )}
+              >
+                Week {w}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div role='group' aria-label='Day' className='grid grid-cols-4 gap-2'>
-          {DAY_TITLES.map((title, i) => {
+          {plan.dayTitles.map((title, i) => {
             const d = i + 1;
             const selected = d === day;
             return (
@@ -105,14 +106,14 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
                   'flex h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[12px]',
                   !selected && 'border border-mist-line bg-mist-raised',
                   selected &&
-                    (week === 2
+                    (week % 2 === 0
                       ? 'border-2 border-mist-pink bg-mist-pink/14'
                       : 'border-2 border-mist-cyan-line bg-mist-cyan/14'),
                 )}
               >
                 <span className='text-[15px] font-extrabold'>Day {d}</span>
                 <span className='text-xs font-semibold text-mist-muted'>
-                  {title.split(' · ')[0]}
+                  {shortTitle(title)}
                 </span>
               </button>
             );
@@ -126,12 +127,12 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
             aria-hidden
             className='mt-0.5 shrink-0'
           />
-          Weight and notes are shared by Week 1 and Week 2. An exercise on two
-          days shares one target.
+          {plan.weeks > 1 && 'Weight and notes are shared by every week. '}An
+          exercise on two days shares one target.
         </p>
 
         <h2 className='mx-0.5 mt-1 mb-0 text-lg font-extrabold'>
-          {DAY_TITLES[day - 1]}
+          {plan.dayTitles[day - 1] || `Day ${day}`}
         </h2>
 
         <RowList rows={dayRows.slice(0, split)} onEdit={setEditingId} />

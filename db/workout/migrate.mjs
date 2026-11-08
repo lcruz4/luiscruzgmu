@@ -1,6 +1,6 @@
 // Applies pending db/workout/NNN_*.sql files in order against WORKOUT_DB_URL.
 // Each file runs in one transaction together with its schema_migrations row.
-// Usage: npm run workout:migrate
+// Usage: npm run workout:migrate (.env.local overrides .env.production, as in Next)
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';

@@ -1,11 +1,11 @@
 import type { LogSet, PlanRow } from '@/types/workout';
 
-export const DAY_TITLES = [
-  'Chest · Triceps · Abs',
-  'Back · Biceps',
-  'Legs · Abs',
-  'Shoulders · Arms',
-];
+// Week 2 · Day 3, or Day 3 on a 1-week plan
+export const weekDayText = (week: number, day: number, weeks: number) =>
+  weeks === 1 ? `Day ${day}` : `Week ${week} · Day ${day}`;
+
+// 'Chest · Triceps' → 'Chest', for tiles
+export const shortTitle = (title: string) => title.split(' · ')[0];
 
 // Numbers are lb; bands ('rb -1.5') and 'BW' stay as typed
 export const isPounds = (weight: string) => /^[\d./]+$/.test(weight);

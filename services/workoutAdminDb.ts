@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { MAX_WEEKS } from '@/lib/workout/schedule';
 import { HttpError, idField, intField, textField } from './workoutApi';
 import { workoutPool } from './workoutDb';
 import type {
@@ -13,7 +14,7 @@ export const getAdminPlan = async (
   planId: number,
 ): Promise<AdminPlanResponse> => {
   const { rows } = await db.query<AdminPlan>(
-    `SELECT id, name, owner_email AS "ownerEmail", is_active AS "isActive"
+    `SELECT id, name, weeks, day_titles AS "dayTitles", owner_email AS "ownerEmail", is_active AS "isActive"
      FROM plans
      WHERE id = $1`,
     [planId],
@@ -56,7 +57,7 @@ export const getAdminPlanRow = async (
 
 // Body fields of a plan_exercises row. 0 sets/reps = not filled in yet.
 export const planRowFields = (body: Record<string, unknown>) => ({
-  week: intField(body.week, 'week', 1, 52),
+  week: intField(body.week, 'week', 1, MAX_WEEKS),
   day: intField(body.day, 'day', 1, 7),
   position: intField(body.position, 'position', 1, 100),
   exerciseId: idField(body.exerciseId, 'exerciseId'),

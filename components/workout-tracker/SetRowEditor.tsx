@@ -14,7 +14,6 @@ interface SetRowEditorProps {
   onToggleNote: () => void;
   onChange: (set: DraftSet) => void;
   onSave: () => void;
-  onNoteBlur: () => void;
   onRemove: () => void;
 }
 
@@ -33,7 +32,6 @@ export const SetRowEditor = ({
   onToggleNote,
   onChange,
   onSave,
-  onNoteBlur,
   onRemove,
 }: SetRowEditorProps) => {
   const repsLabel = isTimed ? 'seconds' : 'reps';
@@ -120,7 +118,6 @@ export const SetRowEditor = ({
             onChange={(event) =>
               onChange({ ...set, notes: event.target.value })
             }
-            onBlur={onNoteBlur}
             className='box-border h-11 min-w-0 flex-1 rounded-[10px] border border-mist-line bg-mist-raised px-3 text-base font-medium text-mist-text placeholder:text-mist-muted'
           />
           <button

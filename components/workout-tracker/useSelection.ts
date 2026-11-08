@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { DAYS_PER_WEEK, WEEKS, type WeekDay } from '@/lib/workout/schedule';
+import { DAYS_PER_WEEK, MAX_WEEKS, type WeekDay } from '@/lib/workout/schedule';
 
 export interface Selection {
   /** Omitted = today */
@@ -18,7 +18,7 @@ const intParam = (value: unknown, max: number) => {
 export const useSelection = () => {
   const router = useRouter();
   const { date, week: weekParam, day: dayParam } = router.query;
-  const week = intParam(weekParam, WEEKS);
+  const week = intParam(weekParam, MAX_WEEKS);
   const day = intParam(dayParam, DAYS_PER_WEEK);
 
   const selection: Selection = {

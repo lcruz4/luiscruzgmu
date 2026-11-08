@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp, Timer } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Save, Timer } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -127,13 +127,16 @@ export const ExerciseCard = ({
   };
 
   // Notes and pass/fail; rows not saved yet stay a draft
-  const saveDetails = (next: ExerciseDraft) => {
-    if (!detailsChanged(log, next)) {
-      onDraftChange(next);
-      return;
-    }
+  const saveDetails = () => {
     setRetrySet(undefined);
-    save(next, withDetails(log, next));
+    save(current, withDetails(log, current));
+  };
+
+  // Saves pass/fail right away; an edited note stays a draft
+  const savePassed = (passed: boolean | null) => {
+    const next = { ...current, passed };
+    setRetrySet(undefined);
+    save(next, withDetails(log, { ...next, notes: log?.notes ?? '' }));
   };
 
   return (
@@ -188,21 +191,30 @@ export const ExerciseCard = ({
           saveSet(index);
           onSetSave(index === current.sets.length - 1);
         }}
-        onNoteBlur={() => draft && saveDetails(draft)}
       />
       <ExerciseLogFields
         planExerciseId={exercise.id}
         notes={current.notes}
         passed={current.passed}
+        defaultOpen={!!log?.notes || log?.passed != null}
         onNotesChange={(notes) => update({ notes })}
-        onNotesBlur={() => draft && saveDetails(draft)}
-        onPassedChange={(passed) => saveDetails({ ...current, passed })}
+        onPassedChange={savePassed}
       />
+      {draft && detailsChanged(log, draft) && (
+        <button
+          type='button'
+          onClick={saveDetails}
+          className='mr-1 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-mist-cyan text-[15px] font-extrabold text-mist-ink'
+        >
+          <Save size={18} strokeWidth={2.5} aria-hidden />
+          Save
+        </button>
+      )}
       <SaveStatus
         error={saveLog.error}
         paused={saveLog.isPaused}
         onRetry={() =>
-          retrySet === undefined ? saveDetails(current) : saveSet(retrySet)
+          retrySet === undefined ? saveDetails() : saveSet(retrySet)
         }
       />
     </section>

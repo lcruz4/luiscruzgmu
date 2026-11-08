@@ -55,6 +55,8 @@ export const WorkoutDay = ({
         today={today}
         week={data.week}
         day={data.day}
+        weeks={data.plan.weeks}
+        title={data.plan.dayTitles[data.day - 1] ?? ''}
         done={done && phase !== 'trophy'}
       >
         {children}
