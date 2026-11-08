@@ -12,17 +12,18 @@ interface DayGroup {
   date: string;
   week: number;
   day: number;
+  planName: string;
   planWeeks: number;
   dayTitle: string;
   entries: HistoryEntry[];
 }
 
-// Entries come sorted by date, week, day, so each group is one run
+// Entries come sorted by date, plan, week, day, so each group is one run
 const groupByDay = (entries: HistoryEntry[]) => {
   const groups: DayGroup[] = [];
   for (const entry of entries) {
-    const { date, week, day, planWeeks, dayTitle } = entry;
-    const key = `${date} W${week}D${day}`;
+    const { date, planId, planName, week, day, planWeeks, dayTitle } = entry;
+    const key = `${date} P${planId}W${week}D${day}`;
     const group = groups.at(-1);
     if (group?.key === key) group.entries.push(entry);
     else
@@ -31,6 +32,7 @@ const groupByDay = (entries: HistoryEntry[]) => {
         date,
         week,
         day,
+        planName,
         planWeeks,
         dayTitle,
         entries: [entry],
@@ -65,7 +67,7 @@ interface DayGroupCardProps {
 }
 
 const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
-  const { date, week, day, planWeeks, dayTitle, entries } = group;
+  const { date, week, day, planName, planWeeks, dayTitle, entries } = group;
   const Chevron = open ? ChevronUp : ChevronDown;
   return (
     <section className={cardClass}>
@@ -80,7 +82,8 @@ const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
       >
         <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
           <span className='text-xs font-bold tracking-[0.08em] text-mist-muted uppercase'>
-            {date === today ? `Today · ${longDate(date)}` : longDate(date)}
+            {date === today ? `Today · ${longDate(date)}` : longDate(date)} ·{' '}
+            {planName}
           </span>
           <span className='text-base leading-[22px] font-extrabold'>
             {[weekDayText(week, day, planWeeks), dayTitle]

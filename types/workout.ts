@@ -68,6 +68,9 @@ export interface LogResponse {
 }
 
 export interface HistoryEntry extends LastPerformance {
+  /** The plan the log belongs to */
+  planId: number;
+  planName: string;
   /** Weeks of the plan the log belongs to */
   planWeeks: number;
   /** That plan's title for the day */
