@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { autoNext, type WeekDay } from '@/lib/workout/schedule';
 import type { DayResponse } from '@/types/workout';
-import { DAY_TITLES, shortDate, weekDayText } from './format';
+import { shortDate, shortTitle, weekDayText } from './format';
 import { accentBorder, labelClass } from './styles';
 import type { Selection } from './useSelection';
 
@@ -20,7 +20,7 @@ interface DayPickerProps {
 export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const { weeks } = shown.plan;
+  const { weeks, dayTitles } = shown.plan;
   const weekNumbers = Array.from({ length: weeks }, (_, index) => index + 1);
   const next = today ? autoNext(shown.lastDone.at(0), today, weeks) : undefined;
 
@@ -56,7 +56,7 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
       <Dialog.Overlay className='fixed inset-0 z-50 bg-mist-text/45' />
       <Dialog.Content
         aria-describedby={undefined}
-        className='fixed inset-x-0 bottom-0 z-50 mx-auto flex sm:max-w-md flex-col gap-4 rounded-t-[24px] border-t border-mist-line bg-mist-surface px-4 pt-2.5 pb-[max(24px,env(safe-area-inset-bottom))]'
+        className='fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[85dvh] overflow-y-auto sm:max-w-md flex-col gap-4 rounded-t-[24px] border-t border-mist-line bg-mist-surface px-4 pt-2.5 pb-[max(24px,env(safe-area-inset-bottom))]'
       >
         <div
           aria-hidden
@@ -87,9 +87,9 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
               </div>
             )}
             <div className='grid grid-cols-4 gap-2'>
-              {DAY_TITLES.map((title, index) => {
+              {dayTitles.map((title, index) => {
                 const day = index + 1;
-                const shortTitle = title.split(' · ')[0];
+                const tileTitle = shortTitle(title);
                 const lastDate = shown.lastDone.find(
                   (done) => done.week === week && done.day === day,
                 )?.date;
@@ -103,7 +103,7 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
                       week,
                       day,
                       weeks,
-                    )}, ${shortTitle}, ${
+                    )}, ${tileTitle}, ${
                       lastDate
                         ? `last done ${shortDate(lastDate)}`
                         : 'not done yet'
@@ -127,7 +127,7 @@ export const DayPicker = ({ shown, today, onPick }: DayPickerProps) => {
                       Day {day}
                     </span>
                     <span className='text-xs font-semibold text-mist-muted'>
-                      {shortTitle}
+                      {tileTitle}
                     </span>
                     <span className='font-num text-xs font-medium text-mist-muted'>
                       {lastDate ? shortDate(lastDate) : '–'}

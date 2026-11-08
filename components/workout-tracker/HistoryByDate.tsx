@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { HistoryEntry } from '@/types/workout';
 import { EntryNotes, PassFail } from './EntryDetails';
-import { DAY_TITLES, longDate, setsText, weekDayText } from './format';
+import { longDate, setsText, weekDayText } from './format';
 import { cardClass } from './styles';
 import { getToday } from './useDay';
 
@@ -13,6 +13,7 @@ interface DayGroup {
   week: number;
   day: number;
   planWeeks: number;
+  dayTitle: string;
   entries: HistoryEntry[];
 }
 
@@ -20,11 +21,20 @@ interface DayGroup {
 const groupByDay = (entries: HistoryEntry[]) => {
   const groups: DayGroup[] = [];
   for (const entry of entries) {
-    const { date, week, day, planWeeks } = entry;
+    const { date, week, day, planWeeks, dayTitle } = entry;
     const key = `${date} W${week}D${day}`;
     const group = groups.at(-1);
     if (group?.key === key) group.entries.push(entry);
-    else groups.push({ key, date, week, day, planWeeks, entries: [entry] });
+    else
+      groups.push({
+        key,
+        date,
+        week,
+        day,
+        planWeeks,
+        dayTitle,
+        entries: [entry],
+      });
   }
   return groups;
 };
@@ -55,7 +65,7 @@ interface DayGroupCardProps {
 }
 
 const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
-  const { date, week, day, planWeeks, entries } = group;
+  const { date, week, day, planWeeks, dayTitle, entries } = group;
   const Chevron = open ? ChevronUp : ChevronDown;
   return (
     <section className={cardClass}>
@@ -73,7 +83,9 @@ const DayGroupCard = ({ group, today, open, onToggle }: DayGroupCardProps) => {
             {date === today ? `Today · ${longDate(date)}` : longDate(date)}
           </span>
           <span className='text-base leading-[22px] font-extrabold'>
-            {weekDayText(week, day, planWeeks)} · {DAY_TITLES[day - 1]}
+            {[weekDayText(week, day, planWeeks), dayTitle]
+              .filter(Boolean)
+              .join(' · ')}
           </span>
           {!open && (
             <span className='text-[13px] font-semibold text-mist-muted'>

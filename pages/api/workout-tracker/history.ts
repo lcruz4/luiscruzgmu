@@ -16,7 +16,7 @@ const getHistory = async (
 
   const { rows: entries } = await workoutPool.query<HistoryEntry>(
     `SELECT wl.id, wl.date::text AS date, pe.week, pe.day, pe.position,
-       p.weeks AS "planWeeks",
+       p.weeks AS "planWeeks", p.day_titles[pe.day] AS "dayTitle",
        pe.exercise_id AS "exerciseId", e.name, e.is_timed AS "isTimed",
        wl.passed, wl.notes, (
          SELECT coalesce(json_agg(json_build_object(

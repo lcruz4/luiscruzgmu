@@ -1,5 +1,5 @@
 import type { NextApiRequest } from 'next';
-import { MAX_WEEKS } from '@/lib/workout/schedule';
+import { DAYS_PER_WEEK, MAX_WEEKS } from '@/lib/workout/schedule';
 import {
   bodyOf,
   HttpError,
@@ -14,10 +14,30 @@ import type { AdminPlanResponse } from '@/types/workout';
 const getPlan = async (req: NextApiRequest): Promise<AdminPlanResponse> =>
   getAdminPlan(workoutPool, idField(req.query.id, 'id'));
 
-// Body: { weeks }. Refuses to drop a week that still has rows.
+const dayTitlesField = (value: unknown) => {
+  if (
+    !Array.isArray(value) ||
+    value.length !== DAYS_PER_WEEK ||
+    !value.every((title) => typeof title === 'string' && title.length <= 50)
+  ) {
+    throw new HttpError(
+      400,
+      `dayTitles must be ${DAYS_PER_WEEK} strings of at most 50 characters`,
+    );
+  }
+  return value.map((title: string) => title.trim());
+};
+
+// Body: { weeks?, dayTitles? }. Refuses to drop a week that still has rows.
 const updatePlan = async (req: NextApiRequest): Promise<AdminPlanResponse> => {
   const id = idField(req.query.id, 'id');
-  const weeks = intField(bodyOf(req).weeks, 'weeks', 1, MAX_WEEKS);
+  const body = bodyOf(req);
+  const weeks =
+    body.weeks === undefined
+      ? null
+      : intField(body.weeks, 'weeks', 1, MAX_WEEKS);
+  const dayTitles =
+    body.dayTitles === undefined ? null : dayTitlesField(body.dayTitles);
 
   return withTransaction(async (client) => {
     const { rowCount } = await client.query(
@@ -27,7 +47,7 @@ const updatePlan = async (req: NextApiRequest): Promise<AdminPlanResponse> => {
     if (!rowCount) throw new HttpError(404, 'Plan not found');
     const { rowCount: dropped } = await client.query(
       'SELECT 1 FROM plan_exercises WHERE plan_id = $1 AND week > $2 LIMIT 1',
-      [id, weeks],
+      [id, weeks ?? MAX_WEEKS],
     );
     if (dropped) {
       throw new HttpError(
@@ -35,10 +55,12 @@ const updatePlan = async (req: NextApiRequest): Promise<AdminPlanResponse> => {
         `Plan has exercises after week ${weeks}; delete them first`,
       );
     }
-    await client.query('UPDATE plans SET weeks = $2 WHERE id = $1', [
-      id,
-      weeks,
-    ]);
+    await client.query(
+      `UPDATE plans
+       SET weeks = coalesce($2, weeks), day_titles = coalesce($3, day_titles)
+       WHERE id = $1`,
+      [id, weeks, dayTitles],
+    );
     return getAdminPlan(client, id);
   });
 };

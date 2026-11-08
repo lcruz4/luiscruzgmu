@@ -5,6 +5,8 @@ export interface Plan {
   name: string;
   /** Weeks in the rotation, 1–MAX_WEEKS */
   weeks: number;
+  /** One per day of the week; '' = untitled */
+  dayTitles: string[];
 }
 
 export interface PlanRow {
@@ -68,6 +70,8 @@ export interface LogResponse {
 export interface HistoryEntry extends LastPerformance {
   /** Weeks of the plan the log belongs to */
   planWeeks: number;
+  /** That plan's title for the day */
+  dayTitle: string;
   exerciseId: number;
   name: string;
   isTimed: boolean;

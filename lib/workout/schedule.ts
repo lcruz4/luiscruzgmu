@@ -1,4 +1,4 @@
-export const MAX_WEEKS = 4;
+export const MAX_WEEKS = 52;
 export const DAYS_PER_WEEK = 4;
 
 export interface WeekDay {

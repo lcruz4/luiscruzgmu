@@ -12,7 +12,11 @@ import {
   X,
 } from 'lucide-react';
 import { DAYS_PER_WEEK, MAX_WEEKS } from '@/lib/workout/schedule';
-import type { AdminPlanDetailRow, AdminPlanSummary } from '@/types/workout';
+import type {
+  AdminPlan,
+  AdminPlanDetailRow,
+  AdminPlanSummary,
+} from '@/types/workout';
 import {
   ConfirmButton,
   ErrorText,
@@ -21,6 +25,7 @@ import {
   LABEL,
   OUTLINE_ACCENT,
   OUTLINE_DANGER,
+  PRIMARY_BTN,
 } from './ui';
 import {
   type PlanRowInput,
@@ -30,7 +35,7 @@ import {
   useExercises,
   usePlan,
   useSetPlanActive,
-  useSetPlanWeeks,
+  useUpdatePlanSettings,
   useUpdatePlanRow,
 } from './workoutApi';
 
@@ -51,7 +56,7 @@ const Picker = ({
   value: number;
   onChange: (value: number) => void;
 }) => (
-  <div className='flex items-center gap-1.5'>
+  <div className='flex flex-wrap items-center gap-1.5'>
     <span className={`${LABEL} mr-1`}>{label}</span>
     {range(count).map((n) => (
       <button
@@ -71,6 +76,74 @@ const Picker = ({
 );
 
 const numberInput = (value: string) => (value === '' ? 0 : Number(value));
+
+// Weeks in the rotation + a title per day
+const SettingsForm = ({ plan }: { plan: AdminPlan }) => {
+  const update = useUpdatePlanSettings(plan.id);
+  const [weeks, setWeeks] = useState(String(plan.weeks));
+  const [dayTitles, setDayTitles] = useState(plan.dayTitles);
+  const changed =
+    Number(weeks) !== plan.weeks ||
+    dayTitles.some((title, i) => title.trim() !== plan.dayTitles[i]);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    update.mutate({ weeks: Number(weeks), dayTitles });
+  };
+
+  return (
+    <form
+      onSubmit={submit}
+      className='flex flex-col gap-2 border-b border-[#1e2a44] px-4 py-3'
+    >
+      <div className='grid grid-cols-2 gap-2 sm:grid-cols-[5rem_repeat(4,minmax(0,1fr))_auto] sm:items-end'>
+        <label className='flex flex-col gap-1'>
+          <span className={LABEL}>WEEKS</span>
+          <input
+            type='number'
+            required
+            min={1}
+            max={MAX_WEEKS}
+            value={weeks}
+            onChange={(e) => setWeeks(e.target.value)}
+            className={`${INPUT} h-8 font-mono text-xs`}
+          />
+        </label>
+        {dayTitles.map((title, i) => (
+          <label key={i} className='flex min-w-0 flex-col gap-1'>
+            <span className={LABEL}>DAY {i + 1}</span>
+            <input
+              value={title}
+              maxLength={50}
+              placeholder='Untitled'
+              onChange={(e) =>
+                setDayTitles(
+                  dayTitles.map((other, j) =>
+                    j === i ? e.target.value : other,
+                  ),
+                )
+              }
+              className={`${INPUT} h-8 min-w-0 text-xs`}
+            />
+          </label>
+        ))}
+        <button
+          type='submit'
+          disabled={!changed || update.isPending}
+          className={`${PRIMARY_BTN} h-8 justify-center disabled:opacity-40`}
+        >
+          {update.isPending ? (
+            <Loader2 className='size-3.5 animate-spin' />
+          ) : (
+            <Check className='size-3.5' />
+          )}
+          Save
+        </button>
+      </div>
+      <ErrorText error={update.error} />
+    </form>
+  );
+};
 
 const RowEditor = ({
   initial,
@@ -326,7 +399,6 @@ export const PlanDetail = ({
   const { data, isPending, error } = usePlan(planId);
   const remove = useDeletePlan();
   const createRow = useCreatePlanRow(planId);
-  const setWeeks = useSetPlanWeeks(planId);
   const [week, setWeek] = useState(1);
   const [day, setDay] = useState(1);
   const [adding, setAdding] = useState(false);
@@ -403,13 +475,8 @@ export const PlanDetail = ({
           )}
         </div>
       </div>
+      <SettingsForm key={plan.id} plan={plan} />
       <div className='flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3'>
-        <Picker
-          label='WEEKS'
-          count={MAX_WEEKS}
-          value={plan.weeks}
-          onChange={(weeks) => setWeeks.mutate(weeks)}
-        />
         {plan.weeks > 1 && (
           <Picker
             label='WEEK'
@@ -424,7 +491,6 @@ export const PlanDetail = ({
           value={day}
           onChange={setDay}
         />
-        <ErrorText error={setWeeks.error} />
       </div>
       <div className='overflow-x-auto'>
         <table className='w-full min-w-[40rem] table-fixed text-left text-sm'>

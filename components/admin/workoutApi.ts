@@ -97,13 +97,15 @@ export const useDeletePlan = () => {
   });
 };
 
-export const useSetPlanWeeks = (id: number) => {
+export type PlanSettings = Pick<AdminPlan, 'weeks' | 'dayTitles'>;
+
+export const useUpdatePlanSettings = (id: number) => {
   const invalidate = useInvalidatePlans();
   return useMutation({
-    mutationFn: (weeks: number) =>
+    mutationFn: (settings: PlanSettings) =>
       request<AdminPlanResponse>(`plans/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ weeks }),
+        body: JSON.stringify(settings),
       }),
     onSuccess: invalidate,
   });

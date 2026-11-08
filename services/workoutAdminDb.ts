@@ -14,7 +14,7 @@ export const getAdminPlan = async (
   planId: number,
 ): Promise<AdminPlanResponse> => {
   const { rows } = await db.query<AdminPlan>(
-    `SELECT id, name, weeks, owner_email AS "ownerEmail", is_active AS "isActive"
+    `SELECT id, name, weeks, day_titles AS "dayTitles", owner_email AS "ownerEmail", is_active AS "isActive"
      FROM plans
      WHERE id = $1`,
     [planId],

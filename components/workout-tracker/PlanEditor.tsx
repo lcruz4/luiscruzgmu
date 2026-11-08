@@ -2,7 +2,7 @@ import { LinkIcon, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { PlanResponse, PlanRow } from '@/types/workout';
-import { DAY_TITLES, targetText } from './format';
+import { shortTitle, targetText } from './format';
 import { PlanRowEditor } from './PlanRowEditor';
 import { badgeClass, cardClass } from './styles';
 
@@ -68,7 +68,7 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
           <div
             role='group'
             aria-label='Week'
-            className='grid auto-cols-fr grid-flow-col gap-1 rounded-[14px] border border-mist-line bg-mist-surface p-1'
+            className='grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-1 rounded-[14px] border border-mist-line bg-mist-surface p-1'
           >
             {weekNumbers.map((w) => (
               <button
@@ -93,7 +93,7 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
         )}
 
         <div role='group' aria-label='Day' className='grid grid-cols-4 gap-2'>
-          {DAY_TITLES.map((title, i) => {
+          {plan.dayTitles.map((title, i) => {
             const d = i + 1;
             const selected = d === day;
             return (
@@ -113,7 +113,7 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
               >
                 <span className='text-[15px] font-extrabold'>Day {d}</span>
                 <span className='text-xs font-semibold text-mist-muted'>
-                  {title.split(' · ')[0]}
+                  {shortTitle(title)}
                 </span>
               </button>
             );
@@ -132,7 +132,7 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
         </p>
 
         <h2 className='mx-0.5 mt-1 mb-0 text-lg font-extrabold'>
-          {DAY_TITLES[day - 1]}
+          {plan.dayTitles[day - 1] || `Day ${day}`}
         </h2>
 
         <RowList rows={dayRows.slice(0, split)} onEdit={setEditingId} />

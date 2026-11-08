@@ -42,7 +42,9 @@ export const getPlanRows = async (
 
 export const getActivePlan = async (email: string): Promise<Plan> => {
   const { rows } = await workoutPool.query<Plan>(
-    'SELECT id, name, weeks FROM plans WHERE owner_email = $1 AND is_active',
+    `SELECT id, name, weeks, day_titles AS "dayTitles"
+     FROM plans
+     WHERE owner_email = $1 AND is_active`,
     [email],
   );
   const plan = rows.at(0);
