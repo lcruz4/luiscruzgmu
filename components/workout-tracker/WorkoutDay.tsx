@@ -21,7 +21,7 @@ interface WorkoutDayProps {
   today: string | undefined;
   /** A set's save button was tapped, except the workout's last set */
   onSetSave: () => void;
-  /** The Change button */
+  /** The header buttons */
   children: ReactNode;
 }
 

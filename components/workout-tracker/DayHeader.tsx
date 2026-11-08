@@ -14,7 +14,7 @@ interface DayHeaderProps {
   title: string;
   /** Every exercise is logged */
   done: boolean;
-  /** The Change button */
+  /** The header buttons */
   children: ReactNode;
 }
 
