@@ -1,9 +1,15 @@
-import { Download, LoaderCircle, RefreshCw } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { Download, LoaderCircle, Plus, RefreshCw } from 'lucide-react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { cn } from '@/lib/utils';
-import type { CartResponse, KeepList, Report } from '@/types/giantOrder';
+import type {
+  CartResponse,
+  KeepItem,
+  KeepList,
+  Report,
+} from '@/types/giantOrder';
 import {
   cardClass,
+  inputClass,
   labelClass,
   linkButton,
   money,
@@ -12,10 +18,11 @@ import {
 } from './styles';
 import { ProductThumb } from './ProductThumb';
 import {
+  useAddKeepItem,
   useCart,
   useKeepList,
-  useSetKeepChecked,
   useSetList,
+  useUpdateKeepItem,
   useStartCheckout,
 } from './useGiant';
 
@@ -98,7 +105,7 @@ const CartSkeleton = () => (
 );
 
 // The active cart as Giant has it, however it was filled
-const CartPanel = () => {
+const CartPanel = ({ children }: { children?: ReactNode }) => {
   const cart = useCart();
   const below =
     cart.data?.minimum != null && cart.data.subTotal < cart.data.minimum;
@@ -158,26 +165,117 @@ const CartPanel = () => {
         </>
       )}
       <ErrorText error={cart.error} />
+      {children}
     </section>
   );
 };
 
-// The unchecked Keep items. Checking one off updates Keep, so stale items
-// can go before the list starts; the rest become the list.
+// Tap the text to rename; Enter or leaving the field saves, Escape cancels
+const KeepRow = ({
+  item,
+  onCheck,
+  onRename,
+}: {
+  item: KeepItem;
+  onCheck: (checked: boolean) => void;
+  onRename: (text: string) => void;
+}) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  const save = () => {
+    if (draft === null) return;
+    const text = draft.trim();
+    setDraft(null);
+    if (text && text !== item.text) onRename(text);
+  };
+  return (
+    <li className='flex items-center gap-3 py-1'>
+      <input
+        type='checkbox'
+        aria-label={item.text}
+        checked={item.checked}
+        onChange={(event) => onCheck(event.target.checked)}
+        className='size-5 shrink-0 cursor-pointer accent-mist-cyan-text'
+      />
+      {draft === null ? (
+        <button
+          type='button'
+          onClick={() => setDraft(item.text)}
+          className={cn(
+            'min-h-9 flex-1 cursor-text text-left text-[15px] font-semibold',
+            item.checked && 'text-mist-muted line-through',
+          )}
+        >
+          {item.text}
+        </button>
+      ) : (
+        <input
+          autoFocus
+          onFocus={(event) => event.target.select()}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={save}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') save();
+            if (event.key === 'Escape') setDraft(null);
+          }}
+          className={cn(inputClass, 'h-9 flex-1')}
+        />
+      )}
+    </li>
+  );
+};
+
+const AddKeepItem = ({ noteId }: { noteId: string }) => {
+  const [text, setText] = useState('');
+  const add = useAddKeepItem();
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!text.trim()) return;
+    add.mutate({ noteId, text: text.trim() }, { onSuccess: () => setText('') });
+  };
+  return (
+    <form onSubmit={submit} className='flex flex-col gap-2'>
+      <div className='flex gap-2'>
+        <input
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder='Add an item'
+          aria-label='New Keep item'
+          className={cn(inputClass, 'flex-1')}
+        />
+        <button
+          type='submit'
+          disabled={add.isPending || !text.trim()}
+          className={secondaryButton}
+          aria-label='Add'
+        >
+          {add.isPending ? (
+            <LoaderCircle size={18} className='animate-spin' aria-hidden />
+          ) : (
+            <Plus size={18} aria-hidden />
+          )}
+        </button>
+      </div>
+      <ErrorText error={add.error} />
+    </form>
+  );
+};
+
+// The unchecked Keep items. Checking one off, renaming or adding updates
+// Keep, so the list can be tidied before it starts; the open items become
+// the list.
 const KeepChecklist = ({
   keep,
   primary,
   pulling,
   onPull,
-  onPaste,
 }: {
   keep: KeepList;
   primary: boolean;
   pulling: boolean;
   onPull: () => void;
-  onPaste: () => void;
 }) => {
-  const setChecked = useSetKeepChecked();
+  const update = useUpdateKeepItem();
   const setList = useSetList();
   const open = keep.items.filter((item) => !item.checked);
   const start = () =>
@@ -185,49 +283,46 @@ const KeepChecklist = ({
       lines: open.map((item) => ({ text: item.text, keepItemId: item.id })),
     });
   return (
-    <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
-      <div className='flex items-center justify-between gap-2'>
-        <h2 className='m-0 text-[15px] font-bold'>Keep list</h2>
-        <button
-          type='button'
-          onClick={onPull}
-          disabled={pulling}
-          className={linkButton}
-        >
-          <RefreshCw size={15} aria-hidden />
-          {pulling ? 'Pulling…' : 'Pull again'}
-        </button>
-      </div>
-      <ul className='m-0 flex list-none flex-col p-0'>
-        {keep.items.map((item) => (
-          <li key={item.id}>
-            <label className='flex cursor-pointer items-center gap-3 py-2 text-[15px] font-semibold'>
-              <input
-                type='checkbox'
-                checked={item.checked}
-                onChange={(event) =>
-                  setChecked.mutate({
-                    noteId: keep.noteId,
-                    itemId: item.id,
-                    checked: event.target.checked,
-                  })
-                }
-                className='size-5 shrink-0 cursor-pointer accent-mist-cyan-text'
-              />
-              <span
-                className={cn(item.checked && 'text-mist-muted line-through')}
-              >
-                {item.text}
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
+    <>
+      <button
+        type='button'
+        onClick={onPull}
+        disabled={pulling}
+        className={cn(linkButton, 'self-end')}
+      >
+        <RefreshCw size={15} aria-hidden />
+        {pulling ? 'Pulling…' : 'Pull again'}
+      </button>
+      {keep.items.length === 0 ? (
+        <p className='m-0 text-[13px] font-medium text-mist-muted'>
+          Nothing unchecked in Keep
+        </p>
+      ) : (
+        <ul className='m-0 flex list-none flex-col p-0'>
+          {keep.items.map((item) => (
+            <KeepRow
+              key={item.id}
+              item={item}
+              onCheck={(checked) =>
+                update.mutate({
+                  noteId: keep.noteId,
+                  item,
+                  change: { checked },
+                })
+              }
+              onRename={(text) =>
+                update.mutate({ noteId: keep.noteId, item, change: { text } })
+              }
+            />
+          ))}
+        </ul>
+      )}
+      <AddKeepItem noteId={keep.noteId} />
       <p className='m-0 text-[13px] font-medium text-mist-muted'>
         Check off what you don’t need; ordered items get checked once the order
         is placed
       </p>
-      <ErrorText error={setChecked.error} />
+      <ErrorText error={update.error} />
       <button
         type='button'
         className={primary ? primaryButton : secondaryButton}
@@ -239,24 +334,31 @@ const KeepChecklist = ({
           : `Start with ${open.length} ${open.length === 1 ? 'item' : 'items'}`}
       </button>
       <ErrorText error={setList.error} />
-      <button
-        type='button'
-        onClick={onPaste}
-        className={cn(linkButton, 'self-center')}
-      >
-        Paste a list instead
-      </button>
-    </section>
+    </>
   );
 };
 
-const PasteForm = ({
-  primary,
+// Not pulled yet, or the pull failed
+const KeepPull = ({
   keepList,
 }: {
-  primary: boolean;
   keepList: ReturnType<typeof useKeepList>;
-}) => {
+}) => (
+  <>
+    <button
+      type='button'
+      onClick={() => keepList.refetch()}
+      disabled={keepList.isFetching}
+      className={secondaryButton}
+    >
+      <Download size={15} aria-hidden />
+      {keepList.isFetching ? 'Pulling…' : 'Pull from Keep'}
+    </button>
+    <ErrorText error={keepList.error} />
+  </>
+);
+
+const PasteForm = ({ primary }: { primary: boolean }) => {
   const [text, setText] = useState('');
   const [empty, setEmpty] = useState(false);
   const setList = useSetList();
@@ -266,24 +368,10 @@ const PasteForm = ({
     setList.mutate({ text });
   };
   return (
-    <form
-      onSubmit={submit}
-      className={cn(cardClass, 'flex flex-col gap-3 p-4')}
-    >
-      <div className='flex items-center justify-between gap-2'>
-        <label htmlFor='grocery-list' className='text-[15px] font-bold'>
-          Paste your list
-        </label>
-        <button
-          type='button'
-          onClick={() => keepList.refetch()}
-          disabled={keepList.isFetching}
-          className={linkButton}
-        >
-          <Download size={15} aria-hidden />
-          {keepList.isFetching ? 'Pulling…' : 'Pull from Keep'}
-        </button>
-      </div>
+    <form onSubmit={submit} className='flex flex-col gap-3'>
+      <label htmlFor='grocery-list' className='sr-only'>
+        Paste your list
+      </label>
       <textarea
         id='grocery-list'
         rows={8}
@@ -295,17 +383,11 @@ const PasteForm = ({
         placeholder={'Oat milk\nSoy sauce\nCider TWO'}
         className='rounded-xl border border-mist-line bg-mist-surface p-3 text-[15px] leading-6'
       />
-      {keepList.data?.items.length === 0 && (
-        <p className='m-0 text-[13px] font-medium text-mist-muted'>
-          Nothing unchecked in Keep
-        </p>
-      )}
       {empty && (
         <p className='m-0 text-[13px] text-mist-pink-text'>
           Add at least one item
         </p>
       )}
-      <ErrorText error={keepList.error} />
       <button
         type='submit'
         className={primary ? primaryButton : secondaryButton}
@@ -318,6 +400,13 @@ const PasteForm = ({
   );
 };
 
+const TABS = [
+  { id: 'keep', label: 'Keep list' },
+  { id: 'paste', label: 'Paste' },
+] as const;
+
+type Tab = (typeof TABS)[number]['id'];
+
 // Secondary when "Check out" is the next step. `autoPull` pulls the Keep list
 // on mount; "Pull from Keep" does it on demand.
 const NewList = ({
@@ -328,25 +417,43 @@ const NewList = ({
   autoPull: boolean;
 }) => {
   const keepList = useKeepList(autoPull);
-  const [pasting, setPasting] = useState(false);
-  // A new pull shows the checklist again
-  const [pulledAt, setPulledAt] = useState(0);
-  if (keepList.dataUpdatedAt !== pulledAt) {
-    setPulledAt(keepList.dataUpdatedAt);
-    setPasting(false);
-  }
-  if (!pasting && keepList.data && keepList.data.items.length > 0) {
-    return (
-      <KeepChecklist
-        keep={keepList.data}
-        primary={primary}
-        pulling={keepList.isFetching}
-        onPull={() => keepList.refetch()}
-        onPaste={() => setPasting(true)}
-      />
-    );
-  }
-  return <PasteForm primary={primary} keepList={keepList} />;
+  const [tab, setTab] = useState<Tab>('keep');
+  return (
+    <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
+      <div
+        role='tablist'
+        className='flex rounded-[14px] border border-mist-line bg-mist-surface p-1'
+      >
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type='button'
+            role='tab'
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={cn(
+              'h-9 flex-1 cursor-pointer rounded-[10px] text-sm font-bold text-mist-muted',
+              tab === id && 'bg-mist-cyan text-mist-ink',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'paste' ? (
+        <PasteForm primary={primary} />
+      ) : keepList.data ? (
+        <KeepChecklist
+          keep={keepList.data}
+          primary={primary}
+          pulling={keepList.isFetching}
+          onPull={() => keepList.refetch()}
+        />
+      ) : (
+        <KeepPull keepList={keepList} />
+      )}
+    </section>
+  );
 };
 
 // No list open: what the last "Add to cart" did, checkout, or a new list
@@ -361,28 +468,29 @@ export const StartStage = ({ filled }: { filled: CartResponse | null }) => {
         <p className='m-0 text-[15px] font-medium'>{filled.summary}</p>
       )}
       {report && <CartReport report={report} />}
-      <CartPanel />
-      {canCheckOut && (
-        <div className='flex flex-col gap-2'>
-          <button
-            type='button'
-            className={report ? primaryButton : secondaryButton}
-            disabled={checkout.isPending}
-            onClick={() => checkout.mutate()}
-          >
-            {checkout.isPending
-              ? 'Opening checkout…'
-              : report
-              ? 'Check out'
-              : 'Check out the current cart'}
-          </button>
-          {checkout.error && (
-            <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
-              {checkout.error.message}
-            </p>
-          )}
-        </div>
-      )}
+      <CartPanel>
+        {canCheckOut && (
+          <div className='flex flex-col gap-2'>
+            <button
+              type='button'
+              className={report ? primaryButton : secondaryButton}
+              disabled={checkout.isPending}
+              onClick={() => checkout.mutate()}
+            >
+              {checkout.isPending
+                ? 'Opening checkout…'
+                : report
+                ? 'Check out'
+                : 'Check out the current cart'}
+            </button>
+            {checkout.error && (
+              <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
+                {checkout.error.message}
+              </p>
+            )}
+          </div>
+        )}
+      </CartPanel>
       <NewList primary={!report || !canCheckOut} autoPull={!filled} />
     </>
   );

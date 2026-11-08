@@ -10,6 +10,7 @@ import type {
   GroceryLine,
   ItemDefault,
   KeepCheck,
+  KeepItem,
   KeepList,
   QuestionResponse,
   Reply,
@@ -114,25 +115,52 @@ export const useKeepList = (enabled: boolean) =>
     retry: false,
   });
 
-// Checks or unchecks one Keep item, showing the change right away
-export const useSetKeepChecked = () => {
+type KeepItemChange = Partial<Pick<KeepItem, 'checked' | 'text'>>;
+
+const useSetKeepItem = () => {
   const queryClient = useQueryClient();
-  const setItem = (itemId: string, checked: boolean) =>
+  return (itemId: string, change: KeepItemChange) =>
     queryClient.setQueryData<KeepList>(
       KEEP_KEY,
       (keep) =>
         keep && {
           ...keep,
           items: keep.items.map((item) =>
-            item.id === itemId ? { ...item, checked } : item,
+            item.id === itemId ? { ...item, ...change } : item,
           ),
         },
     );
+};
+
+// Checks, unchecks or renames one Keep item, showing the change right away
+export const useUpdateKeepItem = () => {
+  const setItem = useSetKeepItem();
   return useMutation({
-    mutationFn: (body: { noteId: string; itemId: string; checked: boolean }) =>
-      call('PATCH', 'keep', body),
-    onMutate: ({ itemId, checked }) => setItem(itemId, checked),
-    onError: (_error, { itemId, checked }) => setItem(itemId, !checked),
+    mutationFn: ({
+      noteId,
+      item,
+      change,
+    }: {
+      noteId: string;
+      item: KeepItem;
+      change: KeepItemChange;
+    }) => call('PATCH', 'keep', { noteId, itemId: item.id, ...change }),
+    onMutate: ({ item, change }) => setItem(item.id, change),
+    onError: (_error, { item }) =>
+      setItem(item.id, { checked: item.checked, text: item.text }),
+  });
+};
+
+export const useAddKeepItem = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { noteId: string; text: string }): Promise<KeepItem> =>
+      call('POST', 'keep', body),
+    onSuccess: (item) =>
+      queryClient.setQueryData<KeepList>(
+        KEEP_KEY,
+        (keep) => keep && { ...keep, items: [...keep.items, item] },
+      ),
   });
 };
 

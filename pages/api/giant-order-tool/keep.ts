@@ -1,8 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAuthenticatedEmail } from '@/services/auth';
-import { getGiantList, KeepApiError, setChecked } from '@/services/keep';
+import {
+  addItem,
+  getGiantList,
+  KeepApiError,
+  setChecked,
+  setText,
+} from '@/services/keep';
 import { logger } from '@/services/logger';
-import type { KeepCheck, KeepList } from '@/types/giantOrder';
+import type { KeepCheck, KeepItem, KeepList } from '@/types/giantOrder';
 
 const isStrings = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
@@ -39,8 +45,9 @@ const sendError = (res: NextApiResponse, error: unknown) => {
 };
 
 // GET: the unchecked items of the Keep "Giant" list.
-// PATCH `{ noteId, itemId, checked }`: checks or unchecks one item.
-// POST `{ itemIds }`: checks the ordered items.
+// PATCH `{ noteId, itemId, checked }`: checks or unchecks one item;
+// `{ noteId, itemId, text }` renames it.
+// POST `{ itemIds }`: checks the ordered items; `{ noteId, text }` adds one.
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (!['GET', 'PATCH', 'POST'].includes(req.method ?? '')) {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -50,6 +57,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
+    if (req.method === 'POST' && typeof req.body?.noteId === 'string') {
+      const text: unknown = req.body.text;
+      if (typeof text !== 'string' || !text.trim()) {
+        return res.status(400).json({ error: 'Invalid text' });
+      }
+      const { id } = await addItem(req.body.noteId, text.trim());
+      const item: KeepItem = { id, text: text.trim(), checked: false };
+      return res.status(201).json(item);
+    }
+
     if (req.method === 'POST') {
       const itemIds: unknown = req.body?.itemIds;
       if (!isStrings(itemIds)) {
@@ -59,16 +76,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'PATCH') {
-      const { noteId, itemId, checked } = req.body ?? {};
-      if (
-        typeof noteId !== 'string' ||
-        typeof itemId !== 'string' ||
-        typeof checked !== 'boolean'
-      ) {
+      const { noteId, itemId, checked, text } = req.body ?? {};
+      if (typeof noteId !== 'string' || typeof itemId !== 'string') {
         return res.status(400).json({ error: 'Invalid item' });
       }
-      await setChecked(noteId, itemId, checked);
-      return res.status(200).json({ checked });
+      if (typeof checked === 'boolean') {
+        await setChecked(noteId, itemId, checked);
+        return res.status(200).json({ checked });
+      }
+      if (typeof text === 'string' && text.trim()) {
+        await setText(noteId, itemId, text.trim());
+        return res.status(200).json({ text: text.trim() });
+      }
+      return res.status(400).json({ error: 'Invalid item' });
     }
 
     const { noteId, items } = await getGiantList();
