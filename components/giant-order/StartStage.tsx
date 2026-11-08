@@ -1,5 +1,5 @@
 import { Download, LoaderCircle, Plus, RefreshCw } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type {
   CartResponse,
@@ -105,7 +105,7 @@ const CartSkeleton = () => (
 );
 
 // The active cart as Giant has it, however it was filled
-const CartPanel = () => {
+const CartPanel = ({ children }: { children?: ReactNode }) => {
   const cart = useCart();
   const below =
     cart.data?.minimum != null && cart.data.subTotal < cart.data.minimum;
@@ -165,6 +165,7 @@ const CartPanel = () => {
         </>
       )}
       <ErrorText error={cart.error} />
+      {children}
     </section>
   );
 };
@@ -282,19 +283,16 @@ const KeepChecklist = ({
       lines: open.map((item) => ({ text: item.text, keepItemId: item.id })),
     });
   return (
-    <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
-      <div className='flex items-center justify-between gap-2'>
-        <h2 className='m-0 text-[15px] font-bold'>Keep list</h2>
-        <button
-          type='button'
-          onClick={onPull}
-          disabled={pulling}
-          className={linkButton}
-        >
-          <RefreshCw size={15} aria-hidden />
-          {pulling ? 'Pulling…' : 'Pull again'}
-        </button>
-      </div>
+    <>
+      <button
+        type='button'
+        onClick={onPull}
+        disabled={pulling}
+        className={cn(linkButton, 'self-end')}
+      >
+        <RefreshCw size={15} aria-hidden />
+        {pulling ? 'Pulling…' : 'Pull again'}
+      </button>
       {keep.items.length === 0 ? (
         <p className='m-0 text-[13px] font-medium text-mist-muted'>
           Nothing unchecked in Keep
@@ -336,7 +334,7 @@ const KeepChecklist = ({
           : `Start with ${open.length} ${open.length === 1 ? 'item' : 'items'}`}
       </button>
       <ErrorText error={setList.error} />
-    </section>
+    </>
   );
 };
 
@@ -346,7 +344,7 @@ const KeepPull = ({
 }: {
   keepList: ReturnType<typeof useKeepList>;
 }) => (
-  <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
+  <>
     <button
       type='button'
       onClick={() => keepList.refetch()}
@@ -357,7 +355,7 @@ const KeepPull = ({
       {keepList.isFetching ? 'Pulling…' : 'Pull from Keep'}
     </button>
     <ErrorText error={keepList.error} />
-  </section>
+  </>
 );
 
 const PasteForm = ({ primary }: { primary: boolean }) => {
@@ -370,11 +368,8 @@ const PasteForm = ({ primary }: { primary: boolean }) => {
     setList.mutate({ text });
   };
   return (
-    <form
-      onSubmit={submit}
-      className={cn(cardClass, 'flex flex-col gap-3 p-4')}
-    >
-      <label htmlFor='grocery-list' className='text-[15px] font-bold'>
+    <form onSubmit={submit} className='flex flex-col gap-3'>
+      <label htmlFor='grocery-list' className='sr-only'>
         Paste your list
       </label>
       <textarea
@@ -424,7 +419,7 @@ const NewList = ({
   const keepList = useKeepList(autoPull);
   const [tab, setTab] = useState<Tab>('keep');
   return (
-    <div className='flex flex-col gap-3'>
+    <section className={cn(cardClass, 'flex flex-col gap-3 p-4')}>
       <div
         role='tablist'
         className='flex rounded-[14px] border border-mist-line bg-mist-surface p-1'
@@ -457,7 +452,7 @@ const NewList = ({
       ) : (
         <KeepPull keepList={keepList} />
       )}
-    </div>
+    </section>
   );
 };
 
@@ -473,28 +468,29 @@ export const StartStage = ({ filled }: { filled: CartResponse | null }) => {
         <p className='m-0 text-[15px] font-medium'>{filled.summary}</p>
       )}
       {report && <CartReport report={report} />}
-      <CartPanel />
-      {canCheckOut && (
-        <div className='flex flex-col gap-2'>
-          <button
-            type='button'
-            className={report ? primaryButton : secondaryButton}
-            disabled={checkout.isPending}
-            onClick={() => checkout.mutate()}
-          >
-            {checkout.isPending
-              ? 'Opening checkout…'
-              : report
-              ? 'Check out'
-              : 'Check out the current cart'}
-          </button>
-          {checkout.error && (
-            <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
-              {checkout.error.message}
-            </p>
-          )}
-        </div>
-      )}
+      <CartPanel>
+        {canCheckOut && (
+          <div className='flex flex-col gap-2'>
+            <button
+              type='button'
+              className={report ? primaryButton : secondaryButton}
+              disabled={checkout.isPending}
+              onClick={() => checkout.mutate()}
+            >
+              {checkout.isPending
+                ? 'Opening checkout…'
+                : report
+                ? 'Check out'
+                : 'Check out the current cart'}
+            </button>
+            {checkout.error && (
+              <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
+                {checkout.error.message}
+              </p>
+            )}
+          </div>
+        )}
+      </CartPanel>
       <NewList primary={!report || !canCheckOut} autoPull={!filled} />
     </>
   );
