@@ -68,7 +68,7 @@ export const PlanEditor = ({ plan, rows, dayData }: PlanResponse) => {
           <div
             role='group'
             aria-label='Week'
-            className='grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-1 rounded-[14px] border border-mist-line bg-mist-surface p-1'
+            className='grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-1 rounded-[14px] border border-mist-line bg-mist-surface p-1'
           >
             {weekNumbers.map((w) => (
               <button
