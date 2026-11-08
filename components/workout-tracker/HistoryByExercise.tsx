@@ -59,7 +59,8 @@ export const HistoryByExercise = ({ entries }: { entries: HistoryEntry[] }) => {
             <div className='flex items-center justify-between gap-2'>
               <span className='text-xs font-bold tracking-[0.08em] text-mist-muted uppercase'>
                 {longDate(entry.date)} ·{' '}
-                {entry.planWeeks === 1 ? '' : `W${entry.week} `}D{entry.day}
+                {entry.planWeeks === 1 ? '' : `W${entry.week} `}D{entry.day} ·{' '}
+                {entry.planName}
               </span>
               <PassFail passed={entry.passed} />
             </div>
