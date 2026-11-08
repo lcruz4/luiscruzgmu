@@ -1,4 +1,4 @@
-import { LoaderCircle, Plus, Search } from 'lucide-react';
+import { LoaderCircle, Plus } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type {
@@ -6,12 +6,13 @@ import type {
   ItemDefault,
   SearchProduct,
 } from '@/types/giantOrder';
+import { ErrorText, ProductSearch } from './ProductSearch';
 import { ProductThumb } from './ProductThumb';
 import {
   cardClass,
+  inputClass,
   labelClass,
   linkButton,
-  money,
   primaryButton,
   secondaryButton,
 } from './styles';
@@ -21,93 +22,7 @@ import {
   useDefaults,
   useDeleteDefault,
   usePutDefault,
-  useSearch,
 } from './useGiant';
-
-const inputClass =
-  'h-11 min-w-0 rounded-[14px] border border-mist-line bg-mist-surface px-3 text-[15px]';
-
-const ErrorText = ({ error }: { error: Error | null }) =>
-  error && (
-    <p className='m-0 text-[13px] font-medium text-mist-pink-text'>
-      {error.message}
-    </p>
-  );
-
-// Searches Giant (opens a tab on the Mac) for a default's product
-const ProductSearch = ({
-  initial,
-  onPick,
-}: {
-  initial: string;
-  onPick: (product: SearchProduct) => void;
-}) => {
-  const [text, setText] = useState(initial);
-  const [query, setQuery] = useState('');
-  const search = useSearch(query);
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    setQuery(text.trim());
-  };
-  return (
-    <div className='flex flex-col gap-2'>
-      <form onSubmit={submit} className='flex gap-2'>
-        <input
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder='Search Giant'
-          className={cn(inputClass, 'flex-1')}
-        />
-        <button
-          type='submit'
-          aria-label='Search'
-          disabled={search.isFetching}
-          className={cn(primaryButton, 'px-4')}
-        >
-          {search.isFetching ? (
-            <LoaderCircle size={18} className='animate-spin' aria-hidden />
-          ) : (
-            <Search size={18} aria-hidden />
-          )}
-        </button>
-      </form>
-      {search.data?.length === 0 && (
-        <p className='m-0 text-[13px] font-medium text-mist-muted'>
-          No products found
-        </p>
-      )}
-      {search.data?.map((product) => (
-        <button
-          key={product.prodId}
-          type='button'
-          onClick={() => onPick(product)}
-          className='flex w-full cursor-pointer items-center gap-3 rounded-xl border border-mist-line bg-mist-surface px-3 py-2 text-left hover:border-mist-cyan-line'
-        >
-          <ProductThumb product={product} className='size-12' />
-          <span className='flex min-w-0 flex-1 flex-col'>
-            <span className='text-sm font-semibold'>{product.name}</span>
-            <span className='text-[13px] font-medium text-mist-muted'>
-              {product.size} · {money(product.price)}
-              {product.boughtBefore && ' · bought before'}
-            </span>
-          </span>
-          {product.unavailable && (
-            <span className='shrink-0 rounded-full bg-mist-warn-banner px-2 py-0.5 text-[11px] font-bold text-mist-warn-text'>
-              {product.unavailable}
-            </span>
-          )}
-        </button>
-      ))}
-      <ErrorText error={search.error} />
-    </div>
-  );
-};
-
-const quantityOf = (text: string) => {
-  if (!text.trim()) return null;
-  const quantity = Number(text);
-  return Number.isInteger(quantity) && quantity > 0 ? quantity : undefined;
-};
 
 // Edits `entry`, or adds a new alias without one. Only changed fields are sent.
 const DefaultForm = ({
@@ -120,10 +35,6 @@ const DefaultForm = ({
   const [alias, setAlias] = useState(entry?.alias ?? '');
   const [picked, setPicked] = useState<SearchProduct | null>(null);
   const [searching, setSearching] = useState(!entry);
-  const [quantity, setQuantity] = useState(
-    entry?.defaultQuantity?.toString() ?? '',
-  );
-  const [alwaysAsk, setAlwaysAsk] = useState(entry?.alwaysAskQuantity ?? false);
   const [note, setNote] = useState(entry?.note ?? '');
   const [invalid, setInvalid] = useState<string | null>(null);
   const put = usePutDefault();
@@ -131,22 +42,12 @@ const DefaultForm = ({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const defaultQuantity = quantityOf(quantity);
     if (!alias.trim()) return setInvalid('Enter the list name');
     if (!entry && !picked) return setInvalid('Pick a product');
-    if (defaultQuantity === undefined) {
-      return setInvalid('Quantity must be a whole number above 0');
-    }
     const savedNote = note.trim() || null;
     const change: DefaultChange = {};
     if (picked && picked.prodId !== entry?.prodId) {
       change.prodId = picked.prodId;
-    }
-    if (defaultQuantity !== (entry?.defaultQuantity ?? null)) {
-      change.defaultQuantity = defaultQuantity;
-    }
-    if (alwaysAsk !== (entry?.alwaysAskQuantity ?? false)) {
-      change.alwaysAskQuantity = alwaysAsk;
     }
     if (savedNote !== (entry?.note ?? null)) change.note = savedNote;
     if (Object.keys(change).length === 0) return onDone();
@@ -211,34 +112,6 @@ const DefaultForm = ({
       </div>
       <form onSubmit={submit} className='flex flex-col gap-3'>
         <label className='flex flex-col gap-1'>
-          <span className={labelClass}>Default quantity</span>
-          <input
-            inputMode='numeric'
-            value={quantity}
-            onChange={(event) => {
-              setQuantity(event.target.value);
-              setInvalid(null);
-            }}
-            placeholder='None'
-            className={cn(inputClass, 'w-24')}
-          />
-        </label>
-        <label
-          className={cn(
-            'flex items-center gap-3 text-sm font-semibold',
-            quantity.trim() && 'text-mist-muted',
-          )}
-        >
-          <input
-            type='checkbox'
-            checked={alwaysAsk}
-            onChange={(event) => setAlwaysAsk(event.target.checked)}
-            className='size-5 accent-mist-cyan-text'
-          />
-          Always ask the quantity
-          {quantity.trim() && ' (only without a default)'}
-        </label>
-        <label className='flex flex-col gap-1'>
           <span className={labelClass}>Note</span>
           <input
             value={note}
@@ -281,13 +154,6 @@ const DefaultForm = ({
     </div>
   );
 };
-
-const quantityText = (entry: ItemDefault) =>
-  entry.defaultQuantity !== null
-    ? `×${entry.defaultQuantity}`
-    : entry.alwaysAskQuantity
-    ? 'asks'
-    : null;
 
 // giant-cart's item_defaults: what each list name means
 export const DefaultsManager = () => {
@@ -377,9 +243,6 @@ export const DefaultsManager = () => {
                       review
                     </span>
                   )}
-                  <span className='shrink-0 text-[13px] font-semibold text-mist-muted'>
-                    {quantityText(entry)}
-                  </span>
                 </button>
                 {editing === entry.alias && (
                   <DefaultForm

@@ -14,4 +14,7 @@ export const secondaryButton = `${buttonBase} border border-mist-line bg-mist-su
 export const linkButton =
   'flex cursor-pointer items-center gap-1.5 text-[13px] font-bold text-mist-cyan-text disabled:cursor-default disabled:opacity-50';
 
+export const inputClass =
+  'h-11 min-w-0 rounded-[14px] border border-mist-line bg-mist-surface px-3 text-[15px]';
+
 export const money = (value: number) => `$${value.toFixed(2)}`;

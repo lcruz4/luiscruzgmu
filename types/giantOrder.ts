@@ -30,8 +30,7 @@ export type PickReply =
 export type Reply =
   | PickReply
   | { kind: 'text'; text: string }
-  | { kind: 'confirm'; yes: boolean }
-  | { kind: 'quantity'; quantity: number };
+  | { kind: 'confirm'; yes: boolean };
 
 export type PickChoice = {
   name: string;
@@ -57,11 +56,9 @@ export type Question =
       initial: string;
       remember: boolean;
     }
-  | { kind: 'remember'; lineId: number; message: string; prodId: number }
-  | { kind: 'quantity'; lineId: number; message: string }
-  | { kind: 'total'; lineId: number; mergeIds: number[]; message: string };
+  | { kind: 'remember'; lineId: number; message: string; prodId: number };
 
-export type LineStatus = 'match' | 'quantity' | 'resolved' | 'skipped';
+export type LineStatus = 'match' | 'resolved' | 'skipped';
 
 export type GroceryLine = {
   id: number;
@@ -78,6 +75,7 @@ export type GroceryLine = {
 };
 
 export type ReviewItem = {
+  lineId: number;
   name: string;
   quantity: number;
   prodId: number;
@@ -137,7 +135,7 @@ export type SearchProduct = Product & {
   unavailable: string | null;
 };
 
-// One `item_defaults` entry: what a list name means, plus its quantity rules
+// One `item_defaults` entry: what a list name means
 export type ItemDefault = {
   alias: string;
   prodId: number;
@@ -145,14 +143,9 @@ export type ItemDefault = {
   status: 'confident' | 'review';
   note: string | null;
   aliasOnly?: boolean;
-  // null = 1, or ask when alwaysAskQuantity
-  defaultQuantity: number | null;
-  alwaysAskQuantity: boolean;
 };
 
-export type DefaultChange = Partial<
-  Pick<ItemDefault, 'prodId' | 'defaultQuantity' | 'alwaysAskQuantity' | 'note'>
->;
+export type DefaultChange = Partial<Pick<ItemDefault, 'prodId' | 'note'>>;
 
 export type CheckoutReply =
   | { kind: 'card'; capsId: number }

@@ -172,6 +172,27 @@ export const useAnswer = () => {
   });
 };
 
+// A review item's quantity or product; `remember` saves the product as the
+// line name's default
+export type LineEdit = {
+  lineId: number;
+  quantity?: number;
+  prodId?: number;
+  remember?: boolean;
+};
+
+export const useEditLine = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lineId, ...change }: LineEdit): Promise<QuestionResponse> =>
+      call('PATCH', `list/${lineId}`, change),
+    onSuccess: (data) => queryClient.setQueryData(QUESTION_KEY, data),
+    onError: () => queryClient.invalidateQueries({ queryKey: QUESTION_KEY }),
+    // Lines can merge
+    onSettled: () => queryClient.invalidateQueries({ queryKey: LIST_KEY }),
+  });
+};
+
 // The list is cleared once it's in the cart
 export const useFillCart = () => {
   const queryClient = useQueryClient();
