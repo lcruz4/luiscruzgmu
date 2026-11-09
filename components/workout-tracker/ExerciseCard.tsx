@@ -180,6 +180,11 @@ export const ExerciseCard = ({
         <dd className='m-0 text-[13px] font-semibold text-mist-muted'>
           {last && shortDate(last.date)}
         </dd>
+        {exercise.notes && (
+          <dd className='col-span-2 col-start-2 m-0 text-[13px] font-medium whitespace-pre-line text-mist-muted'>
+            {exercise.notes}
+          </dd>
+        )}
       </dl>
       <div className='mr-1 h-px bg-mist-line' />
       <SetList
