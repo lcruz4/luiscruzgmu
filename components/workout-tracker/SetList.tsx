@@ -28,10 +28,10 @@ export const SetList = ({
       <div className='flex flex-col gap-2'>
         <div aria-hidden className={cn(SET_GRID, labelClass)}>
           <span className='text-center'>Set</span>
-          <span>Weight</span>
           <span className='text-center'>
             {exercise.isTimed ? 'Sec' : 'Reps'}
           </span>
+          <span>Weight</span>
           <span />
         </div>
         {sets.map((set, index) => (
