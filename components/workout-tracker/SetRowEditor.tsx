@@ -56,6 +56,19 @@ export const SetRowEditor = ({
         >
           {setNumber}
         </button>
+        <input
+          aria-label={`Set ${setNumber} ${repsLabel}`}
+          value={set.reps}
+          // A row with no reps isn't saved
+          placeholder='–'
+          inputMode='numeric'
+          pattern='[0-9]*'
+          maxLength={4}
+          onChange={(event) =>
+            onChange({ ...set, reps: event.target.value.replace(/\D/g, '') })
+          }
+          className={cn(inputClass, 'text-center')}
+        />
         <div className='relative'>
           <input
             aria-label={`Set ${setNumber} weight`}
@@ -79,19 +92,6 @@ export const SetRowEditor = ({
             </span>
           )}
         </div>
-        <input
-          aria-label={`Set ${setNumber} ${repsLabel}`}
-          value={set.reps}
-          // A row with no reps isn't saved
-          placeholder='–'
-          inputMode='numeric'
-          pattern='[0-9]*'
-          maxLength={4}
-          onChange={(event) =>
-            onChange({ ...set, reps: event.target.value.replace(/\D/g, '') })
-          }
-          className={cn(inputClass, 'text-center')}
-        />
         <button
           type='button'
           aria-label={`${
