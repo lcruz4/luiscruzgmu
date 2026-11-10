@@ -17,7 +17,7 @@ interface SetRowEditorProps {
   onRemove: () => void;
 }
 
-export const SET_GRID = 'grid grid-cols-[32px_minmax(0,1fr)_88px_44px] gap-2';
+export const SET_GRID = 'grid grid-cols-[32px_88px_minmax(0,1fr)_44px] gap-2';
 
 const inputClass =
   'box-border h-[52px] w-full rounded-[12px] border border-mist-line bg-mist-raised font-num text-[22px] font-bold text-mist-text placeholder:font-medium placeholder:text-mist-muted';
