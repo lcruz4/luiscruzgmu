@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { colorName, describeEvent } from '@/lib/remorse/describe';
 import { cn } from '@/lib/utils';
-import type { GameEvent, GameResponse, Piece } from '@/types/remorse';
+import type { GameEvent, GameResponse } from '@/types/remorse';
 import type { GameCommand } from './useGame';
 
 const button =
@@ -14,8 +14,6 @@ interface GamePanelProps {
   game: GameResponse;
   error: string | null;
   busy: boolean;
-  pendingHeal: Piece | null;
-  onCancelHeal: () => void;
   onCommand: (command: GameCommand) => void;
   onFlip: () => void;
 }
@@ -24,8 +22,6 @@ export const GamePanel = ({
   game,
   error,
   busy,
-  pendingHeal,
-  onCancelHeal,
   onCommand,
   onFlip,
 }: GamePanelProps) => {
@@ -92,29 +88,6 @@ export const GamePanel = ({
         >
           Skip extra move
         </button>
-      )}
-
-      {pendingHeal && (
-        <div className='flex flex-col gap-2 rounded-md border border-emerald-700 bg-emerald-950/50 p-3 text-sm'>
-          <span>
-            Heal the bishop on {pendingHeal.square}? It uses your whole turn.
-          </span>
-          <div className='flex gap-2'>
-            <button
-              type='button'
-              className={button}
-              disabled={busy}
-              onClick={() =>
-                onCommand({ type: 'selfHeal', pieceId: pendingHeal.id })
-              }
-            >
-              Heal bishop
-            </button>
-            <button type='button' className={button} onClick={onCancelHeal}>
-              Cancel
-            </button>
-          </div>
-        </div>
       )}
 
       {error && <p className='text-sm text-red-300'>{error}</p>}

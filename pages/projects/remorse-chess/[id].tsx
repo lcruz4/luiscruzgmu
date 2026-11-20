@@ -5,7 +5,7 @@ import { GamePanel } from '@/components/remorse-chess/GamePanel';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import { useGame } from '@/components/remorse-chess/useGame';
 import { requireLogin } from '@/services/auth';
-import type { GameResponse, Piece } from '@/types/remorse';
+import type { GameResponse } from '@/types/remorse';
 
 const lastMoveOf = (game: GameResponse) => {
   for (const event of game.steps.at(-1)?.events ?? []) {
@@ -20,7 +20,6 @@ const GamePage = () => {
     typeof router.query.id === 'string' ? Number(router.query.id) : undefined;
   const { query, mutation } = useGame(id);
   const [flip, setFlip] = useState(false);
-  const [pendingHeal, setPendingHeal] = useState<Piece | null>(null);
   const game = query.data;
 
   if (!game) {
@@ -49,19 +48,17 @@ const GamePage = () => {
           canMove={canMove}
           lastMove={lastMoveOf(game)}
           onMove={(from, to) => {
-            setPendingHeal(null);
             mutation.mutate({ type: 'move', from, to });
           }}
-          onSelfHeal={setPendingHeal}
+          onSelfHeal={(piece) =>
+            mutation.mutate({ type: 'selfHeal', pieceId: piece.id })
+          }
         />
         <GamePanel
           game={game}
           error={mutation.error?.message ?? null}
           busy={mutation.isPending}
-          pendingHeal={pendingHeal}
-          onCancelHeal={() => setPendingHeal(null)}
           onCommand={(command) => {
-            setPendingHeal(null);
             mutation.mutate(command);
           }}
           onFlip={() => setFlip(!flip)}
