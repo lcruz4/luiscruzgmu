@@ -11,7 +11,7 @@ const squareField = (value: unknown, name: string) => {
 };
 
 // Body: { type, version, ... }
-//   move: { from, to } · selfHeal: { pieceId } · undo · join
+//   move: { from, to } · selfHeal: { pieceId } · skipExtraMove · undo · join
 const postAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
   const body = bodyOf(req);
@@ -31,6 +31,8 @@ const postAction = async (req: NextApiRequest, email: string) => {
       type: 'selfHeal',
       pieceId: body.pieceId,
     });
+  } else if (body.type === 'skipExtraMove') {
+    await playAction(id, email, version(), { type: 'skipExtraMove' });
   } else if (body.type === 'undo') {
     await undoStep(id, email, version());
   } else if (body.type === 'join') {
@@ -38,7 +40,7 @@ const postAction = async (req: NextApiRequest, email: string) => {
   } else {
     throw new HttpError(
       400,
-      "type must be 'move', 'selfHeal', 'undo' or 'join'",
+      "type must be 'move', 'selfHeal', 'skipExtraMove', 'undo' or 'join'",
     );
   }
   return getGame(id, email);

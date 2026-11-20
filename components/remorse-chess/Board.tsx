@@ -36,7 +36,11 @@ export const Board = ({
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
   const bySquare = new Map(state.pieces.map((piece) => [piece.square, piece]));
-  const isMine = (piece?: Piece) => canMove && piece?.color === state.turn;
+  // During a psychopath's extra move only that piece may move
+  const isMine = (piece?: Piece) =>
+    canMove &&
+    piece?.color === state.turn &&
+    (!state.extraMovePieceId || piece.id === state.extraMovePieceId);
 
   const handleClick = (square: string) => {
     if (justDragged.current) {

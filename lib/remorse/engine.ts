@@ -73,7 +73,7 @@ export const initialState = (): GameState => {
   return {
     pieces,
     turn: 'w',
-    extraMove: false,
+    extraMovePieceId: null,
     turnNumber: 1,
     winner: null,
     enPassant: null,
@@ -139,7 +139,7 @@ const onCapture = (
     if (piece.trauma === 'devastated') devastate(state, piece);
     if (piece.trauma === 'psychopath') {
       piece.kills = 1;
-      events.push({ type: 'extraMove', color: piece.color });
+      events.push({ type: 'extraMove', piece: ref(piece) });
       return true;
     }
     return false;
@@ -216,7 +216,7 @@ const endTurn = (state: GameState, events: GameEvent[]) => {
     }
   }
   state.turn = opponent(color);
-  state.extraMove = false;
+  state.extraMovePieceId = null;
   state.turnNumber += 1;
 };
 
@@ -299,6 +299,9 @@ const move = (
   if (!piece || piece.color !== state.turn) {
     throw new RuleError('Move one of your own pieces');
   }
+  if (state.extraMovePieceId && piece.id !== state.extraMovePieceId) {
+    throw new RuleError('Only the psychopath gets the extra move');
+  }
   const occupant = pieceAt(state, to);
   if (occupant?.color === piece.color) {
     throw new RuleError("You can't capture your own piece");
@@ -327,7 +330,7 @@ const move = (
   healAround(state, piece, events);
 
   if (extraMove && !state.winner) {
-    state.extraMove = true;
+    state.extraMovePieceId = piece.id;
   } else {
     endTurn(state, events);
   }
@@ -342,7 +345,19 @@ const selfHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
   if (!canBeHealed(piece)) {
     throw new RuleError('That bishop has nothing to heal');
   }
+  if (state.extraMovePieceId) {
+    throw new RuleError('Use or skip the extra move first');
+  }
   heal(piece, piece, events);
+  state.enPassant = null;
+  endTurn(state, events);
+};
+
+// The psychopath's extra move is optional
+const skipExtraMove = (state: GameState, events: GameEvent[]) => {
+  const piece = state.pieces.find((p) => p.id === state.extraMovePieceId);
+  if (!piece) throw new RuleError('There is no extra move to skip');
+  events.push({ type: 'skipExtraMove', piece: ref(piece) });
   state.enPassant = null;
   endTurn(state, events);
 };
@@ -359,8 +374,10 @@ export const applyAction = (
   const events: GameEvent[] = [];
   if (action.type === 'move') {
     move(next, action.from, action.to, rollDie, events);
-  } else {
+  } else if (action.type === 'selfHeal') {
     selfHeal(next, action.pieceId, events);
+  } else {
+    skipExtraMove(next, events);
   }
   return { state: next, events };
 };

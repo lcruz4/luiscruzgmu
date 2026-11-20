@@ -44,10 +44,13 @@ export const GamePanel = ({
     }
   };
 
+  const psychopath = state.pieces.find((p) => p.id === state.extraMovePieceId);
   const status = state.winner
     ? `${colorName(state.winner)} wins`
-    : state.extraMove
-    ? `${colorName(state.turn)}'s psychopath earned an extra move`
+    : psychopath
+    ? `${colorName(state.turn)}'s psychopath on ${
+        psychopath.square
+      } may move again`
     : `${colorName(state.turn)} to move`;
 
   return (
@@ -70,9 +73,7 @@ export const GamePanel = ({
       <div
         className={cn(
           'rounded-md px-3 py-2 text-sm font-medium',
-          state.extraMove
-            ? 'bg-red-900/60 text-red-100'
-            : 'bg-[#3a3733] text-white',
+          psychopath ? 'bg-red-900/60 text-red-100' : 'bg-[#3a3733] text-white',
           state.winner && 'bg-amber-700/60',
         )}
       >
@@ -81,6 +82,17 @@ export const GamePanel = ({
           <span className='ml-1 font-normal text-[#cfcbc3]'>· your turn</span>
         )}
       </div>
+
+      {psychopath && yourTurn && (
+        <button
+          type='button'
+          className={button}
+          disabled={busy}
+          onClick={() => onCommand({ type: 'skipExtraMove' })}
+        >
+          Skip extra move
+        </button>
+      )}
 
       {pendingHeal && (
         <div className='flex flex-col gap-2 rounded-md border border-emerald-700 bg-emerald-950/50 p-3 text-sm'>

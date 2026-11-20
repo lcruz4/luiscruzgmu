@@ -43,7 +43,9 @@ export const describeEvent = (event: GameEvent): string => {
     case 'bloodlust':
       return `${name(event.piece)} is in bloodlust`;
     case 'extraMove':
-      return `${colorName(event.color)} gets an extra move`;
+      return `${name(event.piece)} gets an extra move`;
+    case 'skipExtraMove':
+      return `${name(event.piece)} skipped its extra move`;
     case 'heal':
       return event.piece.id === event.healer.id
         ? `${name(event.piece)} healed itself`

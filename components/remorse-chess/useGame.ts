@@ -37,6 +37,7 @@ export const useCreateGame = () =>
 export type GameCommand =
   | { type: 'move'; from: string; to: string }
   | { type: 'selfHeal'; pieceId: string }
+  | { type: 'skipExtraMove' }
   | { type: 'undo' }
   | { type: 'join' };
 

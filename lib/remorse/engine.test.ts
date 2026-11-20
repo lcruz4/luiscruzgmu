@@ -21,7 +21,7 @@ const piece = (
 const game = (pieces: Piece[], extra: Partial<GameState> = {}): GameState => ({
   pieces: [piece('wk', 'e1'), piece('bk', 'e8'), ...pieces],
   turn: 'w',
-  extraMove: false,
+  extraMovePieceId: null,
   turnNumber: 1,
   winner: null,
   enPassant: null,
@@ -166,10 +166,28 @@ describe('psychopath', () => {
       piece('wp-h', 'h2'),
     ]);
     const first = applyAction(state, mv('c3', 'd5'), roll(6)).state;
-    expect(first).toMatchObject({ turn: 'w', extraMove: true });
+    expect(first).toMatchObject({ turn: 'w', extraMovePieceId: 'wn-b' });
     expect(find(first, 'wn-b')?.kills).toBe(1);
-    const second = applyAction(first, mv('h2', 'h3'), noRoll).state;
-    expect(second).toMatchObject({ turn: 'b', extraMove: false });
+    expect(() => applyAction(first, mv('h2', 'h3'), noRoll)).toThrow(
+      'psychopath',
+    );
+    const second = applyAction(first, mv('d5', 'd6'), noRoll).state;
+    expect(second).toMatchObject({ turn: 'b', extraMovePieceId: null });
+  });
+
+  it('can skip the extra move', () => {
+    const state = game([piece('wn-b', 'c3'), piece('bp-d', 'd5')]);
+    const first = applyAction(state, mv('c3', 'd5'), roll(6)).state;
+    const { state: next, events } = applyAction(
+      first,
+      { type: 'skipExtraMove' },
+      noRoll,
+    );
+    expect(next).toMatchObject({ turn: 'b', extraMovePieceId: null });
+    expect(events.map((e) => e.type)).toEqual(['skipExtraMove']);
+    expect(() =>
+      applyAction(next, { type: 'skipExtraMove' }, noRoll),
+    ).toThrow();
   });
 
   it('reaches bloodlust on the third capture, with no further extra moves', () => {

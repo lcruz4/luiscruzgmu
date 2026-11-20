@@ -19,8 +19,8 @@ export interface Piece {
 export interface GameState {
   pieces: Piece[];
   turn: Color;
-  // the side to move is on its psychopath's bonus move
-  extraMove: boolean;
+  // the psychopath that may make an optional bonus move (only it can move)
+  extraMovePieceId: string | null;
   turnNumber: number;
   winner: Color | null;
   // square a pawn just skipped with a double step, capturable en passant
@@ -29,7 +29,8 @@ export interface GameState {
 
 export type Action =
   | { type: 'move'; from: string; to: string }
-  | { type: 'selfHeal'; pieceId: string };
+  | { type: 'selfHeal'; pieceId: string }
+  | { type: 'skipExtraMove' };
 
 export interface PieceRef {
   id: string;
@@ -46,7 +47,8 @@ export type GameEvent =
   | { type: 'reactivate'; piece: PieceRef; trauma: Trauma }
   | { type: 'kill'; piece: PieceRef; kills: number }
   | { type: 'bloodlust'; piece: PieceRef }
-  | { type: 'extraMove'; color: Color }
+  | { type: 'extraMove'; piece: PieceRef }
+  | { type: 'skipExtraMove'; piece: PieceRef }
   | { type: 'heal'; piece: PieceRef; healer: PieceRef }
   | { type: 'death'; piece: PieceRef }
   | { type: 'gameOver'; winner: Color };
