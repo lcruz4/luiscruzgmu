@@ -24,6 +24,7 @@ const game = (pieces: Piece[], extra: Partial<GameState> = {}): GameState => ({
   extraMove: false,
   turnNumber: 1,
   winner: null,
+  enPassant: null,
   ...extra,
 });
 
@@ -84,6 +85,40 @@ describe('moves', () => {
     const { state: next } = applyAction(state, mv('e7', 'e8'), roll(4));
     expect(next.winner).toBe('w');
     expect(() => applyAction(next, mv('e8', 'e7'), noRoll)).toThrow('over');
+  });
+});
+
+describe('en passant', () => {
+  it('takes a pawn that just double-stepped past', () => {
+    let state = game([
+      piece('wp-e', 'e5'),
+      piece('bp-d', 'd7'),
+      piece('bp-h', 'h7'),
+    ]);
+    state = applyAction(state, mv('e1', 'e2'), noRoll).state;
+    state = applyAction(state, mv('d7', 'd5'), noRoll).state;
+    expect(state.enPassant).toBe('d6');
+    const { state: next, events } = applyAction(state, mv('e5', 'd6'), roll(4));
+    expect(find(next, 'bp-d')).toBeUndefined();
+    expect(find(next, 'wp-e')).toMatchObject({
+      square: 'd6',
+      trauma: 'unaffected',
+    });
+    expect(events.map((e) => e.type)).toEqual(['move', 'capture', 'roll']);
+  });
+
+  it('is only allowed on the very next move', () => {
+    let state = game([
+      piece('wp-e', 'e5'),
+      piece('bp-d', 'd7'),
+      piece('bp-h', 'h7'),
+    ]);
+    state = applyAction(state, mv('e1', 'e2'), noRoll).state;
+    state = applyAction(state, mv('d7', 'd5'), noRoll).state;
+    state = applyAction(state, mv('e2', 'e3'), noRoll).state;
+    state = applyAction(state, mv('h7', 'h6'), noRoll).state;
+    const next = applyAction(state, mv('e5', 'd6'), noRoll).state;
+    expect(find(next, 'bp-d')?.square).toBe('d5');
   });
 });
 

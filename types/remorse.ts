@@ -23,6 +23,8 @@ export interface GameState {
   extraMove: boolean;
   turnNumber: number;
   winner: Color | null;
+  // square a pawn just skipped with a double step, capturable en passant
+  enPassant: string | null;
 }
 
 export type Action =

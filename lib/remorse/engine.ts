@@ -70,7 +70,14 @@ export const initialState = (): GameState => {
       pieces.push(newPiece(color, 'p', `${file}${pawns}`, `${color}p-${file}`));
     }
   }
-  return { pieces, turn: 'w', extraMove: false, turnNumber: 1, winner: null };
+  return {
+    pieces,
+    turn: 'w',
+    extraMove: false,
+    turnNumber: 1,
+    winner: null,
+    enPassant: null,
+  };
 };
 
 export const traumaForRoll = (roll: number): Trauma => {
@@ -247,6 +254,37 @@ const castleRook = (
   });
 };
 
+// The square a pawn skipped with a double step; only the very next move can
+// capture it en passant
+const doubleStepTarget = (piece: Piece, from: string, to: string) => {
+  const startRank = piece.color === 'w' ? '2' : '7';
+  const jumpRank = piece.color === 'w' ? '4' : '5';
+  if (
+    piece.type !== 'p' ||
+    from[0] !== to[0] ||
+    from[1] !== startRank ||
+    to[1] !== jumpRank
+  ) {
+    return null;
+  }
+  return `${from[0]}${piece.color === 'w' ? '3' : '6'}`;
+};
+
+// A pawn moving diagonally onto the skipped square takes the pawn that skipped it
+const enPassantVictim = (
+  state: GameState,
+  piece: Piece,
+  from: string,
+  to: string,
+) => {
+  if (piece.type !== 'p' || to !== state.enPassant || from[0] === to[0])
+    return undefined;
+  const victim = pieceAt(state, `${to[0]}${from[1]}`);
+  return victim?.type === 'p' && victim.color !== piece.color
+    ? victim
+    : undefined;
+};
+
 const move = (
   state: GameState,
   from: string,
@@ -261,12 +299,14 @@ const move = (
   if (!piece || piece.color !== state.turn) {
     throw new RuleError('Move one of your own pieces');
   }
-  const target = pieceAt(state, to);
-  if (target?.color === piece.color) {
+  const occupant = pieceAt(state, to);
+  if (occupant?.color === piece.color) {
     throw new RuleError("You can't capture your own piece");
   }
+  const target = occupant ?? enPassantVictim(state, piece, from, to);
 
   piece.square = to;
+  state.enPassant = doubleStepTarget(piece, from, to);
   events.push({ type: 'move', piece: ref(piece), from, to });
   castleRook(state, piece, from, to, events);
 
@@ -303,6 +343,7 @@ const selfHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
     throw new RuleError('That bishop has nothing to heal');
   }
   heal(piece, piece, events);
+  state.enPassant = null;
   endTurn(state, events);
 };
 
