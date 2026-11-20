@@ -4,7 +4,8 @@ import {
   DAYS_PER_WEEK,
   type LoggedDay,
 } from '@/lib/workout/schedule';
-import { dateField, intField, workoutRoute } from '@/services/workoutApi';
+import { dateField, intField } from '@/services/api';
+import { workoutRoute } from '@/services/workoutApi';
 import { getActivePlan, workoutPool } from '@/services/workoutDb';
 import type {
   DayLog,

@@ -1,10 +1,6 @@
 import type { NextApiRequest } from 'next';
-import {
-  bodyOf,
-  HttpError,
-  idField,
-  workoutAdminRoute,
-} from '@/services/workoutApi';
+import { bodyOf, HttpError, idField } from '@/services/api';
+import { workoutAdminRoute } from '@/services/workoutApi';
 import { deactivateOwnerPlans } from '@/services/workoutAdminDb';
 import { withTransaction } from '@/services/workoutDb';
 import type { AdminPlan } from '@/types/workout';

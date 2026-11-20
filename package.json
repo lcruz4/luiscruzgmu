@@ -7,6 +7,7 @@
     "start": "next start -H 127.0.0.1",
     "workout:migrate": "node --env-file-if-exists=.env.production --env-file-if-exists=.env.local db/workout/migrate.mjs",
     "workout:reset": "node --env-file-if-exists=.env.local db/workout/reset.mjs",
+    "remorse:migrate": "node --env-file-if-exists=.env.production --env-file-if-exists=.env.local db/remorse/migrate.mjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

@@ -1,12 +1,7 @@
 import type { NextApiRequest } from 'next';
 import { DAYS_PER_WEEK, MAX_WEEKS } from '@/lib/workout/schedule';
-import {
-  bodyOf,
-  HttpError,
-  idField,
-  intField,
-  workoutAdminRoute,
-} from '@/services/workoutApi';
+import { bodyOf, HttpError, idField, intField } from '@/services/api';
+import { workoutAdminRoute } from '@/services/workoutApi';
 import { getAdminPlan } from '@/services/workoutAdminDb';
 import { withTransaction, workoutPool } from '@/services/workoutDb';
 import type { AdminPlanResponse } from '@/types/workout';

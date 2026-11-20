@@ -1,10 +1,6 @@
 import type { NextApiRequest } from 'next';
-import {
-  bodyOf,
-  HttpError,
-  idField,
-  workoutAdminRoute,
-} from '@/services/workoutApi';
+import { bodyOf, HttpError, idField } from '@/services/api';
+import { workoutAdminRoute } from '@/services/workoutApi';
 import { getAdminPlanRow, planRowFields } from '@/services/workoutAdminDb';
 import { workoutPool } from '@/services/workoutDb';
 import type { AdminPlanRow } from '@/types/workout';

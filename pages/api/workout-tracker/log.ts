@@ -7,8 +7,8 @@ import {
   intField,
   nullableBooleanField,
   textField,
-  workoutRoute,
-} from '@/services/workoutApi';
+} from '@/services/api';
+import { workoutRoute } from '@/services/workoutApi';
 import {
   assertOwnedPlanExercise,
   loadOrPruneLog,

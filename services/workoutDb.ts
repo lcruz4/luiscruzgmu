@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg';
-import { HttpError } from './workoutApi';
+import { HttpError } from './api';
 import type { DayLog, Plan, PlanRow } from '@/types/workout';
 
 export const workoutPool = new Pool({

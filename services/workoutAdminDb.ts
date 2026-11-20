@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { MAX_WEEKS } from '@/lib/workout/schedule';
-import { HttpError, idField, intField, textField } from './workoutApi';
+import { HttpError, idField, intField, textField } from './api';
 import { workoutPool } from './workoutDb';
 import type {
   AdminPlan,

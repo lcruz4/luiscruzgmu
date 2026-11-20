@@ -10,6 +10,7 @@ const NAV: NavItem[] = [
   { label: 'Chess review', href: '/projects/chess-review' },
   { label: 'Giant order tool', href: '/projects/giant-order-tool' },
   { label: 'Kuromasu', href: '/projects/kuromasu' },
+  { label: 'Remorse chess', href: '/projects/remorse-chess' },
   {
     label: 'Workout tracker',
     children: [

@@ -1,5 +1,6 @@
 import type { NextApiRequest } from 'next';
-import { idField, workoutRoute } from '@/services/workoutApi';
+import { idField } from '@/services/api';
+import { workoutRoute } from '@/services/workoutApi';
 import { workoutPool } from '@/services/workoutDb';
 import type { HistoryEntry, HistoryResponse } from '@/types/workout';
 

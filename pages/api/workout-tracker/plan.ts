@@ -12,8 +12,8 @@ import {
   intField,
   objectField,
   textField,
-  workoutRoute,
-} from '@/services/workoutApi';
+} from '@/services/api';
+import { workoutRoute } from '@/services/workoutApi';
 import {
   getActivePlan,
   getPlanRows,
