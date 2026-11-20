@@ -3,6 +3,7 @@ import type {
   Color,
   GameEvent,
   GameState,
+  MoveAction,
   Piece,
   PieceRef,
   PieceType,
@@ -287,8 +288,7 @@ const enPassantVictim = (
 
 const move = (
   state: GameState,
-  from: string,
-  to: string,
+  { from, to, promotion }: MoveAction,
   rollDie: () => number,
   events: GameEvent[],
 ) => {
@@ -307,15 +307,19 @@ const move = (
     throw new RuleError("You can't capture your own piece");
   }
   const target = occupant ?? enPassantVictim(state, piece, from, to);
+  const promotes =
+    piece.type === 'p' && to[1] === (piece.color === 'w' ? '8' : '1');
+  if (promotes && !promotion) {
+    throw new RuleError('Choose a piece to promote to');
+  }
 
   piece.square = to;
   state.enPassant = doubleStepTarget(piece, from, to);
   events.push({ type: 'move', piece: ref(piece), from, to });
   castleRook(state, piece, from, to, events);
 
-  const lastRank = piece.color === 'w' ? '8' : '1';
-  if (piece.type === 'p' && to[1] === lastRank) {
-    piece.type = 'q';
+  if (promotes && promotion) {
+    piece.type = promotion;
     events.push({ type: 'promote', piece: ref(piece) });
   }
 
@@ -373,7 +377,7 @@ export const applyAction = (
   const next = clone(state);
   const events: GameEvent[] = [];
   if (action.type === 'move') {
-    move(next, action.from, action.to, rollDie, events);
+    move(next, action, rollDie, events);
   } else if (action.type === 'selfHeal') {
     selfHeal(next, action.pieceId, events);
   } else {

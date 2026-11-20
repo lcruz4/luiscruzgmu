@@ -10,8 +10,15 @@ const squareField = (value: unknown, name: string) => {
   return value;
 };
 
+const promotionField = (value: unknown) => {
+  if (value === undefined || value === null) return undefined;
+  if (value === 'q' || value === 'r' || value === 'b' || value === 'n')
+    return value;
+  throw new HttpError(400, "promotion must be 'q', 'r', 'b' or 'n'");
+};
+
 // Body: { type, version, ... }
-//   move: { from, to } · selfHeal: { pieceId } · skipExtraMove · undo · join
+//   move: { from, to, promotion? } · selfHeal: { pieceId } · skipExtraMove · undo · join
 const postAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
   const body = bodyOf(req);
@@ -22,6 +29,7 @@ const postAction = async (req: NextApiRequest, email: string) => {
       type: 'move',
       from: squareField(body.from, 'from'),
       to: squareField(body.to, 'to'),
+      promotion: promotionField(body.promotion),
     });
   } else if (body.type === 'selfHeal') {
     if (typeof body.pieceId !== 'string') {

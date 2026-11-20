@@ -74,10 +74,12 @@ describe('moves', () => {
     expect(find(next, 'wr-h')?.square).toBe('f1');
   });
 
-  it('promotes a pawn to a queen, keeping its markers', () => {
+  it('promotes a pawn to the chosen piece, keeping its markers', () => {
     const state = game([piece('wp-a', 'a7', { trauma: 'guilt' })]);
-    const pawn = find(applyAction(state, mv('a7', 'a8'), noRoll).state, 'wp-a');
-    expect(pawn).toMatchObject({ type: 'q', trauma: 'guilt' });
+    expect(() => applyAction(state, mv('a7', 'a8'), noRoll)).toThrow('promote');
+    const action = { ...mv('a7', 'a8'), promotion: 'n' as const };
+    const pawn = find(applyAction(state, action, noRoll).state, 'wp-a');
+    expect(pawn).toMatchObject({ type: 'n', trauma: 'guilt' });
   });
 
   it('ends the game when a king is captured', () => {

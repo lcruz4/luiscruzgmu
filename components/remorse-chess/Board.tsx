@@ -1,11 +1,13 @@
 import { type PointerEvent, useRef, useState } from 'react';
 import { canBeHealed } from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
-import type { GameState, Piece } from '@/types/remorse';
+import type { GameState, Piece, PromotionType } from '@/types/remorse';
 import { Marker } from './Marker';
 import { traumaLabel } from './markerSvg';
 
 const FILES = 'abcdefgh';
+
+const PROMOTIONS: PromotionType[] = ['q', 'r', 'b', 'n'];
 
 const squaresFor = (flipped: boolean) => {
   const squares: string[] = [];
@@ -21,7 +23,7 @@ interface BoardProps {
   // the viewer may move the side whose turn it is
   canMove: boolean;
   lastMove: { from: string; to: string } | null;
-  onMove: (from: string, to: string) => void;
+  onMove: (from: string, to: string, promotion?: PromotionType) => void;
   // a friendly bishop's own marker: it can spend the turn healing itself
   onSelfHeal: (piece: Piece) => void;
 }
@@ -42,6 +44,21 @@ export const Board = ({
     piece?.color === state.turn &&
     (!state.extraMovePieceId || piece.id === state.extraMovePieceId);
 
+  // A pawn reaching the last rank waits for the player to pick its new piece
+  const [promotion, setPromotion] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+  const requestMove = (from: string, to: string) => {
+    const piece = bySquare.get(from);
+    const lastRank = piece?.color === 'w' ? '8' : '1';
+    if (piece?.type === 'p' && to[1] === lastRank) {
+      setPromotion({ from, to });
+    } else {
+      onMove(from, to);
+    }
+  };
+
   const handleClick = (square: string) => {
     if (justDragged.current) {
       justDragged.current = false;
@@ -53,7 +70,7 @@ export const Board = ({
       return;
     }
     if (selected) {
-      onMove(selected, square);
+      requestMove(selected, square);
       setSelected(null);
     }
   };
@@ -101,7 +118,7 @@ export const Board = ({
     setSelected(null);
     justDragged.current = true;
     const to = squareAt(event.clientX, event.clientY);
-    if (to && to !== start.from) onMove(start.from, to);
+    if (to && to !== start.from) requestMove(start.from, to);
   };
 
   return (
@@ -211,6 +228,63 @@ export const Board = ({
           );
         })}
       </div>
+      {promotion && (
+        <PromotionPicker
+          color={state.turn}
+          column={squares.indexOf(promotion.to) % 8}
+          fromTop={squares.indexOf(promotion.to) < 8}
+          onPick={(type) => {
+            onMove(promotion.from, promotion.to, type);
+            setPromotion(null);
+          }}
+          onCancel={() => setPromotion(null)}
+        />
+      )}
     </div>
   );
 };
+
+// Four squares stacked from the promotion square's edge; a click anywhere
+// else cancels the move
+const PromotionPicker = ({
+  color,
+  column,
+  fromTop,
+  onPick,
+  onCancel,
+}: {
+  color: GameState['turn'];
+  column: number;
+  fromTop: boolean;
+  onPick: (type: PromotionType) => void;
+  onCancel: () => void;
+}) => (
+  <div className='absolute inset-0 z-40 bg-black/40' onClick={onCancel}>
+    <div
+      className={cn(
+        'absolute flex w-[12.5%] rounded-sm bg-[#ebecd0] shadow-lg shadow-black/60',
+        fromTop ? 'top-0 flex-col' : 'bottom-0 flex-col-reverse',
+      )}
+      style={{ left: `${column * 12.5}%` }}
+    >
+      {PROMOTIONS.map((type) => (
+        <button
+          key={type}
+          type='button'
+          aria-label={`Promote to ${type}`}
+          className='aspect-square w-full hover:bg-[#f6f669]'
+          onClick={(event) => {
+            event.stopPropagation();
+            onPick(type);
+          }}
+        >
+          <img
+            src={`/images/${color}${type}.png`}
+            alt=''
+            className='h-full w-full'
+          />
+        </button>
+      ))}
+    </div>
+  </div>
+);

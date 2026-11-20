@@ -41,15 +41,15 @@ const GamePage = () => {
 
   return (
     <RemorseLayout>
-      <div className='flex flex-col items-start gap-6 lg:flex-row'>
+      <div className='flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center'>
         <Board
           state={game.state}
           flipped={blackSeat !== flip}
           canMove={canMove}
           lastMove={lastMoveOf(game)}
-          onMove={(from, to) => {
-            mutation.mutate({ type: 'move', from, to });
-          }}
+          onMove={(from, to, promotion) =>
+            mutation.mutate({ type: 'move', from, to, promotion })
+          }
           onSelfHeal={(piece) =>
             mutation.mutate({ type: 'selfHeal', pieceId: piece.id })
           }

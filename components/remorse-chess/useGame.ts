@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import type { GameResponse, GameSummary } from '@/types/remorse';
+import type { GameResponse, GameSummary, MoveAction } from '@/types/remorse';
 
 const API = '/api/remorse-chess/games';
 
@@ -35,7 +35,7 @@ export const useCreateGame = () =>
   });
 
 export type GameCommand =
-  | { type: 'move'; from: string; to: string }
+  | MoveAction
   | { type: 'selfHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'undo' }

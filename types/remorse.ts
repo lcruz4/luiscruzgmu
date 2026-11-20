@@ -27,8 +27,18 @@ export interface GameState {
   enPassant: string | null;
 }
 
+export type PromotionType = 'q' | 'r' | 'b' | 'n';
+
+// promotion: required when a pawn reaches the last rank
+export interface MoveAction {
+  type: 'move';
+  from: string;
+  to: string;
+  promotion?: PromotionType;
+}
+
 export type Action =
-  | { type: 'move'; from: string; to: string }
+  | MoveAction
   | { type: 'selfHeal'; pieceId: string }
   | { type: 'skipExtraMove' };
 

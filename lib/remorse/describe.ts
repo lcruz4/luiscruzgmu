@@ -29,7 +29,9 @@ export const describeEvent = (event: GameEvent): string => {
     case 'castle':
       return `Castled: rook ${event.from} → ${event.to}`;
     case 'promote':
-      return `${colorName(event.piece.color)} pawn promoted to a queen`;
+      return `${colorName(event.piece.color)} pawn promoted to a ${
+        NAMES[event.piece.type]
+      }`;
     case 'capture':
       return `${name(event.piece)} captured the ${NAMES[event.captured.type]}`;
     case 'roll':
