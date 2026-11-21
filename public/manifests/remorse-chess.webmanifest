@@ -1,0 +1,28 @@
+{
+  "id": "/projects/remorse-chess",
+  "name": "Remorse Chess",
+  "short_name": "Remorse",
+  "start_url": "/projects/remorse-chess",
+  "scope": "/projects/remorse-chess",
+  "display": "fullscreen",
+  "background_color": "#161512",
+  "theme_color": "#161512",
+  "icons": [
+    {
+      "src": "/images/pwa/remorse-chess-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa/remorse-chess-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa/remorse-chess-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
