@@ -322,6 +322,8 @@ const move = (
     remove(state, target);
     events.push({ type: 'capture', piece: ref(piece), captured: ref(target) });
     checkKing(state, target, events);
+    // Taking the king ends the game on the spot: no roll, healing or deaths
+    if (state.winner) return;
     extraMove = onCapture(state, piece, rollDie, events) && !onExtraMove;
   }
 

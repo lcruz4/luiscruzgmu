@@ -153,7 +153,7 @@ export const playSteps = (
       const el = document.createElement('div');
       el.textContent = text;
       el.style.cssText =
-        'position:absolute;left:50%;top:2%;transform:translateX(-50%);max-width:92%;text-align:center;background:rgba(20,16,12,.82);color:#fff;font-size:13px;line-height:1.3;padding:5px 12px;border-radius:14px;z-index:40;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+        'position:absolute;left:50%;bottom:2%;transform:translateX(-50%);max-width:92%;text-align:center;background:rgba(20,16,12,.82);color:#fff;font-size:13px;line-height:1.3;padding:5px 12px;border-radius:14px;z-index:40;box-shadow:0 2px 8px rgba(0,0,0,.4)';
       fx.appendChild(el);
       await run(
         el,
@@ -1211,6 +1211,7 @@ export const playSteps = (
     [...tickedColors].map((color) => [color, lastStepOf(color)]),
   );
 
+  let over = false;
   const playStep = async (stepEvents: GameEvent[], stepIndex: number) => {
     const handled = new Set<number>();
     let ticked = false;
@@ -1293,8 +1294,10 @@ export const playSteps = (
           await check(event.color);
           break;
         case 'gameOver':
+          // Nothing after the end of the game gets played or labelled
+          over = true;
           if (event.reason === 'checkmate') await topple();
-          break;
+          return;
       }
     }
     await runTicks();
@@ -1302,7 +1305,7 @@ export const playSteps = (
 
   (async () => {
     for (const [i, stepEvents] of steps.entries()) {
-      if (!alive) return;
+      if (!alive || over) break;
       await playStep(stepEvents, i);
     }
     await labels;

@@ -103,10 +103,19 @@ describe('moves', () => {
     expect(pawn).toMatchObject({ type: 'n', trauma: 'guilt' });
   });
 
-  it('ends the game when a king is captured', () => {
-    const state = game([piece('wq-d', 'e7')]);
-    const { state: next } = applyAction(state, mv('e7', 'e8'), roll(4));
+  it('ends the game when a king is captured, with nothing after it', () => {
+    const state = game([
+      piece('wq-d', 'e7', { trauma: 'psychopath', kills: 2 }),
+      piece('wp-h', 'h2', {
+        trauma: 'devastated',
+        turnsLeft: 1,
+        devastatedOnTurn: 0,
+      }),
+    ]);
+    const { state: next, events } = applyAction(state, mv('e7', 'e8'), noRoll);
     expect(next.winner).toBe('w');
+    expect(events.map((e) => e.type)).toEqual(['move', 'capture', 'gameOver']);
+    expect(find(next, 'wp-h')).toBeDefined();
     expect(() => applyAction(next, mv('e8', 'e7'), noRoll)).toThrow('over');
   });
 });
