@@ -15,10 +15,11 @@ describe('getAuthenticatedEmail', () => {
     jest.restoreAllMocks();
   });
 
-  it('returns the email nginx forwarded without calling the auth service', async () => {
+  it('returns the email nginx forwarded for the same app without calling the auth service', async () => {
     const req = {
       headers: {
         'x-authenticated-email': 'me@example.com',
+        'x-authenticated-app': 'workout-tracker',
         cookie: 'session=abc',
       },
     };
@@ -27,6 +28,51 @@ describe('getAuthenticatedEmail', () => {
       'me@example.com',
     );
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('asks the auth service when nginx checked a different app', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 403 }));
+
+    await expect(
+      getAuthenticatedEmail(
+        {
+          headers: {
+            'x-authenticated-email': 'me@example.com',
+            'x-authenticated-app': 'remorse-chess',
+            cookie: 'session=abc',
+          },
+        },
+        'giant-order-tool',
+      ),
+    ).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://auth.example.test/auth/authorize',
+      { headers: { cookie: 'session=abc', 'X-Auth-App': 'giant-order-tool' } },
+    );
+  });
+
+  it('asks the auth service when the forwarded email has no app', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(null, {
+        headers: { 'x-authenticated-email': 'me@example.com' },
+      }),
+    );
+
+    await expect(
+      getAuthenticatedEmail(
+        {
+          headers: {
+            'x-authenticated-email': 'me@example.com',
+            cookie: 'session=abc',
+          },
+        },
+        'workout-tracker',
+      ),
+    ).resolves.toBe('me@example.com');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://auth.example.test/auth/authorize',
+      { headers: { cookie: 'session=abc', 'X-Auth-App': 'workout-tracker' } },
+    );
   });
 
   it('falls back to the auth service, forwarding the cookie and app', async () => {
@@ -53,7 +99,12 @@ describe('getAuthenticatedEmail', () => {
 
     await expect(
       getAuthenticatedEmail(
-        { headers: { 'x-authenticated-email': '' } },
+        {
+          headers: {
+            'x-authenticated-email': '',
+            'x-authenticated-app': 'admin',
+          },
+        },
         'admin',
       ),
     ).resolves.toBeNull();

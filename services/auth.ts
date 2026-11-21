@@ -33,15 +33,20 @@ const authorize = async (req: AuthRequest, app: AuthApp) => {
   }
 };
 
-// nginx runs the auth check on the paths it protects and forwards the email;
-// it strips the header everywhere else. Without it (local dev, or a path nginx
-// doesn't check) ask the auth service directly.
+// nginx runs the auth check on the paths it protects and forwards the email
+// plus the app it checked; it strips both headers everywhere else. The email is
+// trusted only when that app is the one this handler needs, since nginx matches
+// on the decoded path but Next.js routes on the raw one. Otherwise (local dev,
+// a path nginx doesn't check, or a different app) ask the auth service directly.
 export const getAuthenticatedEmail = async (
   req: AuthRequest,
   app: AuthApp,
 ): Promise<string | null> => {
   const forwarded = req.headers['x-authenticated-email'];
-  if (typeof forwarded === 'string' && forwarded) return forwarded;
+  const checkedApp = req.headers['x-authenticated-app'];
+  if (typeof forwarded === 'string' && forwarded && checkedApp === app) {
+    return forwarded;
+  }
 
   return (await authorize(req, app))?.get('x-authenticated-email') || null;
 };
