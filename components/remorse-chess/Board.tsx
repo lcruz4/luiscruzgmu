@@ -1,5 +1,5 @@
 import { type PointerEvent, useRef, useState } from 'react';
-import { canBeHealed } from '@/lib/remorse/engine';
+import { canBeHealed, inCheck, legalMoves } from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
 import type { GameState, Piece, PromotionType } from '@/types/remorse';
 import { Marker } from './Marker';
@@ -50,6 +50,7 @@ export const Board = ({
     to: string;
   } | null>(null);
   const requestMove = (from: string, to: string) => {
+    if (!legalMoves(state, from).includes(to)) return;
     const piece = bySquare.get(from);
     const lastRank = piece?.color === 'w' ? '8' : '1';
     if (piece?.type === 'p' && to[1] === lastRank) {
@@ -65,7 +66,8 @@ export const Board = ({
       return;
     }
     const piece = bySquare.get(square);
-    if (isMine(piece)) {
+    // A bloodlust piece may take its own side, so a target wins over reselecting
+    if (isMine(piece) && !(selected && targets.has(square))) {
       setSelected(selected === square ? null : square);
       return;
     }
@@ -86,6 +88,13 @@ export const Board = ({
     dy: number;
   } | null>(null);
   const squares = squaresFor(flipped);
+  const moveFrom = drag?.from ?? selected;
+  const targets = new Set(moveFrom ? legalMoves(state, moveFrom) : []);
+  const checkedKing =
+    !state.winner && inCheck(state, state.turn)
+      ? state.pieces.find((p) => p.color === state.turn && p.type === 'k')
+          ?.square
+      : undefined;
 
   const squareAt = (x: number, y: number) => {
     const rect = boardRef.current?.getBoundingClientRect();
@@ -146,9 +155,20 @@ export const Board = ({
                 (lastMove?.from === square || lastMove?.to === square) &&
                   'bg-yellow-300/40',
                 selected === square && 'bg-sky-400/50',
+                checkedKing === square && 'bg-red-600/60',
               )}
               onClick={() => handleClick(square)}
             >
+              {targets.has(square) && (
+                <span
+                  className={cn(
+                    'pointer-events-none absolute z-20 rounded-full',
+                    piece
+                      ? 'inset-[4%] border-[5px] border-black/25'
+                      : 'inset-[36%] bg-black/25',
+                  )}
+                />
+              )}
               {rankLabel && (
                 <span className='pointer-events-none absolute left-[3%] top-[2%] text-[10px] font-semibold text-black/45'>
                   {square[1]}

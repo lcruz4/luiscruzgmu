@@ -14,6 +14,8 @@ export interface Piece {
   devastatedOnTurn: number | null;
   // psychopath: captures since turning, 3 = bloodlust
   kills: number;
+  // king and rooks: castling needs both unmoved
+  moved: boolean;
 }
 
 export interface GameState {
@@ -22,7 +24,7 @@ export interface GameState {
   // the psychopath that may make an optional bonus move (only it can move)
   extraMovePieceId: string | null;
   turnNumber: number;
-  winner: Color | null;
+  winner: Color | 'draw' | null;
   // square a pawn just skipped with a double step, capturable en passant
   enPassant: string | null;
 }
@@ -61,7 +63,12 @@ export type GameEvent =
   | { type: 'skipExtraMove'; piece: PieceRef }
   | { type: 'heal'; piece: PieceRef; healer: PieceRef }
   | { type: 'death'; piece: PieceRef }
-  | { type: 'gameOver'; winner: Color };
+  | { type: 'check'; color: Color }
+  | {
+      type: 'gameOver';
+      winner: Color | 'draw';
+      reason: 'king' | 'checkmate' | 'stalemate';
+    };
 
 export type GameMode = 'online' | 'local';
 
@@ -78,7 +85,7 @@ export interface GameSummary {
   whiteEmail: string | null;
   blackEmail: string | null;
   turn: Color;
-  winner: Color | null;
+  winner: Color | 'draw' | null;
   updatedAt: string;
 }
 

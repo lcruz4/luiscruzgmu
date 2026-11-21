@@ -1,5 +1,11 @@
 import type { GameState, Piece } from '@/types/remorse';
-import { applyAction, initialState, RULES, traumaForRoll } from './engine';
+import {
+  applyAction,
+  initialState,
+  legalMoves,
+  RULES,
+  traumaForRoll,
+} from './engine';
 
 const piece = (
   id: string,
@@ -15,6 +21,7 @@ const piece = (
   turnsLeft: 0,
   devastatedOnTurn: null,
   kills: 0,
+  moved: false,
   ...extra,
 });
 
@@ -35,6 +42,20 @@ const noRoll = () => {
 const find = (state: GameState, id: string) =>
   state.pieces.find((p) => p.id === id);
 const mv = (from: string, to: string) => ({ type: 'move' as const, from, to });
+// Kings placed by hand instead of e1/e8
+const board = (pieces: Piece[], extra: Partial<GameState> = {}) => ({
+  ...game([], extra),
+  pieces,
+});
+// Black king boxed in on h8; white's rook to a8 mates unless h7 is free
+const backRank = (bishop: Partial<Piece> = {}) =>
+  board([
+    piece('wk', 'e1'),
+    piece('bk', 'h8'),
+    piece('bp-g', 'g7'),
+    piece('wr-a', 'a1'),
+    piece('wb-f', 'd3', bishop),
+  ]);
 
 describe('traumaForRoll', () => {
   it('maps the d6', () => {
@@ -119,8 +140,9 @@ describe('en passant', () => {
     state = applyAction(state, mv('d7', 'd5'), noRoll).state;
     state = applyAction(state, mv('e2', 'e3'), noRoll).state;
     state = applyAction(state, mv('h7', 'h6'), noRoll).state;
-    const next = applyAction(state, mv('e5', 'd6'), noRoll).state;
-    expect(find(next, 'bp-d')?.square).toBe('d5');
+    expect(() => applyAction(state, mv('e5', 'd6'), noRoll)).toThrow(
+      "can't move there",
+    );
   });
 });
 
@@ -173,7 +195,7 @@ describe('psychopath', () => {
     expect(() => applyAction(first, mv('h2', 'h3'), noRoll)).toThrow(
       'psychopath',
     );
-    const second = applyAction(first, mv('d5', 'd6'), noRoll).state;
+    const second = applyAction(first, mv('d5', 'b6'), noRoll).state;
     expect(second).toMatchObject({ turn: 'b', extraMovePieceId: null });
   });
 
@@ -254,13 +276,13 @@ describe('devastated', () => {
 describe('healing', () => {
   it('heals friendly hurt pieces the bishop lands next to', () => {
     const state = game([
-      piece('wb-c', 'c1'),
+      piece('wb-f', 'h1'),
       piece('wn-b', 'e4', { trauma: 'devastated', turnsLeft: 2 }),
       piece('wp-f', 'f4', { trauma: 'guilt' }),
-      piece('wp-g', 'g2', { trauma: 'unaffected' }),
+      piece('wp-g', 'g4', { trauma: 'unaffected' }),
       piece('bp-d', 'e3', { trauma: 'guilt' }),
     ]);
-    const next = applyAction(state, mv('c1', 'f3'), noRoll).state;
+    const next = applyAction(state, mv('h1', 'f3'), noRoll).state;
     expect(find(next, 'wn-b')?.healed).toBe(true);
     expect(find(next, 'wp-f')?.healed).toBe(true);
     expect(find(next, 'wp-g')?.healed).toBe(false);
@@ -270,10 +292,10 @@ describe('healing', () => {
   it("doesn't heal when the hurt piece moves next to the bishop", () => {
     const state = game([
       piece('wb-c', 'd3'),
-      piece('wn-b', 'f3', { trauma: 'guilt' }),
+      piece('wn-b', 'c3', { trauma: 'guilt' }),
     ]);
     expect(
-      find(applyAction(state, mv('f3', 'e4'), noRoll).state, 'wn-b')?.healed,
+      find(applyAction(state, mv('c3', 'e4'), noRoll).state, 'wn-b')?.healed,
     ).toBe(false);
   });
 
@@ -286,7 +308,7 @@ describe('healing', () => {
         devastatedOnTurn: 0,
       }),
     ]);
-    state = applyAction(state, mv('c1', 'd3'), noRoll).state;
+    state = applyAction(state, mv('c1', 'f4'), noRoll).state;
     expect(find(state, 'wn-b')).toMatchObject({ healed: true, turnsLeft: 1 });
   });
 
@@ -312,5 +334,146 @@ describe('healing', () => {
         applyAction(state, { type: 'selfHeal', pieceId }, noRoll),
       ).toThrow();
     }
+  });
+});
+
+describe('movement', () => {
+  it('follows how each piece moves', () => {
+    const state = initialState();
+    expect(legalMoves(state, 'e2').sort()).toEqual(['e3', 'e4']);
+    expect(legalMoves(state, 'b1').sort()).toEqual(['a3', 'c3']);
+    expect(legalMoves(state, 'a1')).toEqual([]);
+    expect(() => applyAction(state, mv('e2', 'e5'), noRoll)).toThrow(
+      "can't move there",
+    );
+  });
+
+  it("won't move into check", () => {
+    const state = game([piece('br-d', 'd8')]);
+    expect(() => applyAction(state, mv('e1', 'd1'), noRoll)).toThrow();
+    expect(legalMoves(state, 'e1')).toContain('f1');
+  });
+
+  it('ignores checks from hurt pieces', () => {
+    for (const trauma of ['guilt', 'devastated'] as const) {
+      const state = game([piece('br-d', 'd8', { trauma, turnsLeft: 2 })]);
+      expect(legalMoves(state, 'e1')).toContain('d1');
+    }
+  });
+});
+
+describe('hurt pieces', () => {
+  it("can't capture until healed", () => {
+    for (const trauma of ['guilt', 'devastated'] as const) {
+      const hurt = game([
+        piece('wr-a', 'a1', { trauma, turnsLeft: 2 }),
+        piece('bp-a', 'a5'),
+      ]);
+      expect(legalMoves(hurt, 'a1')).toContain('a4');
+      expect(legalMoves(hurt, 'a1')).not.toContain('a5');
+      const healed = game([
+        piece('wr-a', 'a1', { trauma, turnsLeft: 2, healed: true }),
+        piece('bp-a', 'a5'),
+      ]);
+      expect(legalMoves(healed, 'a1')).toContain('a5');
+    }
+  });
+});
+
+describe('castling', () => {
+  it('needs an unmoved king and rook', () => {
+    expect(
+      legalMoves(game([piece('wr-h', 'h1', { moved: true })]), 'e1'),
+    ).not.toContain('g1');
+    const state = applyAction(
+      game([piece('wr-h', 'h1'), piece('bp-a', 'a7')]),
+      mv('e1', 'f1'),
+      noRoll,
+    ).state;
+    const back = applyAction(state, mv('a7', 'a6'), noRoll).state;
+    const home = applyAction(back, mv('f1', 'e1'), noRoll).state;
+    const again = applyAction(home, mv('a6', 'a5'), noRoll).state;
+    expect(legalMoves(again, 'e1')).not.toContain('g1');
+  });
+
+  it("can't castle out of or through check, unless the attacker is hurt", () => {
+    const through = game([piece('wr-h', 'h1'), piece('br-f', 'f8')]);
+    expect(legalMoves(through, 'e1')).not.toContain('g1');
+    const out = game([piece('wr-h', 'h1'), piece('br-e', 'e5')]);
+    expect(legalMoves(out, 'e1')).not.toContain('g1');
+    const hurt = game([
+      piece('wr-h', 'h1'),
+      piece('br-f', 'f8', { trauma: 'guilt' }),
+    ]);
+    expect(legalMoves(hurt, 'e1')).toContain('g1');
+  });
+});
+
+describe('checkmate', () => {
+  it('ends the game when the side to move is mated', () => {
+    const { state, events } = applyAction(backRank(), mv('a1', 'a8'), noRoll);
+    expect(state.winner).toBe('w');
+    expect(events.at(-1)).toEqual({
+      type: 'gameOver',
+      winner: 'w',
+      reason: 'checkmate',
+    });
+  });
+
+  it("doesn't count squares guarded by a hurt piece", () => {
+    const { state, events } = applyAction(
+      backRank({ trauma: 'guilt' }),
+      mv('a1', 'a8'),
+      noRoll,
+    );
+    expect(state.winner).toBeNull();
+    expect(events.at(-1)).toEqual({ type: 'check', color: 'b' });
+    expect(legalMoves(state, 'h8')).toEqual(['h7']);
+  });
+
+  it("ends at once when a psychopath's first capture mates", () => {
+    const start = backRank();
+    start.pieces.push(piece('bn-b', 'a8'));
+    const { state } = applyAction(start, mv('a1', 'a8'), roll(6));
+    expect(state).toMatchObject({ winner: 'w', extraMovePieceId: null });
+  });
+
+  it('draws by stalemate', () => {
+    const state = board([
+      piece('wk', 'e1'),
+      piece('bk', 'a8'),
+      piece('wq-d', 'c5'),
+    ]);
+    const { state: next, events } = applyAction(state, mv('c5', 'b6'), noRoll);
+    expect(next.winner).toBe('draw');
+    expect(events.at(-1)).toMatchObject({ reason: 'stalemate' });
+  });
+
+  it("won't let a bishop heal itself while in check", () => {
+    const state = game([
+      piece('wb-c', 'c1', { trauma: 'guilt' }),
+      piece('br-e', 'e5'),
+    ]);
+    expect(() =>
+      applyAction(state, { type: 'selfHeal', pieceId: 'wb-c' }, noRoll),
+    ).toThrow('check');
+  });
+});
+
+describe('bloodlust', () => {
+  const lust = { trauma: 'psychopath' as const, kills: RULES.bloodlustKills };
+
+  it('only moves to capture, and may capture its own side', () => {
+    const state = game([
+      piece('wn-b', 'c3', lust),
+      piece('wp-d', 'd5'),
+      piece('bp-b', 'b5'),
+    ]);
+    expect(legalMoves(state, 'c3').sort()).toEqual(['b5', 'd5']);
+  });
+
+  it('loses the game by taking its own king', () => {
+    const state = game([piece('wn-b', 'd3', lust)]);
+    expect(applyAction(state, mv('d3', 'e1'), noRoll).state.winner).toBe('b');
   });
 });

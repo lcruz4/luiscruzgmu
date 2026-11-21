@@ -11,6 +11,10 @@ const NAMES: Record<PieceType, string> = {
 
 export const colorName = (color: Color) => (color === 'w' ? 'White' : 'Black');
 
+// Who won, for a finished game
+export const resultText = (winner: Color | 'draw') =>
+  winner === 'draw' ? 'Draw' : `${colorName(winner)} wins`;
+
 const name = (piece: PieceRef) =>
   `${colorName(piece.color)} ${NAMES[piece.type]}`;
 
@@ -54,7 +58,13 @@ export const describeEvent = (event: GameEvent): string => {
         : `${name(event.healer)} healed the ${NAMES[event.piece.type]}`;
     case 'death':
       return `${name(event.piece)} died of grief`;
+    case 'check':
+      return `${colorName(event.color)} is in check`;
     case 'gameOver':
-      return `${colorName(event.winner)} wins`;
+      return event.reason === 'checkmate'
+        ? `Checkmate. ${resultText(event.winner)}`
+        : event.reason === 'stalemate'
+        ? 'Stalemate. Draw'
+        : resultText(event.winner);
   }
 };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { colorName, describeEvent } from '@/lib/remorse/describe';
+import { colorName, describeEvent, resultText } from '@/lib/remorse/describe';
+import { inCheck } from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
 import type { GameEvent, GameResponse } from '@/types/remorse';
 import type { GameCommand } from './useGame';
@@ -42,12 +43,14 @@ export const GamePanel = ({
 
   const psychopath = state.pieces.find((p) => p.id === state.extraMovePieceId);
   const status = state.winner
-    ? `${colorName(state.winner)} wins`
+    ? resultText(state.winner)
     : psychopath
     ? `${colorName(state.turn)}'s psychopath on ${
         psychopath.square
       } may move again`
-    : `${colorName(state.turn)} to move`;
+    : `${colorName(state.turn)} to move${
+        inCheck(state, state.turn) ? ', in check' : ''
+      }`;
 
   return (
     <aside className='flex w-full flex-col gap-4 rounded-xl bg-[#262421] p-4 lg:w-80'>

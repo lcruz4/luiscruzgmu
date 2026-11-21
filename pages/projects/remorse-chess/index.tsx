@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import { useCreateGame, useGames } from '@/components/remorse-chess/useGame';
-import { colorName } from '@/lib/remorse/describe';
+import { colorName, resultText } from '@/lib/remorse/describe';
 import { requireLogin } from '@/services/auth';
 import type { GameSummary } from '@/types/remorse';
 
@@ -84,7 +84,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               </span>
               <span className='text-[#a29e96]'>
                 {game.winner
-                  ? `${colorName(game.winner)} won`
+                  ? resultText(game.winner)
                   : `${colorName(game.turn)} to move`}
               </span>
             </Link>

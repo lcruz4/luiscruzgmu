@@ -9,37 +9,25 @@ import type {
   PieceType,
   Trauma,
 } from '@/types/remorse';
+import {
+  enPassantVictim,
+  hasLegalAction,
+  inCheck,
+  isAdjacent,
+  isHurt,
+  isSquare,
+  legalMoves,
+  opponent,
+  pieceAt,
+  RULES,
+} from './moves';
 
-// Bishop healing trigger. 'bishop-moves': only the bishop's own move heals the
-// pieces it lands next to. 'either-moves': a hurt piece landing next to a
-// friendly bishop also heals.
-export type HealTrigger = 'bishop-moves' | 'either-moves';
-
-export const RULES = {
-  healTrigger: 'bishop-moves' as HealTrigger,
-  devastatedTurns: 3,
-  bloodlustKills: 3,
-};
+export { isAdjacent, legalMoves, inCheck, opponent, RULES } from './moves';
 
 export class RuleError extends Error {}
 
 const FILES = 'abcdefgh';
 const BACK_RANK: PieceType[] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
-
-const isSquare = (square: string) => /^[a-h][1-8]$/.test(square);
-
-const coords = (square: string) => [
-  FILES.indexOf(square[0]),
-  Number(square[1]) - 1,
-];
-
-export const isAdjacent = (a: string, b: string) => {
-  const [ax, ay] = coords(a);
-  const [bx, by] = coords(b);
-  return a !== b && Math.abs(ax - bx) <= 1 && Math.abs(ay - by) <= 1;
-};
-
-export const opponent = (color: Color): Color => (color === 'w' ? 'b' : 'w');
 
 const newPiece = (
   color: Color,
@@ -56,6 +44,7 @@ const newPiece = (
   turnsLeft: 0,
   devastatedOnTurn: null,
   kills: 0,
+  moved: false,
 });
 
 export const initialState = (): GameState => {
@@ -88,8 +77,7 @@ export const traumaForRoll = (roll: number): Trauma => {
   return 'psychopath';
 };
 
-export const canBeHealed = (piece: Piece) =>
-  (piece.trauma === 'devastated' || piece.trauma === 'guilt') && !piece.healed;
+export const canBeHealed = isHurt;
 
 const ref = (piece: Piece): PieceRef => ({
   id: piece.id,
@@ -102,9 +90,6 @@ const clone = (state: GameState): GameState => ({
   pieces: state.pieces.map((piece) => ({ ...piece })),
 });
 
-const pieceAt = (state: GameState, square: string) =>
-  state.pieces.find((piece) => piece.square === square);
-
 const remove = (state: GameState, piece: Piece) => {
   state.pieces = state.pieces.filter((p) => p.id !== piece.id);
 };
@@ -112,7 +97,23 @@ const remove = (state: GameState, piece: Piece) => {
 const checkKing = (state: GameState, removed: Piece, events: GameEvent[]) => {
   if (removed.type !== 'k' || state.winner) return;
   state.winner = opponent(removed.color);
-  events.push({ type: 'gameOver', winner: state.winner });
+  events.push({ type: 'gameOver', winner: state.winner, reason: 'king' });
+};
+
+// The side to move with nothing legal is checkmated, or stalemated (a draw)
+const checkMate = (state: GameState, events: GameEvent[]) => {
+  const color = state.turn;
+  const check = inCheck(state, color);
+  if (hasLegalAction(state, color)) {
+    if (check) events.push({ type: 'check', color });
+    return;
+  }
+  state.winner = check ? opponent(color) : 'draw';
+  events.push({
+    type: 'gameOver',
+    winner: state.winner,
+    reason: check ? 'checkmate' : 'stalemate',
+  });
 };
 
 const devastate = (state: GameState, piece: Piece) => {
@@ -219,6 +220,7 @@ const endTurn = (state: GameState, events: GameEvent[]) => {
   state.turn = opponent(color);
   state.extraMovePieceId = null;
   state.turnNumber += 1;
+  if (!state.winner) checkMate(state, events);
 };
 
 const castleRook = (
@@ -247,6 +249,7 @@ const castleRook = (
     return;
   }
   rook.square = rookMove[1];
+  rook.moved = true;
   events.push({
     type: 'castle',
     rook: ref(rook),
@@ -271,21 +274,6 @@ const doubleStepTarget = (piece: Piece, from: string, to: string) => {
   return `${from[0]}${piece.color === 'w' ? '3' : '6'}`;
 };
 
-// A pawn moving diagonally onto the skipped square takes the pawn that skipped it
-const enPassantVictim = (
-  state: GameState,
-  piece: Piece,
-  from: string,
-  to: string,
-) => {
-  if (piece.type !== 'p' || to !== state.enPassant || from[0] === to[0])
-    return undefined;
-  const victim = pieceAt(state, `${to[0]}${from[1]}`);
-  return victim?.type === 'p' && victim.color !== piece.color
-    ? victim
-    : undefined;
-};
-
 const move = (
   state: GameState,
   { from, to, promotion }: MoveAction,
@@ -302,11 +290,14 @@ const move = (
   if (state.extraMovePieceId && piece.id !== state.extraMovePieceId) {
     throw new RuleError('Only the psychopath gets the extra move');
   }
-  const occupant = pieceAt(state, to);
-  if (occupant?.color === piece.color) {
-    throw new RuleError("You can't capture your own piece");
+  if (!legalMoves(state, from).includes(to)) {
+    throw new RuleError(
+      pieceAt(state, to)?.color === piece.color
+        ? "You can't capture your own piece"
+        : "That piece can't move there",
+    );
   }
-  const target = occupant ?? enPassantVictim(state, piece, from, to);
+  const target = pieceAt(state, to) ?? enPassantVictim(state, piece, from, to);
   const promotes =
     piece.type === 'p' && to[1] === (piece.color === 'w' ? '8' : '1');
   if (promotes && !promotion) {
@@ -314,6 +305,7 @@ const move = (
   }
 
   piece.square = to;
+  piece.moved = true;
   state.enPassant = doubleStepTarget(piece, from, to);
   events.push({ type: 'move', piece: ref(piece), from, to });
   castleRook(state, piece, from, to, events);
@@ -333,11 +325,17 @@ const move = (
 
   healAround(state, piece, events);
 
-  if (extraMove && !state.winner) {
+  // A first capture that already checkmates ends the game, extra move or not
+  if (extraMove && !state.winner && !mateAfterMove(state)) {
     state.extraMovePieceId = piece.id;
   } else {
     endTurn(state, events);
   }
+};
+
+const mateAfterMove = (state: GameState) => {
+  const enemy = opponent(state.turn);
+  return inCheck(state, enemy) && !hasLegalAction(state, enemy);
 };
 
 // A bishop spends its turn healing itself
@@ -351,6 +349,9 @@ const selfHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
   }
   if (state.extraMovePieceId) {
     throw new RuleError('Use or skip the extra move first');
+  }
+  if (inCheck(state, piece.color)) {
+    throw new RuleError("You can't heal while in check");
   }
   heal(piece, piece, events);
   state.enPassant = null;
