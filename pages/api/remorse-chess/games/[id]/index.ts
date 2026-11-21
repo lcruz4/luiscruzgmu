@@ -1,7 +1,19 @@
 import type { NextApiRequest } from 'next';
-import { bodyOf, HttpError, idField, intField } from '@/services/api';
+import {
+  bodyOf,
+  HttpError,
+  idField,
+  intField,
+  NO_CONTENT,
+} from '@/services/api';
 import { remorseRoute } from '@/services/remorseApi';
-import { getGame, joinGame, playAction, undoStep } from '@/services/remorseDb';
+import {
+  gameVersion,
+  getGame,
+  joinGame,
+  playAction,
+  undoStep,
+} from '@/services/remorseDb';
 
 const squareField = (value: unknown, name: string) => {
   if (typeof value !== 'string' || !/^[a-h][1-8]$/.test(value)) {
@@ -54,7 +66,18 @@ const postAction = async (req: NextApiRequest, email: string) => {
   return getGame(id, email);
 };
 
+// ?since=<version the client has>: 204 while that's still current, so a poll
+// that finds nothing new skips loading and sending the whole game
+const getAction = async (req: NextApiRequest, email: string) => {
+  const id = idField(req.query.id, 'id');
+  if (req.query.since !== undefined) {
+    const since = intField(req.query.since, 'since', 0, 2147483647);
+    if ((await gameVersion(id)) === since) return NO_CONTENT;
+  }
+  return getGame(id, email);
+};
+
 export default remorseRoute({
-  GET: (req, email) => getGame(idField(req.query.id, 'id'), email),
+  GET: getAction,
   POST: postAction,
 });

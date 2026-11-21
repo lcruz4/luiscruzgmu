@@ -16,9 +16,13 @@ const FK_VIOLATION = '23503';
 
 type MethodHandler = (req: NextApiRequest, email: string) => Promise<unknown>;
 
+// Return from a handler to answer 204 with no body
+export const NO_CONTENT = Symbol('no content');
+
 // Method check → auth check (returns the email or throws an HttpError) →
-// handler. The handler's return value is sent as 200 JSON; HttpError → its
-// status; unique/foreign key violations → 409; anything else → logged 500.
+// handler. The handler's return value is sent as 200 JSON (NO_CONTENT → 204);
+// HttpError → its status; unique/foreign key violations → 409; anything else
+// → logged 500.
 export const route =
   (authenticate: (req: NextApiRequest) => Promise<string>) =>
   (handlers: Partial<Record<string, MethodHandler>>) =>
@@ -31,7 +35,12 @@ export const route =
 
     try {
       const email = await authenticate(req);
-      return res.status(200).json(await handler(req, email));
+      const result = await handler(req, email);
+      if (result === NO_CONTENT) {
+        res.status(204).end();
+        return;
+      }
+      return res.status(200).json(result);
     } catch (error) {
       if (error instanceof HttpError) {
         return res.status(error.status).json({ error: error.message });

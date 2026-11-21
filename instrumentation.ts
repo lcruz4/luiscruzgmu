@@ -1,5 +1,9 @@
 import * as Sentry from '@sentry/nextjs';
 
+// Each remorse chess player polls its game every 2s; tracing every poll
+// costs real CPU on the Pi
+const REMORSE_POLL = /^GET \/api\/remorse-chess\/games\/\d+$/;
+
 export const register = () => {
   Sentry.init({
     dsn: process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -7,7 +11,9 @@ export const register = () => {
       Sentry.consoleLoggingIntegration({ levels: ['warn', 'error'] }),
     ],
     enableLogs: true,
-    tracesSampleRate: 1,
+    // Polls ignore the browser's sampling decision; everything else follows it
+    tracesSampler: ({ name, inheritOrSampleWith }) =>
+      REMORSE_POLL.test(name) ? 0 : inheritOrSampleWith(0.1),
   });
 };
 
