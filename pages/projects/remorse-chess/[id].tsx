@@ -20,6 +20,8 @@ const GamePage = () => {
     typeof router.query.id === 'string' ? Number(router.query.id) : undefined;
   const { query, mutation } = useGame(id);
   const [flip, setFlip] = useState(false);
+  // steps from here on are still animating, so the panel holds them back
+  const [hiddenFrom, setHiddenFrom] = useState<number | null>(null);
   const game = query.data;
 
   if (!game) {
@@ -44,6 +46,8 @@ const GamePage = () => {
       <div className='flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center'>
         <Board
           state={game.state}
+          steps={game.steps}
+          onAnimating={setHiddenFrom}
           flipped={blackSeat !== flip}
           canMove={canMove}
           lastMove={lastMoveOf(game)}
@@ -56,6 +60,7 @@ const GamePage = () => {
         />
         <GamePanel
           game={game}
+          hiddenFrom={hiddenFrom}
           error={mutation.error?.message ?? null}
           busy={mutation.isPending}
           onCommand={(command) => {

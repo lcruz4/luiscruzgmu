@@ -15,10 +15,12 @@ export const colorName = (color: Color) => (color === 'w' ? 'White' : 'Black');
 export const resultText = (winner: Color | 'draw') =>
   winner === 'draw' ? 'Draw' : `${colorName(winner)} wins`;
 
-const name = (piece: PieceRef) =>
+export const typeName = (type: PieceType) => NAMES[type];
+
+export const pieceName = (piece: Pick<PieceRef, 'color' | 'type'>) =>
   `${colorName(piece.color)} ${NAMES[piece.type]}`;
 
-const TRAUMA_TEXT = {
+export const TRAUMA_TEXT = {
   devastated: 'devastated',
   guilt: 'guilt-ridden',
   unaffected: 'unaffected',
@@ -29,7 +31,7 @@ const TRAUMA_TEXT = {
 export const describeEvent = (event: GameEvent): string => {
   switch (event.type) {
     case 'move':
-      return `${name(event.piece)} ${event.from} → ${event.to}`;
+      return `${pieceName(event.piece)} ${event.from} → ${event.to}`;
     case 'castle':
       return `Castled: rook ${event.from} → ${event.to}`;
     case 'promote':
@@ -37,27 +39,29 @@ export const describeEvent = (event: GameEvent): string => {
         NAMES[event.piece.type]
       }`;
     case 'capture':
-      return `${name(event.piece)} captured the ${NAMES[event.captured.type]}`;
+      return `${pieceName(event.piece)} captured the ${
+        NAMES[event.captured.type]
+      }`;
     case 'roll':
-      return `Rolled ${event.roll}: ${name(event.piece)} is ${
+      return `Rolled ${event.roll}: ${pieceName(event.piece)} is ${
         TRAUMA_TEXT[event.trauma]
       }`;
     case 'reactivate':
-      return `${name(event.piece)} is ${TRAUMA_TEXT[event.trauma]} again`;
+      return `${pieceName(event.piece)} is ${TRAUMA_TEXT[event.trauma]} again`;
     case 'kill':
-      return `${name(event.piece)}: psychopath ${event.kills}/3`;
+      return `${pieceName(event.piece)}: psychopath ${event.kills}/3`;
     case 'bloodlust':
-      return `${name(event.piece)} is in bloodlust`;
+      return `${pieceName(event.piece)} is in bloodlust`;
     case 'extraMove':
-      return `${name(event.piece)} gets an extra move`;
+      return `${pieceName(event.piece)} gets an extra move`;
     case 'skipExtraMove':
-      return `${name(event.piece)} skipped its extra move`;
+      return `${pieceName(event.piece)} skipped its extra move`;
     case 'heal':
       return event.piece.id === event.healer.id
-        ? `${name(event.piece)} healed itself`
-        : `${name(event.healer)} healed the ${NAMES[event.piece.type]}`;
+        ? `${pieceName(event.piece)} healed itself`
+        : `${pieceName(event.healer)} healed the ${NAMES[event.piece.type]}`;
     case 'death':
-      return `${name(event.piece)} died of grief`;
+      return `${pieceName(event.piece)} died of grief`;
     case 'check':
       return `${colorName(event.color)} is in check`;
     case 'gameOver':

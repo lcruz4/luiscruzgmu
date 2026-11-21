@@ -122,7 +122,8 @@ const devastate = (state: GameState, piece: Piece) => {
 };
 
 // The capturing piece's remorse: a roll on its first capture, re-activation
-// when healed, a step towards bloodlust for an active psychopath.
+// when healed, a step towards bloodlust for an active psychopath. Returns
+// whether the piece is a psychopath, which earns an extra move.
 const onCapture = (
   state: GameState,
   piece: Piece,
@@ -141,7 +142,6 @@ const onCapture = (
     if (piece.trauma === 'devastated') devastate(state, piece);
     if (piece.trauma === 'psychopath') {
       piece.kills = 1;
-      events.push({ type: 'extraMove', piece: ref(piece) });
       return true;
     }
     return false;
@@ -164,7 +164,7 @@ const onCapture = (
         : { type: 'kill', piece: ref(piece), kills: piece.kills },
     );
   }
-  return false;
+  return piece.trauma === 'psychopath';
 };
 
 const heal = (piece: Piece, healer: Piece, events: GameEvent[]) => {
@@ -315,12 +315,14 @@ const move = (
     events.push({ type: 'promote', piece: ref(piece) });
   }
 
+  // A capture made with the extra move doesn't earn another one
+  const onExtraMove = state.extraMovePieceId !== null;
   let extraMove = false;
   if (target) {
     remove(state, target);
     events.push({ type: 'capture', piece: ref(piece), captured: ref(target) });
     checkKing(state, target, events);
-    extraMove = onCapture(state, piece, rollDie, events);
+    extraMove = onCapture(state, piece, rollDie, events) && !onExtraMove;
   }
 
   healAround(state, piece, events);
@@ -328,6 +330,7 @@ const move = (
   // A first capture that already checkmates ends the game, extra move or not
   if (extraMove && !state.winner && !mateAfterMove(state)) {
     state.extraMovePieceId = piece.id;
+    events.push({ type: 'extraMove', piece: ref(piece) });
   } else {
     endTurn(state, events);
   }

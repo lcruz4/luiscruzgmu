@@ -214,20 +214,39 @@ describe('psychopath', () => {
     ).toThrow();
   });
 
-  it('reaches bloodlust on the third capture, with no further extra moves', () => {
+  it('gets an extra move on every capture, bloodlust included', () => {
+    for (const kills of [1, RULES.bloodlustKills]) {
+      const state = game([
+        piece('wn-b', 'c3', { trauma: 'psychopath', kills }),
+        piece('bp-d', 'd5'),
+      ]);
+      expect(applyAction(state, mv('c3', 'd5'), noRoll).state).toMatchObject({
+        turn: 'w',
+        extraMovePieceId: 'wn-b',
+      });
+    }
+  });
+
+  it("doesn't earn another extra move by capturing on the extra move", () => {
     let state = game([
       piece('wn-b', 'c3', { trauma: 'psychopath', kills: 1 }),
       piece('bp-d', 'd5'),
       piece('bp-c', 'c7'),
-      piece('bp-h', 'h7'),
     ]);
     state = applyAction(state, mv('c3', 'd5'), noRoll).state;
-    expect(state.turn).toBe('b');
-    state = applyAction(state, mv('h7', 'h6'), noRoll).state;
     const { state: next, events } = applyAction(state, mv('d5', 'c7'), noRoll);
+    expect(next).toMatchObject({ turn: 'b', extraMovePieceId: null });
+    expect(events.map((e) => e.type)).not.toContain('extraMove');
+  });
+
+  it('reaches bloodlust on the third capture', () => {
+    const state = game([
+      piece('wn-b', 'c3', { trauma: 'psychopath', kills: 2 }),
+      piece('bp-d', 'd5'),
+    ]);
+    const { state: next, events } = applyAction(state, mv('c3', 'd5'), noRoll);
     expect(find(next, 'wn-b')?.kills).toBe(3);
     expect(events.map((e) => e.type)).toContain('bloodlust');
-    expect(next.turn).toBe('b');
   });
 });
 

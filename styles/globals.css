@@ -273,3 +273,42 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Remorse chess: persistent piece states */
+@keyframes remorse-extra {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+@keyframes remorse-extra-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px #ff2b2b);
+  }
+  50% {
+    filter: drop-shadow(0 0 8px #ff2b2b);
+  }
+}
+@keyframes remorse-aura {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px #ff1a1a);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px #ff1a1a);
+  }
+}
+@keyframes remorse-throb {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 7px #ff5a4e);
+  }
+}

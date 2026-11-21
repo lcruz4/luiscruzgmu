@@ -13,6 +13,9 @@ const isNotable = (event: GameEvent) =>
 
 interface GamePanelProps {
   game: GameResponse;
+  // steps from here on are still animating on the board; showing them (or the
+  // status they lead to) would give a dice roll away
+  hiddenFrom: number | null;
   error: string | null;
   busy: boolean;
   onCommand: (command: GameCommand) => void;
@@ -21,6 +24,7 @@ interface GamePanelProps {
 
 export const GamePanel = ({
   game,
+  hiddenFrom,
   error,
   busy,
   onCommand,
@@ -41,8 +45,14 @@ export const GamePanel = ({
     }
   };
 
-  const psychopath = state.pieces.find((p) => p.id === state.extraMovePieceId);
-  const status = state.winner
+  const revealing = hiddenFrom !== null;
+  const steps = revealing ? game.steps.slice(0, hiddenFrom) : game.steps;
+  const psychopath = revealing
+    ? undefined
+    : state.pieces.find((p) => p.id === state.extraMovePieceId);
+  const status = revealing
+    ? 'Playing out the move…'
+    : state.winner
     ? resultText(state.winner)
     : psychopath
     ? `${colorName(state.turn)}'s psychopath on ${
@@ -73,11 +83,11 @@ export const GamePanel = ({
         className={cn(
           'rounded-md px-3 py-2 text-sm font-medium',
           psychopath ? 'bg-red-900/60 text-red-100' : 'bg-[#3a3733] text-white',
-          state.winner && 'bg-amber-700/60',
+          state.winner && !revealing && 'bg-amber-700/60',
         )}
       >
         {status}
-        {yourTurn && !state.winner && game.mode === 'online' && (
+        {yourTurn && !revealing && game.mode === 'online' && (
           <span className='ml-1 font-normal text-[#cfcbc3]'>· your turn</span>
         )}
       </div>
@@ -129,11 +139,9 @@ export const GamePanel = ({
 
       <div className='flex flex-col text-sm'>
         <span className='mb-1 font-medium text-white'>Moves</span>
-        {!game.steps.length && (
-          <span className='text-[#a29e96]'>No moves yet</span>
-        )}
+        {!steps.length && <span className='text-[#a29e96]'>No moves yet</span>}
         <ol className='flex max-h-[45dvh] flex-col overflow-y-auto'>
-          {[...game.steps].reverse().map((step) => (
+          {[...steps].reverse().map((step) => (
             <li key={step.step} className='border-t border-[#3a3733] py-1.5'>
               {step.events.map((event, index) => (
                 <div

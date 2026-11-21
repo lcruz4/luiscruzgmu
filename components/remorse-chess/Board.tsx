@@ -1,7 +1,19 @@
-import { type PointerEvent, useRef, useState } from 'react';
+import {
+  type PointerEvent,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { canBeHealed, inCheck, legalMoves } from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
-import type { GameState, Piece, PromotionType } from '@/types/remorse';
+import type {
+  GameState,
+  GameStep,
+  Piece,
+  PromotionType,
+} from '@/types/remorse';
+import { playSteps } from './animate';
 import { Marker } from './Marker';
 import { traumaLabel } from './markerSvg';
 
@@ -19,6 +31,10 @@ const squaresFor = (flipped: boolean) => {
 
 interface BoardProps {
   state: GameState;
+  // every step so far; new ones are animated as they arrive
+  steps: GameStep[];
+  // the first step still being animated, or null once they've all played
+  onAnimating: (fromStep: number | null) => void;
   flipped: boolean;
   // the viewer may move the side whose turn it is
   canMove: boolean;
@@ -30,6 +46,8 @@ interface BoardProps {
 
 export const Board = ({
   state,
+  steps,
+  onAnimating,
   flipped,
   canMove,
   lastMove,
@@ -88,6 +106,46 @@ export const Board = ({
     dy: number;
   } | null>(null);
   const squares = squaresFor(flipped);
+
+  // Animate steps that arrive after the board first rendered; undo and the
+  // first load just show the board
+  const fxRef = useRef<HTMLDivElement>(null);
+  const seen = useRef<{ state: GameState; count: number } | null>(null);
+  const stopAnimation = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    const last = seen.current;
+    seen.current = { state, count: steps.length };
+    const board = boardRef.current;
+    const fx = fxRef.current;
+    if (!last || steps.length <= last.count || !board || !fx) return;
+    stopAnimation.current?.();
+    onAnimating(last.count);
+    const order = squaresFor(flipped);
+    stopAnimation.current = playSteps(
+      {
+        board,
+        fx,
+        at: (square) => {
+          const index = order.indexOf(square);
+          return { c: index % 8, r: Math.floor(index / 8) };
+        },
+      },
+      last.state,
+      state,
+      steps.slice(last.count).map((step) => step.events),
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      () => onAnimating(null),
+    );
+  }, [state, steps, flipped, onAnimating]);
+  useEffect(() => () => stopAnimation.current?.(), []);
+
+  const mate = steps
+    .at(-1)
+    ?.events.find((e) => e.type === 'gameOver' && e.reason === 'checkmate');
+  const toppledKing =
+    mate?.type === 'gameOver'
+      ? state.pieces.find((p) => p.type === 'k' && p.color !== mate.winner)?.id
+      : undefined;
   const moveFrom = drag?.from ?? selected;
   const targets = new Set(moveFrom ? legalMoves(state, moveFrom) : []);
   const checkedKing =
@@ -155,10 +213,21 @@ export const Board = ({
                 (lastMove?.from === square || lastMove?.to === square) &&
                   'bg-yellow-300/40',
                 selected === square && 'bg-sky-400/50',
-                checkedKing === square && 'bg-red-600/60',
               )}
               onClick={() => handleClick(square)}
             >
+              {checkedKing === square && (
+                <div
+                  data-check
+                  className='pointer-events-none absolute inset-0 bg-red-600/60'
+                />
+              )}
+              {piece && piece.id === state.extraMovePieceId && (
+                <div
+                  data-extra
+                  className='pointer-events-none absolute inset-0 bg-[rgba(229,56,59,0.55)] motion-safe:animate-[remorse-extra_1s_ease-in-out_infinite]'
+                />
+              )}
               {targets.has(square) && (
                 <span
                   className={cn(
@@ -181,6 +250,7 @@ export const Board = ({
               )}
               {piece && (
                 <div
+                  data-piece-id={piece.id}
                   className={cn(
                     'relative h-full w-full',
                     isMine(piece) && 'cursor-grab touch-none',
@@ -200,13 +270,30 @@ export const Board = ({
                   }}
                 >
                   <img
+                    data-piece-img
                     src={`/images/${piece.color}${piece.type}.png`}
                     alt={`${piece.color}${piece.type}`}
                     draggable={false}
-                    className='pointer-events-none h-full w-full'
+                    className={cn(
+                      'pointer-events-none h-full w-full',
+                      piece.trauma === 'psychopath' &&
+                        piece.kills >= 3 &&
+                        'motion-safe:animate-[remorse-aura_1.1s_ease-in-out_infinite]',
+                      piece.id === state.extraMovePieceId &&
+                        'motion-safe:animate-[remorse-extra-glow_1s_ease-in-out_infinite]',
+                    )}
+                    style={
+                      piece.id === toppledKing
+                        ? {
+                            transform: 'rotate(78deg) translateY(-4%)',
+                            transformOrigin: '75% 92%',
+                          }
+                        : undefined
+                    }
                   />
                   {piece.trauma && (
                     <button
+                      data-marker
                       type='button'
                       title={`${traumaLabel({
                         ...piece,
@@ -231,6 +318,11 @@ export const Board = ({
                         selfHeal
                           ? 'cursor-pointer rounded-full ring-2 ring-emerald-300 ring-offset-0 animate-pulse'
                           : 'pointer-events-none',
+                        !selfHeal &&
+                          piece.trauma === 'devastated' &&
+                          !piece.healed &&
+                          piece.turnsLeft === 1 &&
+                          'motion-safe:animate-[remorse-throb_1.2s_ease-in-out_infinite]',
                       )}
                     >
                       <Marker
@@ -248,6 +340,7 @@ export const Board = ({
           );
         })}
       </div>
+      <div ref={fxRef} className='pointer-events-none absolute inset-0 z-20' />
       {promotion && (
         <PromotionPicker
           color={state.turn}
