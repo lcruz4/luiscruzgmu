@@ -8,11 +8,17 @@ import type { GameResponse, GameSummary, MoveAction } from '@/types/remorse';
 
 const API = '/api/remorse-chess/games';
 
-const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
+// `current`: what to return on a 204, the server saying it's still current
+const request = async <T>(
+  url: string,
+  init?: RequestInit,
+  current?: T,
+): Promise<T> => {
   const response = await fetch(url, {
     ...init,
     headers: { 'Content-Type': 'application/json' },
   });
+  if (response.status === 204 && current !== undefined) return current;
   const body = await response.json().catch(() => ({}));
   if (!response.ok)
     throw new Error(body.error ?? `Request failed (${response.status})`);
@@ -41,14 +47,24 @@ export type GameCommand =
   | { type: 'undo' }
   | { type: 'join' };
 
-// Polls so the other player's moves show up; every command answers with the
-// new game, and a stale version (409) refetches.
+const fetchGame = (id: number, current: GameResponse | undefined) =>
+  request(
+    current ? `${API}/${id}?since=${current.version}` : `${API}/${id}`,
+    undefined,
+    current,
+  );
+
+// Polls so the other player's moves show up, sending the version it has so an
+// unchanged game costs the server little; every command answers with the new
+// game, and a stale version (409) refetches.
 export const useGame = (id: number | undefined) => {
   const queryClient = useQueryClient();
   const key = ['remorse-chess', 'game', id];
   const query = useQuery({
     queryKey: key,
-    queryFn: id ? () => request<GameResponse>(`${API}/${id}`) : skipToken,
+    queryFn: id
+      ? () => fetchGame(id, queryClient.getQueryData<GameResponse>(key))
+      : skipToken,
     refetchInterval: 2000,
     staleTime: 0,
   });

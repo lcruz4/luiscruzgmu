@@ -2,7 +2,8 @@
 // the simulated players make legal moves. Settings are env vars (README.md).
 //
 // Each VU hosts one game, like the real client: every tick (POLL_S) each of
-// its players polls the game, and after a think time the side to move plays.
+// its players polls the game (with ?since= its version, so an unchanged game
+// answers 204), and after a think time the side to move plays.
 // 7 in 10 VUs host an online game between two accounts, the rest a local game
 // one account plays both sides of. Ticks are short so a stop lands quickly.
 import { sleep } from 'k6';
@@ -104,6 +105,7 @@ const gamesStarted = new Counter('games_started');
 const gamesFinished = new Counter('games_finished');
 const rejectedActions = new Counter('rejected_actions');
 const pollKb = new Trend('poll_kb');
+const unchangedPolls = new Counter('unchanged_polls');
 
 // --- Requests, and the abort rules -----------------------------------------
 
@@ -216,6 +218,8 @@ interface Table {
   players: Account[];
   seats: Record<Color, Account>;
   game: GameResponse | null;
+  // the version each player's client has (-1: none yet), sent as ?since=
+  seen: number[];
   nextMoveAt: number;
   // the first `preplay` moves skip think time, so some games run long early
   preplay: number;
@@ -273,6 +277,7 @@ const openTable = (): Table | null => {
     players,
     seats: { w: players[0], b: players[players.length - 1] },
     game: null,
+    seen: players.map(() => -1),
     nextMoveAt: 0,
     preplay: Math.floor(Math.random() * (PREPLAY_MAX + 1)),
     played: 0,
@@ -282,19 +287,24 @@ const openTable = (): Table | null => {
 
 const poll = (t: Table) => {
   const responses = http.batch(
-    t.players.map((account) => ({
+    t.players.map((account, i) => ({
       method: 'GET',
-      url: `${BASE_URL}${API}/${t.id}`,
+      url: `${BASE_URL}${API}/${t.id}${
+        t.seen[i] < 0 ? '' : `?since=${t.seen[i]}`
+      }`,
       params: params(account, 'poll'),
     })),
   );
   let latest: GameResponse | null = null;
-  for (const res of responses) {
+  for (const [i, res] of responses.entries()) {
     track(res);
+    if (res.status === 204) unchangedPolls.add(1);
     if (res.status === 200 && typeof res.body === 'string') {
       pollKb.add(res.body.length / 1024);
     }
-    latest ??= parse<GameResponse>(res);
+    const game = parse<GameResponse>(res);
+    if (game) t.seen[i] = game.version;
+    latest ??= game;
   }
   return latest;
 };
@@ -314,8 +324,9 @@ const tick = (t: Table) => {
   const action = chooseAction(game.state);
   if (!action) return false;
   const name = action.type === 'move' ? 'move' : action.type;
+  const player = t.seats[game.state.turn];
   const res = post(
-    t.seats[game.state.turn],
+    player,
     `${API}/${t.id}`,
     { ...action, version: game.version },
     name,
@@ -323,6 +334,7 @@ const tick = (t: Table) => {
   const next = parse<GameResponse>(res);
   if (next) {
     t.game = next;
+    t.seen[t.players.indexOf(player)] = next.version;
     t.played += 1;
     t.nextMoveAt = Date.now() + thinkMs(t);
     moves.add(1);

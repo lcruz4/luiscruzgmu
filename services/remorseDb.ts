@@ -135,6 +135,17 @@ const lastStep = async (client: PoolClient | Pool, id: number) => {
   return rows[0];
 };
 
+// Cheap check before a full getGame; undefined when the game doesn't exist
+export const gameVersion = async (id: number) => {
+  const { rows } = await remorsePool.query<{ version: number }>(
+    `SELECT version
+     FROM games
+     WHERE id = $1`,
+    [id],
+  );
+  return rows[0]?.version;
+};
+
 export const getGame = async (
   id: number,
   email: string,
