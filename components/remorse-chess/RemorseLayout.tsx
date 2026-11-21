@@ -19,8 +19,18 @@ export const RemorseLayout = ({ children }: { children: ReactNode }) => (
       />
       <meta name='apple-mobile-web-app-title' content='Remorse' />
       <meta name='theme-color' content='#161512' />
+      {/* Installed on iOS the page runs under the status bar, so the
+          header pads itself clear of it */}
+      <meta
+        name='apple-mobile-web-app-status-bar-style'
+        content='black-translucent'
+      />
+      <meta
+        name='viewport'
+        content='width=device-width, initial-scale=1, viewport-fit=cover'
+      />
     </Head>
-    <header className='flex items-center justify-between px-4 py-3'>
+    <header className='flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))] pb-3'>
       <Link
         href='/projects/remorse-chess'
         className='text-lg font-medium text-white'
