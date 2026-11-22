@@ -19,6 +19,7 @@ import type {
   Trauma,
 } from '@/types/remorse';
 import type { PlayerIcon } from '@/lib/remorse/icons';
+import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import { HttpError } from './api';
 
 export const remorsePool = new Pool({
@@ -140,8 +141,9 @@ export const getProfile = async (email: string) => {
   const { rows } = await remorsePool.query<{
     username: string | null;
     icon: PlayerIcon | null;
+    piece_set: PieceSetId | null;
   }>(
-    `SELECT username, icon
+    `SELECT username, icon, piece_set
      FROM players
      WHERE email = $1`,
     [email],
@@ -149,6 +151,7 @@ export const getProfile = async (email: string) => {
   return {
     username: rows[0]?.username ?? email.split('@')[0],
     icon: rows[0]?.icon ?? null,
+    pieceSet: rows[0]?.piece_set ?? null,
     chosen: rows.length > 0,
   };
 };
@@ -159,6 +162,15 @@ export const setIcon = async (email: string, icon: PlayerIcon) => {
      VALUES ($1, $2)
      ON CONFLICT (email) DO UPDATE SET icon = EXCLUDED.icon`,
     [email, icon],
+  );
+};
+
+export const setPieceSet = async (email: string, pieceSet: PieceSetId) => {
+  await remorsePool.query(
+    `INSERT INTO players (email, piece_set)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE SET piece_set = EXCLUDED.piece_set`,
+    [email, pieceSet],
   );
 };
 

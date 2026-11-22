@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { PlayerIcon } from '@/lib/remorse/icons';
+import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import type {
   Color,
   GameResponse,
@@ -48,7 +49,12 @@ export const useGames = () =>
 const PROFILE_KEY = ['remorse-chess', 'profile'];
 
 // chosen: they've picked a name, or kept the default when asked
-type Profile = { username: string; icon: PlayerIcon | null; chosen: boolean };
+type Profile = {
+  username: string;
+  icon: PlayerIcon | null;
+  pieceSet: PieceSetId | null;
+  chosen: boolean;
+};
 
 export const useProfile = () =>
   useQuery({
@@ -60,7 +66,11 @@ export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
     // username null keeps the default name
-    mutationFn: (body: { username?: string | null; icon?: PlayerIcon }) =>
+    mutationFn: (body: {
+      username?: string | null;
+      icon?: PlayerIcon;
+      pieceSet?: PieceSetId;
+    }) =>
       request<Profile>('/api/remorse-chess/profile', {
         method: 'PUT',
         body: JSON.stringify(body),

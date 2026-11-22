@@ -16,7 +16,8 @@ import type {
 import { playSteps } from './animate';
 import { Marker } from './Marker';
 import { traumaLabel } from './markerSvg';
-import { BOARD_SRC, type PieceSetId, pieceSrc, usePieceSet } from './pieceSets';
+import { BOARD_SRC, type PieceSetId, pieceSrc } from '@/lib/remorse/pieceSets';
+import { usePieceSet } from './usePieceSet';
 
 const FILES = 'abcdefgh';
 
@@ -59,7 +60,7 @@ export const Board = ({
   onSelfHeal,
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
-  const { pieceSet } = usePieceSet();
+  const pieceSet = usePieceSet();
   const bySquare = new Map(state.pieces.map((piece) => [piece.square, piece]));
   // During a psychopath's extra move only that piece may move
   const isMine = (piece?: Piece) =>

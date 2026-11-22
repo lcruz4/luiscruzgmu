@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { IconPicker } from '@/components/remorse-chess/IconPicker';
+import { PieceSetPicker } from '@/components/remorse-chess/PieceSetPicker';
 import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import {
@@ -8,6 +9,7 @@ import {
   useUpdateProfile,
 } from '@/components/remorse-chess/useGame';
 import type { PlayerIcon } from '@/lib/remorse/icons';
+import { usePieceSet } from '@/components/remorse-chess/usePieceSet';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
 
@@ -17,6 +19,8 @@ const primary =
 const ProfilePage = ({ email }: { email: string }) => {
   const profile = useProfile();
   const update = useUpdateProfile();
+  const pieceSetUpdate = useUpdateProfile();
+  const pieceSet = usePieceSet();
   const [username, setUsername] = useState('');
   const [icon, setIcon] = useState<PlayerIcon | null>(null);
   const [saved, setSaved] = useState(false);
@@ -61,6 +65,28 @@ const ProfilePage = ({ email }: { email: string }) => {
             Signed in as {email}
           </p>
         </div>
+
+        <section className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'>
+          <div className='flex items-center justify-between gap-3'>
+            <h2 className='font-semibold text-white'>Pieces</h2>
+            {pieceSetUpdate.isPending && (
+              <span className='text-sm text-[#a29e96]'>Saving…</span>
+            )}
+          </div>
+          <PieceSetPicker
+            value={
+              (pieceSetUpdate.isPending && pieceSetUpdate.variables.pieceSet) ||
+              pieceSet
+            }
+            onChange={(next) => pieceSetUpdate.mutate({ pieceSet: next })}
+            disabled={!profile.data || pieceSetUpdate.isPending}
+          />
+          {pieceSetUpdate.isError && (
+            <p className='text-sm text-red-300'>
+              {pieceSetUpdate.error.message}
+            </p>
+          )}
+        </section>
 
         <form
           onSubmit={submit}

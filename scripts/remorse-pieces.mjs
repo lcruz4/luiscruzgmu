@@ -360,7 +360,7 @@ const MONUMENTS = {
   },
 };
 
-// Keep ids in sync with PIECE_SETS in components/remorse-chess/pieceSets.ts
+// Keep ids in sync with PIECE_SETS in lib/remorse/pieceSets.ts
 const SETS = {
   mourners: {
     shapes: MOURNERS,
