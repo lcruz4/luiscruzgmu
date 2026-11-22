@@ -4,7 +4,12 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import type { GameResponse, GameSummary, MoveAction } from '@/types/remorse';
+import type {
+  Color,
+  GameResponse,
+  GameSummary,
+  MoveAction,
+} from '@/types/remorse';
 
 const API = '/api/remorse-chess/games';
 
@@ -33,8 +38,8 @@ export const useGames = () =>
 
 export const useCreateGame = () =>
   useMutation({
-    mutationFn: (body: { mode: 'online' | 'local'; color: 'w' | 'b' }) =>
-      request<{ id: number }>(API, {
+    mutationFn: (body: { mode: 'online' | 'local' }) =>
+      request<{ id: number; color: Color }>(API, {
         method: 'POST',
         body: JSON.stringify(body),
       }),

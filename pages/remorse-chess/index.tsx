@@ -78,7 +78,7 @@ const STEPS = [
   ['Make a free account', 'One tap with Google. No password.'],
   [
     'Start a game, send the link',
-    'Pick a color. Your friend opens the link and joins. Or play both sides on one device.',
+    'Colors are drawn at random. Your friend opens the link and joins. Or play both sides on one device.',
   ],
   [
     'Live with what you capture',
