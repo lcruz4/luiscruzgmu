@@ -18,6 +18,7 @@ import type {
   PlayerStats,
   Trauma,
 } from '@/types/remorse';
+import type { PlayerIcon } from '@/lib/remorse/icons';
 import { HttpError } from './api';
 
 export const remorsePool = new Pool({
@@ -56,6 +57,8 @@ interface GameRow {
 interface NameColumns {
   white_name: string | null;
   black_name: string | null;
+  white_icon: PlayerIcon | null;
+  black_icon: PlayerIcon | null;
 }
 
 interface StepRow {
@@ -98,7 +101,8 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     `SELECT g.id, g.mode, g.white_email, g.black_email, g.state, g.updated_at,
             a.game_id IS NOT NULL AS archived, r.id AS rematch_id,
             COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
-            COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name
+            COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
+            pw.icon AS white_icon, pb.icon AS black_icon
      FROM games g
      LEFT JOIN game_archives a ON a.game_id = g.id AND a.email = $1
      LEFT JOIN games r ON r.rematch_of = g.id
@@ -116,6 +120,8 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     blackEmail: row.black_email,
     whiteName: row.white_name,
     blackName: row.black_name,
+    whiteIcon: row.white_icon,
+    blackIcon: row.black_icon,
     turn: row.state.turn,
     winner: row.state.winner,
     pieces: row.state.pieces.map(({ color, type, square }) => ({
@@ -131,16 +137,29 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
 
 // chosen: they've picked a name or kept the default when asked
 export const getProfile = async (email: string) => {
-  const { rows } = await remorsePool.query<{ username: string | null }>(
-    `SELECT username
+  const { rows } = await remorsePool.query<{
+    username: string | null;
+    icon: PlayerIcon | null;
+  }>(
+    `SELECT username, icon
      FROM players
      WHERE email = $1`,
     [email],
   );
   return {
     username: rows[0]?.username ?? email.split('@')[0],
+    icon: rows[0]?.icon ?? null,
     chosen: rows.length > 0,
   };
+};
+
+export const setIcon = async (email: string, icon: PlayerIcon) => {
+  await remorsePool.query(
+    `INSERT INTO players (email, icon)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE SET icon = EXCLUDED.icon`,
+    [email, icon],
+  );
 };
 
 export const keepDefaultUsername = async (email: string) => {
@@ -150,7 +169,6 @@ export const keepDefaultUsername = async (email: string) => {
      ON CONFLICT DO NOTHING`,
     [email],
   );
-  return getProfile(email);
 };
 
 const USERNAME = /^[A-Za-z0-9_-]{3,20}$/;
@@ -176,7 +194,6 @@ export const setUsername = async (email: string, username: string) => {
     }
     throw error;
   }
-  return { username, chosen: true };
 };
 
 export const playerStats = async (email: string): Promise<PlayerStats> => {
@@ -324,7 +341,8 @@ export const getGame = async (
   const { rows } = await remorsePool.query<GameRow & NameColumns>(
     `SELECT g.id, g.mode, g.created_by, g.white_email, g.black_email, g.initial_state, g.state, g.version,
             COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
-            COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name
+            COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
+            pw.icon AS white_icon, pb.icon AS black_icon
      FROM games g
      LEFT JOIN players pw ON pw.email = g.white_email
      LEFT JOIN players pb ON pb.email = g.black_email
@@ -354,6 +372,8 @@ export const getGame = async (
     blackEmail: game.black_email,
     whiteName: game.white_name,
     blackName: game.black_name,
+    whiteIcon: game.white_icon,
+    blackIcon: game.black_icon,
     state: game.state,
     version: game.version,
     steps: steps.rows.map(

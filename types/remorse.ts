@@ -1,3 +1,5 @@
+import type { PlayerIcon } from '@/lib/remorse/icons';
+
 export type Color = 'w' | 'b';
 export type PieceType = 'k' | 'q' | 'r' | 'b' | 'n' | 'p';
 export type Trauma = 'devastated' | 'guilt' | 'unaffected' | 'psychopath';
@@ -86,6 +88,9 @@ export interface GameSummary {
   blackEmail: string | null;
   whiteName: string | null;
   blackName: string | null;
+  // null: the default icon
+  whiteIcon: PlayerIcon | null;
+  blackIcon: PlayerIcon | null;
   turn: Color;
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
@@ -111,6 +116,9 @@ export interface GameResponse {
   blackEmail: string | null;
   whiteName: string | null;
   blackName: string | null;
+  // null: the default icon
+  whiteIcon: PlayerIcon | null;
+  blackIcon: PlayerIcon | null;
   state: GameState;
   version: number;
   steps: GameStep[];

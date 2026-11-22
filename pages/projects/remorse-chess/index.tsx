@@ -4,6 +4,7 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { Marker } from '@/components/remorse-chess/Marker';
 import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
+import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RecordCard } from '@/components/remorse-chess/RecordCard';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
@@ -160,8 +161,14 @@ const GameRow = ({
       >
         <MiniBoard pieces={game.pieces} flipped={flipped} />
         <div className='min-w-0 flex-1'>
-          <strong className='block truncate font-semibold text-white'>
-            {opponentOf(game, email)}
+          <strong className='flex min-w-0 items-center gap-1.5 font-semibold text-white'>
+            {game.mode === 'online' && !inviteOpen(game) && (
+              <PlayerAvatar
+                icon={seat === 'w' ? game.blackIcon : game.whiteIcon}
+                className='size-6'
+              />
+            )}
+            <span className='truncate'>{opponentOf(game, email)}</span>
           </strong>
           <span className={cn(muted, 'block truncate')}>{detail}</span>
         </div>
@@ -282,6 +289,12 @@ const LobbyPage = ({ email }: { email: string }) => {
       <div className='mx-auto flex max-w-[760px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
         <section>
           <div className='mb-6 flex flex-wrap items-center gap-x-3 gap-y-2'>
+            {profile.data && (
+              <PlayerAvatar
+                icon={profile.data.icon}
+                className='size-12 border-[3px]'
+              />
+            )}
             <h1 className='text-[clamp(26px,4.5vw,34px)] leading-tight font-bold tracking-tight text-white'>
               {profile.data?.username ?? (
                 <span className='inline-block h-8 w-40 animate-pulse rounded-md bg-[#262421] align-middle' />

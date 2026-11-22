@@ -1,9 +1,11 @@
 -- A player's chosen display name. Without one, the name is the part of their
 -- email before the @. A row with a null username: they were asked to pick a
--- name and kept the default.
+-- name and kept the default. icon: one of PLAYER_ICONS (lib/remorse/icons.ts),
+-- null for the default.
 CREATE TABLE players (
   email text PRIMARY KEY,
   username text,
+  icon text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

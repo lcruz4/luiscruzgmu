@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
-import { Marker } from '@/components/remorse-chess/Marker';
+import { IconPicker } from '@/components/remorse-chess/IconPicker';
+import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import {
   useProfile,
@@ -15,6 +16,7 @@ const primary =
 const ProfilePage = ({ email }: { email: string }) => {
   const profile = useProfile();
   const update = useUpdateProfile();
+  const iconUpdate = useUpdateProfile();
   const [username, setUsername] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -22,12 +24,16 @@ const ProfilePage = ({ email }: { email: string }) => {
     if (profile.data) setUsername(profile.data.username);
   }, [profile.data]);
 
-  const changed = username.trim() !== profile.data?.username;
+  const changed =
+    profile.data !== undefined && username.trim() !== profile.data.username;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setSaved(false);
-    update.mutate(username.trim(), { onSuccess: () => setSaved(true) });
+    update.mutate(
+      { username: username.trim() },
+      { onSuccess: () => setSaved(true) },
+    );
   };
 
   return (
@@ -40,12 +46,9 @@ const ProfilePage = ({ email }: { email: string }) => {
           ← Your games
         </Link>
         <div className='flex items-center gap-3'>
-          <Marker
-            trauma='unaffected'
-            healed={false}
-            turnsLeft={0}
-            kills={0}
-            className='block h-[62px] w-[58px] flex-none'
+          <PlayerAvatar
+            icon={profile.data?.icon ?? null}
+            className='size-16 border-[3px]'
           />
           <div className='min-w-0'>
             <h1 className='text-[clamp(24px,4vw,30px)] leading-tight font-bold tracking-tight text-white'>
@@ -56,6 +59,23 @@ const ProfilePage = ({ email }: { email: string }) => {
             </p>
           </div>
         </div>
+
+        <section className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'>
+          <div className='flex items-center justify-between gap-3'>
+            <h2 className='font-semibold text-white'>Icon</h2>
+            {iconUpdate.isPending && (
+              <span className='text-sm text-[#a29e96]'>Saving…</span>
+            )}
+          </div>
+          <IconPicker
+            value={profile.data?.icon ?? null}
+            onChange={(icon) => iconUpdate.mutate({ icon })}
+            disabled={!profile.data || iconUpdate.isPending}
+          />
+          {iconUpdate.isError && (
+            <p className='text-sm text-red-300'>{iconUpdate.error.message}</p>
+          )}
+        </section>
 
         <form
           onSubmit={submit}

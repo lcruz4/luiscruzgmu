@@ -1,15 +1,87 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { colorName, describeEvent, resultText } from '@/lib/remorse/describe';
-import { inCheck } from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
 import type { GameEvent, GameResponse } from '@/types/remorse';
+import { Marker } from './Marker';
 import type { GameCommand } from './useGame';
 
-const button =
-  'rounded-md border border-[#514d47] bg-[#3a3733] px-3 py-1.5 text-sm text-white hover:bg-[#4a4642] disabled:opacity-40';
+const btn =
+  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 px-3.5 py-2 text-sm font-semibold disabled:cursor-default disabled:opacity-50';
+const primary = cn(
+  btn,
+  'border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105',
+);
+const ghost = cn(
+  btn,
+  'border-[#514d47] bg-[#302d29] text-[#e8e4dc] hover:bg-[#3a3733]',
+);
+const danger = cn(
+  btn,
+  'border-[#120d0b] bg-linear-to-b from-[#e5484d] to-[#a3161b] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_2px_0_#120d0b] hover:brightness-110',
+);
 
-const isNotable = (event: GameEvent) =>
-  event.type !== 'move' && event.type !== 'capture';
+const eventTone = (event: GameEvent) => {
+  switch (event.type) {
+    case 'move':
+    case 'castle':
+    case 'capture':
+      return 'text-[#cfcbc3]';
+    case 'death':
+    case 'bloodlust':
+    case 'check':
+      return 'text-red-300';
+    case 'heal':
+      return 'text-sky-300';
+    default:
+      return 'text-[#ffd27a]';
+  }
+};
+
+const Die = ({ value }: { value: number }) => (
+  <i className='mr-1.5 inline-grid size-[18px] place-items-center rounded-[4px] border-2 border-[#120d0b] bg-[#f7f3ea] align-[-3px] text-[10px] font-bold text-[#120d0b] not-italic'>
+    {value}
+  </i>
+);
+
+// The panel's headline: whose move, or how it ended
+const StatusCard = ({
+  art,
+  title,
+  text,
+  tone,
+  children,
+}: {
+  art?: ReactNode;
+  title: string;
+  text?: string;
+  tone: 'gold' | 'red' | 'plain';
+  children?: ReactNode;
+}) => (
+  <div
+    className={cn(
+      'flex flex-col gap-3 rounded-xl border p-3.5',
+      tone === 'gold' && 'border-[#c98a1c]/45 bg-[#c98a1c]/10',
+      tone === 'red' && 'border-red-400/40 bg-red-950/40',
+      tone === 'plain' && 'border-[#3a3733] bg-[#1d1b18]',
+    )}
+  >
+    <div className='flex items-center gap-3'>
+      {art}
+      <div className='min-w-0'>
+        <strong
+          className={cn(
+            'block text-lg leading-tight font-bold',
+            tone === 'gold' ? 'text-[#ffd27a]' : 'text-white',
+          )}
+        >
+          {title}
+        </strong>
+        {text && <span className='text-[13px] text-[#a29e96]'>{text}</span>}
+      </div>
+    </div>
+    {children}
+  </div>
+);
 
 interface GamePanelProps {
   game: GameResponse;
@@ -37,107 +109,189 @@ export const GamePanel = ({
   const [copied, setCopied] = useState(false);
   const [confirmResign, setConfirmResign] = useState(false);
   const { state } = game;
-  const seatOpen =
-    game.mode === 'online' && (!game.whiteEmail || !game.blackEmail);
+  const online = game.mode === 'online';
+  const seatOpen = online && (!game.whiteEmail || !game.blackEmail);
+  const revealing = hiddenFrom !== null;
   const yourTurn = game.you.includes(state.turn) && !state.winner;
   const canResign =
-    hiddenFrom === null &&
+    !revealing &&
     !state.winner &&
     game.you.length > 0 &&
     Boolean(game.whiteEmail && game.blackEmail);
+  const steps = revealing ? game.steps.slice(0, hiddenFrom) : game.steps;
+  const psychopath = revealing
+    ? undefined
+    : state.pieces.find((p) => p.id === state.extraMovePieceId);
+  const opponentName = game.you.includes('w') ? game.blackName : game.whiteName;
 
   const copyInvite = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
     }
   };
 
-  const revealing = hiddenFrom !== null;
-  const steps = revealing ? game.steps.slice(0, hiddenFrom) : game.steps;
-  const psychopath = revealing
-    ? undefined
-    : state.pieces.find((p) => p.id === state.extraMovePieceId);
-  const status = revealing
-    ? 'Playing out the move…'
-    : state.winner
-    ? resultText(state.winner)
-    : psychopath
-    ? `${colorName(state.turn)}'s psychopath on ${
-        psychopath.square
-      } may move again`
-    : `${colorName(state.turn)} to move${
-        inCheck(state, state.turn) ? ', in check' : ''
-      }`;
+  const status = () => {
+    if (revealing) {
+      return (
+        <StatusCard
+          tone='plain'
+          title='Playing out the move…'
+          art={
+            <span className='grid size-11 flex-none animate-pulse place-items-center rounded-lg border-2 border-[#120d0b] bg-[#f7f3ea] text-lg font-bold text-[#120d0b]'>
+              ?
+            </span>
+          }
+        />
+      );
+    }
+    if (state.winner) {
+      const won =
+        online && game.you.length === 1 && state.winner === game.you[0];
+      const lost =
+        online &&
+        game.you.length === 1 &&
+        state.winner !== 'draw' &&
+        state.winner !== game.you[0];
+      return (
+        <StatusCard
+          tone={lost ? 'plain' : 'gold'}
+          title={won ? 'You won' : lost ? 'You lost' : resultText(state.winner)}
+          text={
+            won || lost
+              ? resultText(state.winner)
+              : 'Every capture left a mark.'
+          }
+          art={
+            <Marker
+              trauma={lost ? 'devastated' : 'psychopath'}
+              healed={false}
+              turnsLeft={lost ? 1 : 0}
+              kills={won ? 3 : 0}
+              className='block h-[52px] w-[48px] flex-none'
+            />
+          }
+        >
+          {game.you.length > 0 && (
+            <button
+              type='button'
+              className={primary}
+              disabled={rematchPending}
+              onClick={onRematch}
+            >
+              {game.rematchId ? 'Go to rematch' : 'Rematch, colors swapped'}
+            </button>
+          )}
+        </StatusCard>
+      );
+    }
+    if (seatOpen) {
+      return game.you.length ? (
+        <StatusCard
+          tone='gold'
+          title='Invite your opponent'
+          text='Send them this game’s link. Colors were drawn at random.'
+        >
+          <button type='button' className={primary} onClick={copyInvite}>
+            {copied ? 'Link copied' : 'Copy invite link'}
+          </button>
+        </StatusCard>
+      ) : (
+        <StatusCard tone='gold' title='A seat is open'>
+          <button
+            type='button'
+            className={primary}
+            disabled={busy}
+            onClick={() => onCommand({ type: 'join' })}
+          >
+            Join as {game.whiteEmail ? 'black' : 'white'}
+          </button>
+        </StatusCard>
+      );
+    }
+    if (psychopath) {
+      return (
+        <StatusCard
+          tone='red'
+          title={`${colorName(state.turn)}'s psychopath strikes again`}
+          text={`The piece on ${psychopath.square} may make an extra move.`}
+          art={
+            <Marker
+              trauma='psychopath'
+              healed={false}
+              turnsLeft={0}
+              kills={psychopath.kills}
+              className='block h-[52px] w-[48px] flex-none'
+            />
+          }
+        >
+          {yourTurn && (
+            <button
+              type='button'
+              className={ghost}
+              disabled={busy}
+              onClick={() => onCommand({ type: 'skipExtraMove' })}
+            >
+              Skip extra move
+            </button>
+          )}
+        </StatusCard>
+      );
+    }
+    if (!online) {
+      return (
+        <StatusCard
+          tone='gold'
+          title={`${colorName(state.turn)} to move`}
+          text='Pass the device across the table.'
+        />
+      );
+    }
+    return yourTurn ? (
+      <StatusCard
+        tone='gold'
+        title='Your move'
+        text='Drag a piece, or tap it and then its square.'
+        art={
+          <img
+            src={`/images/${state.turn}k.png`}
+            alt=''
+            className='size-11 flex-none'
+          />
+        }
+      />
+    ) : (
+      <StatusCard
+        tone='plain'
+        title={`Waiting for ${opponentName ?? 'your opponent'}`}
+        text='Their move shows up here as soon as they play.'
+      />
+    );
+  };
 
   return (
-    <aside className='flex w-full flex-col gap-4 rounded-xl bg-[#262421] p-4 lg:w-80'>
-      <div className='flex flex-col gap-1 text-sm'>
-        <span>
-          <span className='mr-2 inline-block h-3 w-3 rounded-full border border-black bg-white align-middle' />
-          {game.mode === 'local'
-            ? 'You (both sides)'
-            : game.whiteName ?? 'Waiting for a player'}
-        </span>
-        {game.mode === 'online' && (
-          <span>
-            <span className='mr-2 inline-block h-3 w-3 rounded-full border border-[#888] bg-black align-middle' />
-            {game.blackName ?? 'Waiting for a player'}
-          </span>
-        )}
-      </div>
-
-      <div
-        className={cn(
-          'rounded-md px-3 py-2 text-sm font-medium',
-          psychopath ? 'bg-red-900/60 text-red-100' : 'bg-[#3a3733] text-white',
-          state.winner && !revealing && 'bg-amber-700/60',
-        )}
-      >
-        {status}
-        {yourTurn && !revealing && game.mode === 'online' && (
-          <span className='ml-1 font-normal text-[#cfcbc3]'>· your turn</span>
-        )}
-      </div>
-
-      {psychopath && yourTurn && (
-        <button
-          type='button'
-          className={button}
-          disabled={busy}
-          onClick={() => onCommand({ type: 'skipExtraMove' })}
-        >
-          Skip extra move
-        </button>
-      )}
-
-      {state.winner && !revealing && game.you.length > 0 && (
-        <button
-          type='button'
-          className='cursor-pointer rounded-[10px] border-2 border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] px-3 py-2 text-sm font-semibold text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105 disabled:opacity-50'
-          disabled={rematchPending}
-          onClick={onRematch}
-        >
-          {game.rematchId ? 'Go to rematch' : 'Rematch, colors swapped'}
-        </button>
-      )}
+    <aside className='flex w-full flex-col gap-3.5 lg:w-[340px]'>
+      {status()}
 
       {error && <p className='text-sm text-red-300'>{error}</p>}
 
       {canResign && confirmResign && (
-        <div className='flex flex-col gap-2 rounded-md border border-red-400/40 bg-red-950/40 p-3 text-sm'>
-          <span className='text-white'>
-            {game.mode === 'local'
-              ? `Resign for ${colorName(state.turn).toLowerCase()}?`
-              : 'Resign this game?'}{' '}
-            <span className='text-[#cfcbc3]'>It can&apos;t be undone.</span>
-          </span>
+        <StatusCard
+          tone='red'
+          title={
+            online
+              ? 'Resign this game?'
+              : `Resign for ${colorName(state.turn).toLowerCase()}?`
+          }
+          text='It can’t be undone.'
+        >
           <div className='flex gap-2'>
             <button
               type='button'
-              className='cursor-pointer rounded-md border border-red-400/60 bg-red-800 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40'
+              className={danger}
               disabled={busy}
               onClick={() => {
                 setConfirmResign(false);
@@ -148,78 +302,72 @@ export const GamePanel = ({
             </button>
             <button
               type='button'
-              className={button}
+              className={ghost}
               onClick={() => setConfirmResign(false)}
             >
               Keep playing
             </button>
           </div>
-        </div>
+        </StatusCard>
       )}
 
       <div className='flex flex-wrap gap-2'>
-        {game.canUndo && (
-          <button
-            type='button'
-            className={button}
-            disabled={busy}
-            onClick={() => onCommand({ type: 'undo' })}
-            title='Take back the last move'
-          >
-            ↶ Undo last move
-          </button>
-        )}
-        <button type='button' className={button} onClick={onFlip}>
+        <button type='button' className={ghost} onClick={onFlip}>
           ⇅ Flip board
         </button>
         {canResign && !confirmResign && (
           <button
             type='button'
-            className={button}
+            className={ghost}
             disabled={busy}
             onClick={() => setConfirmResign(true)}
           >
             ⚑ Resign
           </button>
         )}
-        {seatOpen && !game.you.length && (
-          <button
-            type='button'
-            className={button}
-            disabled={busy}
-            onClick={() => onCommand({ type: 'join' })}
-          >
-            Join as {game.whiteEmail ? 'black' : 'white'}
-          </button>
-        )}
-        {seatOpen && game.you.length > 0 && (
-          <button type='button' className={button} onClick={copyInvite}>
-            {copied ? 'Link copied' : 'Copy invite link'}
-          </button>
-        )}
       </div>
 
-      <div className='flex flex-col text-sm'>
-        <span className='mb-1 font-medium text-white'>Moves</span>
-        {!steps.length && <span className='text-[#a29e96]'>No moves yet</span>}
-        <ol className='flex max-h-[45dvh] flex-col overflow-y-auto'>
+      <section className='flex min-h-0 flex-col rounded-xl bg-[#262421] p-3.5'>
+        <div className='mb-2 flex items-baseline justify-between'>
+          <h2 className='font-semibold text-white'>Moves</h2>
+          <span className='text-xs text-[#a29e96] tabular-nums'>
+            {steps.length}
+          </span>
+        </div>
+        {!steps.length && (
+          <p className='text-[13px] text-[#a29e96]'>
+            No moves yet. The first capture rolls the die.
+          </p>
+        )}
+        <ol className='flex max-h-[45dvh] flex-col overflow-y-auto text-[13px] leading-snug'>
           {[...steps].reverse().map((step) => (
-            <li key={step.step} className='border-t border-[#3a3733] py-1.5'>
-              {step.events.map((event, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    isNotable(event) ? 'text-amber-200' : 'text-[#cfcbc3]',
-                    index > 0 && 'pl-3',
-                  )}
-                >
-                  {describeEvent(event)}
-                </div>
-              ))}
+            <li
+              key={step.step}
+              className='flex gap-2.5 border-t border-[#3a3733] py-2 first:border-t-0'
+            >
+              <span
+                className={cn(
+                  'mt-[3px] inline-block size-2.5 flex-none rounded-full border',
+                  step.color === 'w'
+                    ? 'border-[#120d0b] bg-[#f7f3ea]'
+                    : 'border-[#6b665e] bg-[#2b2724]',
+                )}
+              />
+              <div className='min-w-0 flex-1'>
+                {step.events.map((event, index) => (
+                  <div key={index} className={eventTone(event)}>
+                    {event.type === 'roll' && <Die value={event.roll} />}
+                    {describeEvent(event)}
+                  </div>
+                ))}
+              </div>
+              <span className='flex-none text-xs text-[#6b665e] tabular-nums'>
+                {step.step}
+              </span>
             </li>
           ))}
         </ol>
-      </div>
+      </section>
     </aside>
   );
 };
