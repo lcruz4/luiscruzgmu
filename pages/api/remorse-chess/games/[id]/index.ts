@@ -8,6 +8,7 @@ import {
 } from '@/services/api';
 import { remorseRoute } from '@/services/remorseApi';
 import {
+  cancelGame,
   gameVersion,
   getGame,
   joinGame,
@@ -84,7 +85,14 @@ const getAction = async (req: NextApiRequest, email: string) => {
   return getGame(id, email);
 };
 
+// Cancels an online game nobody has joined yet
+const deleteGame = async (req: NextApiRequest, email: string) => {
+  await cancelGame(idField(req.query.id, 'id'), email);
+  return NO_CONTENT;
+};
+
 export default remorseRoute({
   GET: getAction,
   POST: postAction,
+  DELETE: deleteGame,
 });

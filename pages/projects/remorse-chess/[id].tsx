@@ -6,7 +6,11 @@ import { GamePanel } from '@/components/remorse-chess/GamePanel';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import { PlayerStrip } from '@/components/remorse-chess/PlayerStrip';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
-import { useCreateGame, useGame } from '@/components/remorse-chess/useGame';
+import {
+  useCancelGame,
+  useCreateGame,
+  useGame,
+} from '@/components/remorse-chess/useGame';
 import { inCheck, opponent } from '@/lib/remorse/engine';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameResponse } from '@/types/remorse';
@@ -24,6 +28,7 @@ const GamePage = () => {
     typeof router.query.id === 'string' ? Number(router.query.id) : undefined;
   const { query, mutation } = useGame(id);
   const rematch = useCreateGame();
+  const cancel = useCancelGame();
   const [flip, setFlip] = useState(false);
   // steps from here on are still animating, so the panel holds them back
   const [hiddenFrom, setHiddenFrom] = useState<number | null>(null);
@@ -109,13 +114,24 @@ const GamePage = () => {
           <GamePanel
             game={game}
             hiddenFrom={hiddenFrom}
-            error={mutation.error?.message ?? rematch.error?.message ?? null}
+            error={
+              mutation.error?.message ??
+              rematch.error?.message ??
+              cancel.error?.message ??
+              null
+            }
             busy={mutation.isPending}
             onCommand={(command) => {
               mutation.mutate(command);
             }}
             onFlip={() => setFlip(!flip)}
             rematchPending={rematch.isPending}
+            cancelPending={cancel.isPending}
+            onCancel={() =>
+              cancel.mutate(game.id, {
+                onSuccess: () => router.push('/projects/remorse-chess'),
+              })
+            }
             onRematch={() =>
               rematch.mutate(
                 { rematchOf: game.id },

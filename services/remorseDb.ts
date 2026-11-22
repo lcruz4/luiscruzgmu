@@ -549,6 +549,27 @@ export const undoStep = async (id: number, email: string, version: number) =>
     );
   });
 
+// Only while an online game waits for its opponent. The game is deleted, so
+// its invite link stops working.
+export const cancelGame = async (id: number, email: string) =>
+  withTransaction(async (client) => {
+    const game = await lockGame(client, id);
+    if (!seatsOf(game, email).length) {
+      throw new HttpError(403, "You're not playing this game");
+    }
+    if (game.mode !== 'online' || (game.white_email && game.black_email)) {
+      throw new HttpError(
+        400,
+        'Only a game still waiting for an opponent can be canceled',
+      );
+    }
+    await client.query(
+      `DELETE FROM games
+       WHERE id = $1`,
+      [id],
+    );
+  });
+
 export const joinGame = async (id: number, email: string) =>
   withTransaction(async (client) => {
     const game = await lockGame(client, id);

@@ -96,6 +96,8 @@ interface GamePanelProps {
   onFlip: () => void;
   onRematch: () => void;
   rematchPending: boolean;
+  onCancel: () => void;
+  cancelPending: boolean;
 }
 
 export const GamePanel = ({
@@ -107,9 +109,12 @@ export const GamePanel = ({
   onFlip,
   onRematch,
   rematchPending,
+  onCancel,
+  cancelPending,
 }: GamePanelProps) => {
   const [copied, setCopied] = useState(false);
   const [confirmResign, setConfirmResign] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const { pieceSet } = useBoardLook();
   const { state } = game;
   const online = game.mode === 'online';
@@ -198,9 +203,18 @@ export const GamePanel = ({
           title='Invite your opponent'
           text='Send them this game’s link. Colors were drawn at random.'
         >
-          <button type='button' className={primary} onClick={copyInvite}>
-            {copied ? 'Link copied' : 'Copy invite link'}
-          </button>
+          <div className='flex flex-wrap gap-2'>
+            <button type='button' className={primary} onClick={copyInvite}>
+              {copied ? 'Link copied' : 'Copy invite link'}
+            </button>
+            <button
+              type='button'
+              className={ghost}
+              onClick={() => setConfirmCancel(true)}
+            >
+              Cancel game
+            </button>
+          </div>
         </StatusCard>
       ) : (
         <StatusCard tone='gold' title='A seat is open'>
@@ -280,6 +294,32 @@ export const GamePanel = ({
       {status()}
 
       {error && <p className='text-sm text-red-300'>{error}</p>}
+
+      {seatOpen && game.you.length > 0 && confirmCancel && (
+        <StatusCard
+          tone='red'
+          title='Cancel this game?'
+          text='It’s deleted and the invite link stops working.'
+        >
+          <div className='flex gap-2'>
+            <button
+              type='button'
+              className={danger}
+              disabled={cancelPending}
+              onClick={onCancel}
+            >
+              Yes, cancel
+            </button>
+            <button
+              type='button'
+              className={ghost}
+              onClick={() => setConfirmCancel(false)}
+            >
+              Keep waiting
+            </button>
+          </div>
+        </StatusCard>
+      )}
 
       {canResign && confirmResign && (
         <StatusCard
