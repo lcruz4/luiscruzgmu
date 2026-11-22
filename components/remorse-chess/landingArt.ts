@@ -43,7 +43,7 @@ export const sceneSvg = (id: string) => {
       squares += `<rect x="${x * SQ}" y="${
         y * SQ
       }" width="${SQ}" height="${SQ}" fill="${
-        (x + y) % 2 ? '#739552' : '#ebecd0'
+        (x + y) % 2 ? '#6e4c34' : '#d9c39a'
       }"/>`;
     }
   }

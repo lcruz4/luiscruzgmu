@@ -16,8 +16,12 @@ import type {
 import { playSteps } from './animate';
 import { Marker } from './Marker';
 import { traumaLabel } from './markerSvg';
+import { BOARD_SRC, type PieceSetId, pieceSrc, usePieceSet } from './pieceSets';
 
 const FILES = 'abcdefgh';
+
+const isLightSquare = (square: string) =>
+  (FILES.indexOf(square[0]) + Number(square[1])) % 2 === 0;
 
 const PROMOTIONS: PromotionType[] = ['q', 'r', 'b', 'n'];
 
@@ -55,6 +59,7 @@ export const Board = ({
   onSelfHeal,
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
+  const { pieceSet } = usePieceSet();
   const bySquare = new Map(state.pieces.map((piece) => [piece.square, piece]));
   // During a psychopath's extra move only that piece may move
   const isMine = (piece?: Piece) =>
@@ -125,6 +130,7 @@ export const Board = ({
       {
         board,
         fx,
+        pieceSrc: (color, type) => pieceSrc(pieceSet, color, type),
         at: (square) => {
           const index = order.indexOf(square);
           return { c: index % 8, r: Math.floor(index / 8) };
@@ -136,7 +142,7 @@ export const Board = ({
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
       () => onAnimating(null),
     );
-  }, [state, steps, flipped, onAnimating]);
+  }, [state, steps, flipped, onAnimating, pieceSet]);
   useEffect(() => () => stopAnimation.current?.(), []);
 
   const mate = steps
@@ -194,7 +200,7 @@ export const Board = ({
       className='relative aspect-square w-full max-w-[min(640px,calc(100dvh-140px))] select-none'
     >
       <img
-        src='/images/board.png'
+        src={BOARD_SRC}
         alt=''
         className='absolute inset-0 h-full w-full rounded-sm'
       />
@@ -239,12 +245,22 @@ export const Board = ({
                 />
               )}
               {rankLabel && (
-                <span className='pointer-events-none absolute left-[3%] top-[2%] text-[10px] font-semibold text-black/45'>
+                <span
+                  className={cn(
+                    'pointer-events-none absolute left-[3%] top-[2%] text-[10px] font-semibold',
+                    isLightSquare(square) ? 'text-black/50' : 'text-white/55',
+                  )}
+                >
                   {square[1]}
                 </span>
               )}
               {fileLabel && (
-                <span className='pointer-events-none absolute bottom-[1%] right-[4%] text-[10px] font-semibold text-black/45'>
+                <span
+                  className={cn(
+                    'pointer-events-none absolute bottom-[1%] right-[4%] text-[10px] font-semibold',
+                    isLightSquare(square) ? 'text-black/50' : 'text-white/55',
+                  )}
+                >
                   {square[0]}
                 </span>
               )}
@@ -271,7 +287,7 @@ export const Board = ({
                 >
                   <img
                     data-piece-img
-                    src={`/images/${piece.color}${piece.type}.png`}
+                    src={pieceSrc(pieceSet, piece.color, piece.type)}
                     alt={`${piece.color}${piece.type}`}
                     draggable={false}
                     className={cn(
@@ -344,6 +360,7 @@ export const Board = ({
       {promotion && (
         <PromotionPicker
           color={state.turn}
+          pieceSet={pieceSet}
           column={squares.indexOf(promotion.to) % 8}
           fromTop={squares.indexOf(promotion.to) < 8}
           onPick={(type) => {
@@ -361,12 +378,14 @@ export const Board = ({
 // else cancels the move
 const PromotionPicker = ({
   color,
+  pieceSet,
   column,
   fromTop,
   onPick,
   onCancel,
 }: {
   color: GameState['turn'];
+  pieceSet: PieceSetId;
   column: number;
   fromTop: boolean;
   onPick: (type: PromotionType) => void;
@@ -375,7 +394,7 @@ const PromotionPicker = ({
   <div className='absolute inset-0 z-40 bg-black/40' onClick={onCancel}>
     <div
       className={cn(
-        'absolute flex w-[12.5%] rounded-sm bg-[#ebecd0] shadow-lg shadow-black/60',
+        'absolute flex w-[12.5%] rounded-sm bg-[#d9c39a] shadow-lg shadow-black/60',
         fromTop ? 'top-0 flex-col' : 'bottom-0 flex-col-reverse',
       )}
       style={{ left: `${column * 12.5}%` }}
@@ -385,14 +404,14 @@ const PromotionPicker = ({
           key={type}
           type='button'
           aria-label={`Promote to ${type}`}
-          className='aspect-square w-full hover:bg-[#f6f669]'
+          className='aspect-square w-full hover:bg-[#f0dfb8]'
           onClick={(event) => {
             event.stopPropagation();
             onPick(type);
           }}
         >
           <img
-            src={`/images/${color}${type}.png`}
+            src={pieceSrc(pieceSet, color, type)}
             alt=''
             className='h-full w-full'
           />

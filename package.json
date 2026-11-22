@@ -8,6 +8,7 @@
     "workout:migrate": "node --env-file-if-exists=.env.production --env-file-if-exists=.env.local db/workout/migrate.mjs",
     "workout:reset": "node --env-file-if-exists=.env.local db/workout/reset.mjs",
     "remorse:migrate": "node --env-file-if-exists=.env.production --env-file-if-exists=.env.local db/remorse/migrate.mjs",
+    "remorse:pieces": "node scripts/remorse-pieces.mjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
