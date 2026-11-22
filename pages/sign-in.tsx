@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { GoogleIcon } from '@/components/GoogleIcon';
 import { RequestPlan } from '@/components/workout-tracker/RequestPlan';
-import { authLoginUrl, REMORSE_SIGN_IN_PATH, safeReturnPath } from '@/lib/auth';
+import { authLoginUrl, REMORSE_LANDING_PATH, safeReturnPath } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { appForPath, getAuthenticatedEmail } from '@/services/auth';
 
@@ -77,7 +77,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
   if (app === 'remorse-chess') {
     return {
       redirect: {
-        destination: `${REMORSE_SIGN_IN_PATH}?${new URLSearchParams({
+        destination: `${REMORSE_LANDING_PATH}?${new URLSearchParams({
           returnTo,
         })}`,
         permanent: false,
