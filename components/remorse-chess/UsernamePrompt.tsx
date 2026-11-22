@@ -8,7 +8,6 @@ import {
 import { cn } from '@/lib/utils';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import { IconPicker } from './IconPicker';
-import { Marker } from './Marker';
 import { PlayerPreview } from './PlayerPreview';
 import { useProfile, useUpdateProfile } from './useGame';
 
@@ -37,23 +36,14 @@ export const UsernamePrompt = () => {
     >
       <DialogContent className='max-w-[calc(100%-32px)] gap-0 font-sans rounded-2xl border-[#3a3733] bg-[#262421] p-5 text-[#e8e6e1] sm:max-w-md sm:rounded-2xl [&>button]:text-[#a29e96]'>
         <form onSubmit={submit} className='flex flex-col gap-3'>
-          <div className='flex items-center gap-3'>
-            <Marker
-              trauma='guilt'
-              healed={false}
-              turnsLeft={0}
-              kills={0}
-              className='block h-[62px] w-[58px] flex-none'
-            />
-            <div>
-              <DialogTitle className='text-xl font-bold text-white'>
-                Pick a name and icon
-              </DialogTitle>
-              <DialogDescription className='text-[13.5px] text-[#a29e96]'>
-                Opponents see these instead of your email. You can change it
-                later on your profile.
-              </DialogDescription>
-            </div>
+          <div className='pr-6'>
+            <DialogTitle className='text-xl font-bold text-white'>
+              Pick a name and icon
+            </DialogTitle>
+            <DialogDescription className='text-[13.5px] text-[#a29e96]'>
+              Opponents see these instead of your email. You can change it later
+              on your profile.
+            </DialogDescription>
           </div>
           <PlayerPreview icon={icon ?? profile.data.icon} username={value} />
           <input
