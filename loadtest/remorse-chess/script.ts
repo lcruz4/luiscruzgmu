@@ -252,13 +252,8 @@ const openTable = (): Table | null => {
     get(account, PAGE, 'lobby page');
     get(account, API, 'list games');
   }
-  const created = parse<{ id: number }>(
-    post(
-      players[0],
-      API,
-      { mode: online ? 'online' : 'local', color: 'w' },
-      'create game',
-    ),
+  const created = parse<{ id: number; color: Color }>(
+    post(players[0], API, { mode: online ? 'online' : 'local' }, 'create game'),
   );
   if (!created) return null;
   const path = `${API}/${created.id}`;
@@ -275,7 +270,10 @@ const openTable = (): Table | null => {
   return {
     id: created.id,
     players,
-    seats: { w: players[0], b: players[players.length - 1] },
+    seats:
+      created.color === 'w'
+        ? { w: players[0], b: players[players.length - 1] }
+        : { w: players[players.length - 1], b: players[0] },
     game: null,
     seen: players.map(() => -1),
     nextMoveAt: 0,

@@ -1,3 +1,5 @@
+import type { PlayerIcon } from '@/lib/remorse/icons';
+
 export type Color = 'w' | 'b';
 export type PieceType = 'k' | 'q' | 'r' | 'b' | 'n' | 'p';
 export type Trauma = 'devastated' | 'guilt' | 'unaffected' | 'psychopath';
@@ -67,7 +69,7 @@ export type GameEvent =
   | {
       type: 'gameOver';
       winner: Color | 'draw';
-      reason: 'king' | 'checkmate' | 'stalemate';
+      reason: 'king' | 'checkmate' | 'stalemate' | 'resign';
     };
 
 export type GameMode = 'online' | 'local';
@@ -84,9 +86,27 @@ export interface GameSummary {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  whiteName: string | null;
+  blackName: string | null;
+  // null: the default icon
+  whiteIcon: PlayerIcon | null;
+  blackIcon: PlayerIcon | null;
   turn: Color;
   winner: Color | 'draw' | null;
+  pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
+  archived: boolean;
+  // the rematch of this game, once someone started one
+  rematchId: number | null;
   updatedAt: string;
+}
+
+export interface PlayerStats {
+  // finished online games against someone else
+  wins: number;
+  losses: number;
+  draws: number;
+  // how your pieces took their first capture
+  traumas: Record<Trauma, number>;
 }
 
 export interface GameResponse {
@@ -94,10 +114,16 @@ export interface GameResponse {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  whiteName: string | null;
+  blackName: string | null;
+  // null: the default icon
+  whiteIcon: PlayerIcon | null;
+  blackIcon: PlayerIcon | null;
   state: GameState;
   version: number;
   steps: GameStep[];
   // colors the viewer plays (both in a local game, none for a spectator)
   you: Color[];
   canUndo: boolean;
+  rematchId: number | null;
 }

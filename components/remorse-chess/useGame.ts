@@ -4,7 +4,14 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import type { GameResponse, GameSummary, MoveAction } from '@/types/remorse';
+import type { PlayerIcon } from '@/lib/remorse/icons';
+import type {
+  Color,
+  GameResponse,
+  GameSummary,
+  MoveAction,
+  PlayerStats,
+} from '@/types/remorse';
 
 const API = '/api/remorse-chess/games';
 
@@ -25,26 +32,84 @@ const request = async <T>(
   return body;
 };
 
+const GAMES_KEY = ['remorse-chess', 'games'];
+
+// Polls (slower in a background tab) so the lobby can say when a game is
+// waiting on you
 export const useGames = () =>
   useQuery({
-    queryKey: ['remorse-chess', 'games'],
+    queryKey: GAMES_KEY,
     queryFn: () => request<GameSummary[]>(API),
+    refetchInterval: () =>
+      typeof document !== 'undefined' && document.hidden ? 60_000 : 15_000,
+    refetchIntervalInBackground: true,
+  });
+
+const PROFILE_KEY = ['remorse-chess', 'profile'];
+
+// chosen: they've picked a name, or kept the default when asked
+type Profile = { username: string; icon: PlayerIcon | null; chosen: boolean };
+
+export const useProfile = () =>
+  useQuery({
+    queryKey: PROFILE_KEY,
+    queryFn: () => request<Profile>('/api/remorse-chess/profile'),
+  });
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    // username null keeps the default name
+    mutationFn: (body: { username?: string | null; icon?: PlayerIcon }) =>
+      request<Profile>('/api/remorse-chess/profile', {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(PROFILE_KEY, profile);
+      queryClient.invalidateQueries({ queryKey: GAMES_KEY });
+    },
+  });
+};
+
+export const useStats = () =>
+  useQuery({
+    queryKey: ['remorse-chess', 'stats'],
+    queryFn: () => request<PlayerStats>('/api/remorse-chess/stats'),
   });
 
 export const useCreateGame = () =>
   useMutation({
-    mutationFn: (body: { mode: 'online' | 'local'; color: 'w' | 'b' }) =>
-      request<{ id: number }>(API, {
+    mutationFn: (body: { mode: 'online' | 'local' } | { rematchOf: number }) =>
+      request<{ id: number; color: Color }>(API, {
         method: 'POST',
         body: JSON.stringify(body),
       }),
   });
 
+export const useArchive = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: number; archived: boolean }) =>
+      request<GameResponse>(`${API}/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({ type: archived ? 'archive' : 'unarchive' }),
+      }),
+    onMutate: ({ id, archived }) =>
+      queryClient.setQueryData<GameSummary[]>(
+        GAMES_KEY,
+        (games) =>
+          games?.map((game) => (game.id === id ? { ...game, archived } : game)),
+      ),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: GAMES_KEY }),
+  });
+};
+
 export type GameCommand =
   | MoveAction
   | { type: 'selfHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
-  | { type: 'undo' }
+  | { type: 'resign' }
   | { type: 'join' };
 
 const fetchGame = (id: number, current: GameResponse | undefined) =>

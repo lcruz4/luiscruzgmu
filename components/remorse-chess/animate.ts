@@ -221,6 +221,8 @@ export const playSteps = (
           ? `Checkmate · ${resultText(event.winner)}`
           : event.reason === 'stalemate'
           ? 'Stalemate · draw'
+          : event.reason === 'resign'
+          ? `Resigned · ${resultText(event.winner)}`
           : `King captured · ${resultText(event.winner)}`;
       default:
         return null;
@@ -522,7 +524,7 @@ export const playSteps = (
     const { left, top } = center(square);
     die.style.cssText = `position:absolute;left:${left}%;top:${
       top - SQ * 0.5
-    }%;width:34px;height:34px;margin-left:-17px;margin-top:-26px;background:#f7f3ea;border:2px solid #120d0b;border-radius:8px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:4px;z-index:35;box-shadow:0 3px 6px rgba(0,0,0,.45)`;
+    }%;width:34px;height:34px;margin-left:-17px;margin-top:-26px;background:#f7f3ea;border:2px solid #120d0b;border-radius:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));padding:4px;z-index:35;box-shadow:0 3px 6px rgba(0,0,0,.45)`;
     const pips: HTMLElement[] = [];
     for (let i = 0; i < 9; i++) {
       const pip = document.createElement('i');
