@@ -1,17 +1,29 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { REMORSE_LANDING_PATH } from '@/lib/auth';
+import { authLogoutUrl, REMORSE_LANDING_PATH } from '@/lib/auth';
 import { Wordmark } from './Wordmark';
 
 const DefaultActions = () => (
   <nav className='flex items-center gap-4 text-sm text-[#a29e96]'>
     <Link href={REMORSE_LANDING_PATH}>Rules</Link>
     <Link href='/projects/remorse-chess/profile'>Profile</Link>
+    <button
+      type='button'
+      className='cursor-pointer hover:text-white'
+      onClick={() => {
+        window.location.href = authLogoutUrl(
+          `${window.location.origin}${REMORSE_LANDING_PATH}`,
+        );
+      }}
+    >
+      Log out
+    </button>
   </nav>
 );
 
-// `actions` sits at the right of the header; defaults to rules and profile links
+// `actions` sits at the right of the header; defaults to rules, profile and
+// log out
 export const RemorseLayout = ({
   children,
   actions = <DefaultActions />,
