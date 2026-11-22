@@ -35,15 +35,21 @@ export const useYourMoveAlerts = (alerts: Alert[] | undefined) => {
     ) {
       for (const alert of alerts) {
         if (seen.current.has(alert.id)) continue;
-        const note = new Notification('Remorse Chess', {
-          body: alert.text,
-          icon: '/images/pwa/remorse-chess-192.png',
-          tag: `remorse-${alert.id}`,
-        });
-        note.onclick = () => {
-          window.focus();
-          window.location.href = `/projects/remorse-chess/${alert.id}`;
-        };
+        // Android only allows notifications from a service worker, where
+        // the constructor throws
+        try {
+          const note = new Notification('Remorse Chess', {
+            body: alert.text,
+            icon: '/images/pwa/remorse-chess-192.png',
+            tag: `remorse-${alert.id}`,
+          });
+          note.onclick = () => {
+            window.focus();
+            window.location.href = `/projects/remorse-chess/${alert.id}`;
+          };
+        } catch {
+          break;
+        }
       }
     }
     seen.current = ids;

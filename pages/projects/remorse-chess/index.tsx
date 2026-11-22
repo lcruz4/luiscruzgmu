@@ -279,28 +279,22 @@ const LobbyPage = ({ email }: { email: string }) => {
     <RemorseLayout title={yourMove ? `(${yourMove}) Remorse Chess` : undefined}>
       <div className='mx-auto flex max-w-[760px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
         <section>
-          <h1 className='mb-1 text-[clamp(24px,4vw,30px)] font-bold tracking-tight text-white'>
+          <h1 className='mb-4 text-[clamp(24px,4vw,30px)] font-bold tracking-tight text-white'>
             {yourMove > 0
               ? `${yourMove} ${
                   yourMove === 1 ? 'game is' : 'games are'
                 } waiting on you`
               : 'Start a game'}
           </h1>
-          <p className='mb-5 text-[#a29e96]'>
-            Colors are drawn at random. Every first capture rolls the die.
-            {notify.permission === 'default' && (
-              <>
-                {' '}
-                <button
-                  type='button'
-                  className='cursor-pointer font-semibold text-[#ffd27a]'
-                  onClick={notify.enable}
-                >
-                  Notify me when it&apos;s my move →
-                </button>
-              </>
-            )}
-          </p>
+          {notify.permission === 'default' && (
+            <button
+              type='button'
+              className='mb-4 cursor-pointer text-[15px] font-semibold text-[#ffd27a]'
+              onClick={notify.enable}
+            >
+              Notify me when it&apos;s my move →
+            </button>
+          )}
           <div className='grid gap-3.5 sm:grid-cols-2'>
             <ModeCard
               marker={{
