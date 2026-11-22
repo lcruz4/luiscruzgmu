@@ -88,7 +88,8 @@ const GamePage = () => {
               toMove={toMove(topColor)}
               inCheck={check}
             />
-            <div className='rounded-2xl border border-[#3a3733] bg-[#262421] p-1.5 shadow-[0_10px_30px_rgba(0,0,0,.45)]'>
+            {/* Phones: the board runs edge to edge, past the page padding */}
+            <div className='rounded-2xl border border-[#3a3733] bg-[#262421] p-1.5 shadow-[0_10px_30px_rgba(0,0,0,.45)] max-sm:-mx-4 max-sm:rounded-none max-sm:border-0 max-sm:p-0 max-sm:shadow-none'>
               <Board
                 state={game.state}
                 steps={game.steps}
