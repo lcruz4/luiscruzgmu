@@ -14,13 +14,15 @@ const RulesLink = () => (
 export const RemorseLayout = ({
   children,
   actions = <RulesLink />,
+  title = 'Remorse Chess',
 }: {
   children: ReactNode;
   actions?: ReactNode;
+  title?: string;
 }) => (
   <div className='min-h-dvh bg-[#161512] font-sans text-[#e8e6e1]'>
     <Head>
-      <title>Remorse Chess</title>
+      <title>{title}</title>
       <link
         key='icon'
         rel='icon'

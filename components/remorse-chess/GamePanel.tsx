@@ -20,6 +20,8 @@ interface GamePanelProps {
   busy: boolean;
   onCommand: (command: GameCommand) => void;
   onFlip: () => void;
+  onRematch: () => void;
+  rematchPending: boolean;
 }
 
 export const GamePanel = ({
@@ -29,6 +31,8 @@ export const GamePanel = ({
   busy,
   onCommand,
   onFlip,
+  onRematch,
+  rematchPending,
 }: GamePanelProps) => {
   const [copied, setCopied] = useState(false);
   const { state } = game;
@@ -100,6 +104,17 @@ export const GamePanel = ({
           onClick={() => onCommand({ type: 'skipExtraMove' })}
         >
           Skip extra move
+        </button>
+      )}
+
+      {state.winner && !revealing && game.you.length > 0 && (
+        <button
+          type='button'
+          className='cursor-pointer rounded-[10px] border-2 border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] px-3 py-2 text-sm font-semibold text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105 disabled:opacity-50'
+          disabled={rematchPending}
+          onClick={onRematch}
+        >
+          {game.rematchId ? 'Go to rematch' : 'Rematch, colors swapped'}
         </button>
       )}
 

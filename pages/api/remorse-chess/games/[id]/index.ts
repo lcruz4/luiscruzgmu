@@ -12,6 +12,7 @@ import {
   getGame,
   joinGame,
   playAction,
+  setArchived,
   undoStep,
 } from '@/services/remorseDb';
 
@@ -31,6 +32,7 @@ const promotionField = (value: unknown) => {
 
 // Body: { type, version, ... }
 //   move: { from, to, promotion? } · selfHeal: { pieceId } · skipExtraMove · undo · join
+//   archive / unarchive: hide the game from your lobby or bring it back
 const postAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
   const body = bodyOf(req);
@@ -57,10 +59,12 @@ const postAction = async (req: NextApiRequest, email: string) => {
     await undoStep(id, email, version());
   } else if (body.type === 'join') {
     await joinGame(id, email);
+  } else if (body.type === 'archive' || body.type === 'unarchive') {
+    await setArchived(id, email, body.type === 'archive');
   } else {
     throw new HttpError(
       400,
-      "type must be 'move', 'selfHeal', 'skipExtraMove', 'undo' or 'join'",
+      "type must be 'move', 'selfHeal', 'skipExtraMove', 'undo', 'join', 'archive' or 'unarchive'",
     );
   }
   return getGame(id, email);

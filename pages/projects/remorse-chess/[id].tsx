@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Board } from '@/components/remorse-chess/Board';
 import { GamePanel } from '@/components/remorse-chess/GamePanel';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
-import { useGame } from '@/components/remorse-chess/useGame';
+import { useCreateGame, useGame } from '@/components/remorse-chess/useGame';
 import { requireLogin } from '@/services/auth';
 import type { GameResponse } from '@/types/remorse';
 
@@ -19,6 +19,7 @@ const GamePage = () => {
   const id =
     typeof router.query.id === 'string' ? Number(router.query.id) : undefined;
   const { query, mutation } = useGame(id);
+  const rematch = useCreateGame();
   const [flip, setFlip] = useState(false);
   // steps from here on are still animating, so the panel holds them back
   const [hiddenFrom, setHiddenFrom] = useState<number | null>(null);
@@ -41,8 +42,14 @@ const GamePage = () => {
     !game.state.winner &&
     !mutation.isPending;
 
+  const yourMove =
+    game.mode === 'online' &&
+    hiddenFrom === null &&
+    game.you.includes(game.state.turn) &&
+    !game.state.winner;
+
   return (
-    <RemorseLayout>
+    <RemorseLayout title={yourMove ? 'Your move · Remorse Chess' : undefined}>
       <div className='flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center'>
         <Board
           state={game.state}
@@ -61,12 +68,23 @@ const GamePage = () => {
         <GamePanel
           game={game}
           hiddenFrom={hiddenFrom}
-          error={mutation.error?.message ?? null}
+          error={mutation.error?.message ?? rematch.error?.message ?? null}
           busy={mutation.isPending}
           onCommand={(command) => {
             mutation.mutate(command);
           }}
           onFlip={() => setFlip(!flip)}
+          rematchPending={rematch.isPending}
+          onRematch={() =>
+            rematch.mutate(
+              { rematchOf: game.id },
+              {
+                // A full load so the board doesn't animate between games
+                onSuccess: ({ id: next }) =>
+                  window.location.assign(`/projects/remorse-chess/${next}`),
+              },
+            )
+          }
         />
       </div>
     </RemorseLayout>

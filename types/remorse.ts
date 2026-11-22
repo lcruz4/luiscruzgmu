@@ -86,7 +86,20 @@ export interface GameSummary {
   blackEmail: string | null;
   turn: Color;
   winner: Color | 'draw' | null;
+  pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
+  archived: boolean;
+  // the rematch of this game, once someone started one
+  rematchId: number | null;
   updatedAt: string;
+}
+
+export interface PlayerStats {
+  // finished online games against someone else
+  wins: number;
+  losses: number;
+  draws: number;
+  // how your pieces took their first capture
+  traumas: Record<Trauma, number>;
 }
 
 export interface GameResponse {
@@ -100,4 +113,5 @@ export interface GameResponse {
   // colors the viewer plays (both in a local game, none for a spectator)
   you: Color[];
   canUndo: boolean;
+  rematchId: number | null;
 }

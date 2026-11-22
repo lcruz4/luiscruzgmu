@@ -15,6 +15,8 @@ import type {
   GameState,
   GameStep,
   GameSummary,
+  PlayerStats,
+  Trauma,
 } from '@/types/remorse';
 import { HttpError } from './api';
 
@@ -75,11 +77,16 @@ const canUndoStep = (
   lastColor !== undefined && seatsOf(game, email).includes(opponent(lastColor));
 
 export const listGames = async (email: string): Promise<GameSummary[]> => {
-  const { rows } = await remorsePool.query<GameRow & { updated_at: Date }>(
-    `SELECT id, mode, white_email, black_email, state, updated_at
-     FROM games
-     WHERE white_email = $1 OR black_email = $1
-     ORDER BY updated_at DESC
+  const { rows } = await remorsePool.query<
+    GameRow & { updated_at: Date; archived: boolean; rematch_id: number | null }
+  >(
+    `SELECT g.id, g.mode, g.white_email, g.black_email, g.state, g.updated_at,
+            a.game_id IS NOT NULL AS archived, r.id AS rematch_id
+     FROM games g
+     LEFT JOIN game_archives a ON a.game_id = g.id AND a.email = $1
+     LEFT JOIN games r ON r.rematch_of = g.id
+     WHERE g.white_email = $1 OR g.black_email = $1
+     ORDER BY g.updated_at DESC
      LIMIT 50`,
     [email],
   );
@@ -90,8 +97,46 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     blackEmail: row.black_email,
     turn: row.state.turn,
     winner: row.state.winner,
+    pieces: row.state.pieces.map(({ color, type, square }) => ({
+      color,
+      type,
+      square,
+    })),
+    archived: row.archived,
+    rematchId: row.rematch_id,
     updatedAt: row.updated_at.toISOString(),
   }));
+};
+
+export const playerStats = async (email: string): Promise<PlayerStats> => {
+  const record = await remorsePool.query<{
+    wins: number;
+    losses: number;
+    draws: number;
+  }>(
+    `SELECT
+       count(*) FILTER (WHERE (state->>'winner' = 'w' AND white_email = $1)
+                           OR (state->>'winner' = 'b' AND black_email = $1))::int AS wins,
+       count(*) FILTER (WHERE (state->>'winner' = 'w' AND black_email = $1)
+                           OR (state->>'winner' = 'b' AND white_email = $1))::int AS losses,
+       count(*) FILTER (WHERE state->>'winner' = 'draw')::int AS draws
+     FROM games
+     WHERE mode = 'online'
+       AND (white_email = $1 OR black_email = $1)
+       AND white_email <> black_email`,
+    [email],
+  );
+  const rolls = await remorsePool.query<{ trauma: Trauma; count: number }>(
+    `SELECT e->>'trauma' AS trauma, count(*)::int AS count
+     FROM game_steps s
+     CROSS JOIN LATERAL jsonb_array_elements(s.events) e
+     WHERE s.email = $1 AND e->>'type' = 'roll'
+     GROUP BY 1`,
+    [email],
+  );
+  const traumas = { devastated: 0, guilt: 0, unaffected: 0, psychopath: 0 };
+  for (const { trauma, count } of rolls.rows) traumas[trauma] = count;
+  return { ...record.rows[0], traumas };
 };
 
 export const createGame = async (
@@ -109,6 +154,57 @@ export const createGame = async (
     [mode, email, white, black, JSON.stringify(state)],
   );
   return rows[0].id;
+};
+
+// Same players, colors swapped. Both players asking land in one game: the
+// old game's row lock orders them and the second finds the first's rematch.
+export const createRematch = async (id: number, email: string) =>
+  withTransaction(async (client) => {
+    const game = await lockGame(client, id);
+    const seats = seatsOf(game, email);
+    if (!seats.length) throw new HttpError(403, "You didn't play this game");
+    if (!game.state.winner) {
+      throw new HttpError(400, "This game isn't over yet");
+    }
+    const color = game.mode === 'local' ? 'w' : opponent(seats[0]);
+    const existing = await client.query<{ id: number }>(
+      `SELECT id
+       FROM games
+       WHERE rematch_of = $1`,
+      [id],
+    );
+    if (existing.rows[0]) return { id: existing.rows[0].id, color };
+    const state = JSON.stringify(initialState());
+    const { rows } = await client.query<{ id: number }>(
+      `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state, rematch_of)
+       VALUES ($1, $2, $3, $4, $5, $5, $6)
+       RETURNING id`,
+      [game.mode, email, game.black_email, game.white_email, state, id],
+    );
+    return { id: rows[0].id, color };
+  });
+
+export const setArchived = async (
+  id: number,
+  email: string,
+  archived: boolean,
+) => {
+  if (archived) {
+    await remorsePool.query(
+      `INSERT INTO game_archives (game_id, email)
+       SELECT id, $2
+       FROM games
+       WHERE id = $1 AND (white_email = $2 OR black_email = $2)
+       ON CONFLICT DO NOTHING`,
+      [id, email],
+    );
+  } else {
+    await remorsePool.query(
+      `DELETE FROM game_archives
+       WHERE game_id = $1 AND email = $2`,
+      [id, email],
+    );
+  }
 };
 
 const lockGame = async (client: PoolClient, id: number) => {
@@ -165,6 +261,12 @@ export const getGame = async (
      ORDER BY step`,
     [id],
   );
+  const rematch = await remorsePool.query<{ id: number }>(
+    `SELECT id
+     FROM games
+     WHERE rematch_of = $1`,
+    [id],
+  );
   const last = steps.rows.at(-1);
   return {
     id: game.id,
@@ -183,6 +285,7 @@ export const getGame = async (
     ),
     you: seatsOf(game, email),
     canUndo: canUndoStep(game, email, last?.color),
+    rematchId: rematch.rows[0]?.id ?? null,
   };
 };
 

@@ -9,6 +9,7 @@ import type {
   GameResponse,
   GameSummary,
   MoveAction,
+  PlayerStats,
 } from '@/types/remorse';
 
 const API = '/api/remorse-chess/games';
@@ -30,20 +31,51 @@ const request = async <T>(
   return body;
 };
 
+const GAMES_KEY = ['remorse-chess', 'games'];
+
+// Polls (slower in a background tab) so the lobby can say when a game is
+// waiting on you
 export const useGames = () =>
   useQuery({
-    queryKey: ['remorse-chess', 'games'],
+    queryKey: GAMES_KEY,
     queryFn: () => request<GameSummary[]>(API),
+    refetchInterval: () =>
+      typeof document !== 'undefined' && document.hidden ? 60_000 : 15_000,
+    refetchIntervalInBackground: true,
+  });
+
+export const useStats = () =>
+  useQuery({
+    queryKey: ['remorse-chess', 'stats'],
+    queryFn: () => request<PlayerStats>('/api/remorse-chess/stats'),
   });
 
 export const useCreateGame = () =>
   useMutation({
-    mutationFn: (body: { mode: 'online' | 'local' }) =>
+    mutationFn: (body: { mode: 'online' | 'local' } | { rematchOf: number }) =>
       request<{ id: number; color: Color }>(API, {
         method: 'POST',
         body: JSON.stringify(body),
       }),
   });
+
+export const useArchive = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: number; archived: boolean }) =>
+      request<GameResponse>(`${API}/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({ type: archived ? 'archive' : 'unarchive' }),
+      }),
+    onMutate: ({ id, archived }) =>
+      queryClient.setQueryData<GameSummary[]>(
+        GAMES_KEY,
+        (games) =>
+          games?.map((game) => (game.id === id ? { ...game, archived } : game)),
+      ),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: GAMES_KEY }),
+  });
+};
 
 export type GameCommand =
   | MoveAction

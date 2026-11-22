@@ -1,10 +1,18 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import type { ReactNode } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Marker } from '@/components/remorse-chess/Marker';
 import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
+import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
+import { RecordCard } from '@/components/remorse-chess/RecordCard';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
-import { useCreateGame, useGames } from '@/components/remorse-chess/useGame';
+import {
+  useArchive,
+  useCreateGame,
+  useGames,
+  useStats,
+} from '@/components/remorse-chess/useGame';
+import { useYourMoveAlerts } from '@/components/remorse-chess/useYourMoveAlerts';
 import { colorName, resultText } from '@/lib/remorse/describe';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
@@ -20,6 +28,8 @@ const ghost = cn(
   btn,
   'border-[#514d47] bg-[#302d29] text-[#e8e4dc] hover:bg-[#3a3733]',
 );
+const small =
+  'cursor-pointer rounded-lg border border-[#514d47] bg-[#302d29] px-2.5 py-1 text-xs font-semibold text-[#e8e4dc] hover:bg-[#3a3733] disabled:cursor-default disabled:opacity-50';
 const h2 = 'mb-3 text-xl font-bold text-white';
 const muted = 'text-[13.5px] text-[#a29e96]';
 
@@ -28,17 +38,23 @@ type Status = { label: string; tone: 'gold' | 'plain' | 'dim' };
 const seatOf = (game: GameSummary, email: string): Color =>
   game.whiteEmail === email ? 'w' : 'b';
 
+const nameOf = (email: string) => email.split('@')[0];
+
 const opponentOf = (game: GameSummary, email: string) => {
   if (game.mode === 'local') return 'Pass and play';
   const other = game.whiteEmail === email ? game.blackEmail : game.whiteEmail;
-  return other ? `vs ${other.split('@')[0]}` : 'Waiting for an opponent';
+  return other ? `vs ${nameOf(other)}` : 'Waiting for an opponent';
 };
 
+const inviteOpen = (game: GameSummary) =>
+  game.mode === 'online' && (!game.whiteEmail || !game.blackEmail);
+
+// Gold is kept for online games waiting on you
 const statusOf = (game: GameSummary, email: string): Status => {
   if (game.mode === 'local') {
     return game.winner
       ? { label: resultText(game.winner), tone: 'dim' }
-      : { label: `${colorName(game.turn)} to move`, tone: 'gold' };
+      : { label: `${colorName(game.turn)} to move`, tone: 'plain' };
   }
   const seat = seatOf(game, email);
   if (game.winner) {
@@ -48,13 +64,14 @@ const statusOf = (game: GameSummary, email: string): Status => {
       tone: 'dim',
     };
   }
-  if (!game.whiteEmail || !game.blackEmail) {
-    return { label: 'Invite pending', tone: 'plain' };
-  }
+  if (inviteOpen(game)) return { label: 'Invite pending', tone: 'plain' };
   return game.turn === seat
     ? { label: 'Your move', tone: 'gold' }
     : { label: 'Their move', tone: 'plain' };
 };
+
+const isYourMove = (game: GameSummary, email: string) =>
+  statusOf(game, email).tone === 'gold';
 
 const ago = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
@@ -72,32 +89,6 @@ const timeAgo = (iso: string) => {
   return 'just now';
 };
 
-// Your seat as a little piece-colored disc; half and half for local games
-const SeatDisc = ({ game, email }: { game: GameSummary; email: string }) => {
-  const ring = 'size-9 flex-none rounded-full border-2 border-[#120d0b]';
-  if (game.mode === 'local') {
-    return (
-      <span
-        className={cn(
-          ring,
-          'bg-linear-to-r from-[#f7f3ea] from-50% to-[#2b2724] to-50%',
-        )}
-        title='Both sides'
-      />
-    );
-  }
-  const seat = seatOf(game, email);
-  return (
-    <span
-      className={cn(
-        ring,
-        seat === 'w' ? 'bg-[#f7f3ea]' : 'bg-[#2b2724] border-[#6b665e]',
-      )}
-      title={`You play ${colorName(seat).toLowerCase()}`}
-    />
-  );
-};
-
 const Chip = ({ label, tone }: Status) => (
   <span
     className={cn(
@@ -111,27 +102,106 @@ const Chip = ({ label, tone }: Status) => (
   </span>
 );
 
-const GameRow = ({ game, email }: { game: GameSummary; email: string }) => {
-  const status = statusOf(game, email);
+const gamePath = (id: number) => `/projects/remorse-chess/${id}`;
+
+const CopyInvite = ({ id }: { id: number }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}${gamePath(id)}`,
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
   return (
-    <Link
-      href={`/projects/remorse-chess/${game.id}`}
+    <button type='button' className={small} onClick={copy}>
+      {copied ? 'Link copied' : 'Copy invite link'}
+    </button>
+  );
+};
+
+const GameRow = ({
+  game,
+  email,
+  onRematch,
+  rematchBusy,
+}: {
+  game: GameSummary;
+  email: string;
+  onRematch: (id: number) => void;
+  rematchBusy: boolean;
+}) => {
+  const archive = useArchive();
+  const status = statusOf(game, email);
+  const seat = seatOf(game, email);
+  const flipped = game.mode === 'online' && seat === 'b';
+  const detail = [
+    game.mode === 'online' && `You play ${colorName(seat).toLowerCase()}`,
+    timeAgo(game.updatedAt),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <div
       className={cn(
-        'flex items-center gap-3 rounded-xl bg-[#262421] px-4 py-3 transition-colors hover:bg-[#302d29]',
+        'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-[#262421] p-2.5 pr-3 transition-colors hover:bg-[#2c2a26]',
         status.tone === 'gold' && 'ring-1 ring-[#c98a1c]/45',
+        game.archived && 'opacity-70',
       )}
     >
-      <SeatDisc game={game} email={email} />
-      <div className='min-w-0 flex-1'>
-        <strong className='block truncate font-semibold text-white'>
-          {opponentOf(game, email)}
-        </strong>
-        <span className={cn(muted, 'tabular-nums')}>
-          Game #{game.id} · {timeAgo(game.updatedAt)}
-        </span>
-      </div>
-      <Chip {...status} />
-    </Link>
+      <Link
+        href={gamePath(game.id)}
+        className='flex min-w-0 flex-[1_1_320px] items-center gap-3'
+      >
+        <MiniBoard pieces={game.pieces} flipped={flipped} />
+        <div className='min-w-0 flex-1'>
+          <strong className='block truncate font-semibold text-white'>
+            {opponentOf(game, email)}
+          </strong>
+          <span className={cn(muted, 'block truncate')}>{detail}</span>
+        </div>
+        {!inviteOpen(game) && <Chip {...status} />}
+      </Link>
+      {(inviteOpen(game) || game.winner) && (
+        <div className='ml-auto flex gap-2'>
+          {inviteOpen(game) && <CopyInvite id={game.id} />}
+          {game.winner &&
+            (game.rematchId ? (
+              <Link href={gamePath(game.rematchId)} className={small}>
+                Go to rematch
+              </Link>
+            ) : (
+              !inviteOpen(game) && (
+                <button
+                  type='button'
+                  className={small}
+                  disabled={rematchBusy}
+                  onClick={() => onRematch(game.id)}
+                >
+                  Rematch
+                </button>
+              )
+            ))}
+          {game.winner && (
+            <button
+              type='button'
+              className={small}
+              disabled={archive.isPending}
+              onClick={() =>
+                archive.mutate({ id: game.id, archived: !game.archived })
+              }
+            >
+              {game.archived ? 'Restore' : 'Archive'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -161,31 +231,53 @@ const ModeCard = ({
 const LobbyPage = ({ email }: { email: string }) => {
   const router = useRouter();
   const games = useGames();
+  const stats = useStats();
   const create = useCreateGame();
+  const [showArchived, setShowArchived] = useState(false);
 
+  const open = ({ id }: { id: number }) => router.push(gamePath(id));
   const start = (mode: 'online' | 'local') =>
-    create.mutate(
-      { mode },
-      { onSuccess: ({ id }) => router.push(`/projects/remorse-chess/${id}`) },
-    );
+    create.mutate({ mode }, { onSuccess: open });
+  const rematch = (id: number) =>
+    create.mutate({ rematchOf: id }, { onSuccess: open });
 
-  const list = games.data ?? [];
+  const list = useMemo(() => games.data ?? [], [games.data]);
+  const visible = list.filter((game) => !game.archived);
+  const archived = list.filter((game) => game.archived);
   // Games waiting on you float to the top
-  const active = list
+  const active = visible
     .filter((game) => !game.winner)
     .sort(
-      (a, b) =>
-        Number(statusOf(b, email).tone === 'gold') -
-        Number(statusOf(a, email).tone === 'gold'),
+      (a, b) => Number(isYourMove(b, email)) - Number(isYourMove(a, email)),
     );
-  const finished = list.filter((game) => game.winner);
-  const yourMove = active.filter(
-    (game) => statusOf(game, email).tone === 'gold',
-  ).length;
+  const finished = visible.filter((game) => game.winner);
+
+  const alerts = useMemo(
+    () =>
+      games.data
+        ?.filter((game) => isYourMove(game, email))
+        .map((game) => ({
+          id: game.id,
+          text: `Your move ${opponentOf(game, email)}`,
+        })),
+    [games.data, email],
+  );
+  const notify = useYourMoveAlerts(alerts);
+  const yourMove = alerts?.length ?? 0;
+
+  const row = (game: GameSummary) => (
+    <GameRow
+      key={game.id}
+      game={game}
+      email={email}
+      onRematch={rematch}
+      rematchBusy={create.isPending}
+    />
+  );
 
   return (
-    <RemorseLayout>
-      <div className='mx-auto flex max-w-[720px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
+    <RemorseLayout title={yourMove ? `(${yourMove}) Remorse Chess` : undefined}>
+      <div className='mx-auto flex max-w-[760px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
         <section>
           <h1 className='mb-1 text-[clamp(24px,4vw,30px)] font-bold tracking-tight text-white'>
             {yourMove > 0
@@ -196,6 +288,18 @@ const LobbyPage = ({ email }: { email: string }) => {
           </h1>
           <p className='mb-5 text-[#a29e96]'>
             Colors are drawn at random. Every first capture rolls the die.
+            {notify.permission === 'default' && (
+              <>
+                {' '}
+                <button
+                  type='button'
+                  className='cursor-pointer font-semibold text-[#ffd27a]'
+                  onClick={notify.enable}
+                >
+                  Notify me when it&apos;s my move →
+                </button>
+              </>
+            )}
           </p>
           <div className='grid gap-3.5 sm:grid-cols-2'>
             <ModeCard
@@ -251,7 +355,7 @@ const LobbyPage = ({ email }: { email: string }) => {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className='h-[62px] animate-pulse rounded-xl bg-[#262421]'
+                className='h-[76px] animate-pulse rounded-xl bg-[#262421]'
               />
             ))}
           </div>
@@ -276,22 +380,38 @@ const LobbyPage = ({ email }: { email: string }) => {
         {active.length > 0 && (
           <section>
             <h2 className={h2}>In progress</h2>
-            <div className='flex flex-col gap-2'>
-              {active.map((game) => (
-                <GameRow key={game.id} game={game} email={email} />
-              ))}
-            </div>
+            <div className='flex flex-col gap-2'>{active.map(row)}</div>
           </section>
         )}
 
         {finished.length > 0 && (
           <section>
             <h2 className={h2}>Finished</h2>
-            <div className='flex flex-col gap-2 opacity-80'>
-              {finished.map((game) => (
-                <GameRow key={game.id} game={game} email={email} />
-              ))}
-            </div>
+            <div className='flex flex-col gap-2'>{finished.map(row)}</div>
+          </section>
+        )}
+
+        {archived.length > 0 && (
+          <section>
+            <button
+              type='button'
+              className='cursor-pointer text-sm font-semibold text-[#a29e96] hover:text-white'
+              onClick={() => setShowArchived(!showArchived)}
+            >
+              {showArchived ? '▾' : '▸'} Archived ({archived.length})
+            </button>
+            {showArchived && (
+              <div className='mt-3 flex flex-col gap-2'>
+                {archived.map(row)}
+              </div>
+            )}
+          </section>
+        )}
+
+        {stats.data && (
+          <section>
+            <h2 className={h2}>Your record</h2>
+            <RecordCard stats={stats.data} />
           </section>
         )}
       </div>

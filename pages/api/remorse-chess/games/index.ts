@@ -1,14 +1,18 @@
 import { randomInt } from 'node:crypto';
 import type { NextApiRequest } from 'next';
-import { bodyOf, HttpError } from '@/services/api';
+import { bodyOf, HttpError, idField } from '@/services/api';
 import { remorseRoute } from '@/services/remorseApi';
-import { createGame, listGames } from '@/services/remorseDb';
+import { createGame, createRematch, listGames } from '@/services/remorseDb';
 import type { Color } from '@/types/remorse';
 
-// Body: { mode: 'online' | 'local' }. Online, the creator's seat is random
-// and returned as `color`.
+// Body: { mode: 'online' | 'local' } or { rematchOf: <finished game id> }.
+// Online, the creator's seat is random (swapped for a rematch) and returned
+// as `color`.
 const postGame = async (req: NextApiRequest, email: string) => {
   const body = bodyOf(req);
+  if (body.rematchOf !== undefined) {
+    return createRematch(idField(body.rematchOf, 'rematchOf'), email);
+  }
   if (body.mode !== 'online' && body.mode !== 'local') {
     throw new HttpError(400, "mode must be 'online' or 'local'");
   }
