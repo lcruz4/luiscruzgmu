@@ -133,8 +133,8 @@ const ART: Record<
   'pawn-tear': {
     shape: 'tile',
     body: () =>
-      `<rect x="2.5" y="2.5" width="59" height="59" rx="10" fill="#ebecd0" stroke="${OUT}" stroke-width="3"/>
-      <path d="M2.5 40H61.5V51.5a10 10 0 0 1-10 10H12.5a10 10 0 0 1-10-10z" fill="#739552"/>
+      `<rect x="2.5" y="2.5" width="59" height="59" rx="10" fill="#d9c39a" stroke="${OUT}" stroke-width="3"/>
+      <path d="M2.5 40H61.5V51.5a10 10 0 0 1-10 10H12.5a10 10 0 0 1-10-10z" fill="#6e4c34"/>
       ${pawn('#2b2724')}${head('#2b2724')}
       <path d="M37.5 18.8c0 2.2-1.5 3.8-3 3.8s-3-1.6-3-3.8c0-1.9 3-5.5 3-5.5s3 3.6 3 5.5z" fill="#6fc0ff" stroke="${OUT}" stroke-width="1.5"/>`,
   },

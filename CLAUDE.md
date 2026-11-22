@@ -39,7 +39,7 @@ Personal portfolio site (lcruz.dev) plus side projects, built on Next.js **Pages
 
 ## Deploy
 
-Push to `main` → GitHub Action calls the deploy webhook on lcruz.dev. No CI tests.
+Push to `main` → GitHub Action calls the deploy webhook on lcruz.dev. No CI tests. The deploy runs all pending migrations (`db/*/NNN_*.sql`) automatically, so new migrations don't need a manual prod run.
 
 ## Commit
 

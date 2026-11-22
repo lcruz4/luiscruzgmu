@@ -11,6 +11,7 @@ import type {
   GameState,
   Piece,
   PieceRef,
+  PieceType,
   Trauma,
 } from '@/types/remorse';
 import { markerSvg } from './markerSvg';
@@ -25,6 +26,8 @@ export interface Scene {
   fx: HTMLElement;
   // display column/row (0-7) of a square, flip-aware
   at: (square: string) => { c: number; r: number };
+  // image of a piece in the viewer's piece set
+  pieceSrc: (color: Color, type: PieceType) => string;
 }
 
 const SQ = 12.5;
@@ -76,7 +79,7 @@ export const playSteps = (
   // called once, when the animations finish or are cut short
   onDone: () => void,
 ) => {
-  const { board, fx, at } = scene;
+  const { board, fx, at, pieceSrc } = scene;
   let alive = true;
   const mine: Animation[] = [];
   const prevById = new Map(prev.pieces.map((p) => [p.id, p]));
@@ -281,7 +284,10 @@ export const playSteps = (
       ghost.style.cssText = `position:absolute;left:${c * SQ}%;top:${
         r * SQ
       }%;width:${SQ}%;height:${SQ}%;z-index:5`;
-      ghost.innerHTML = `<img data-piece-img src="/images/${piece.color}${piece.type}.png" alt="" style="width:100%;height:100%;display:block">`;
+      ghost.innerHTML = `<img data-piece-img src="${pieceSrc(
+        piece.color,
+        piece.type,
+      )}" alt="" style="width:100%;height:100%;display:block">`;
       if (piece.trauma) {
         const marker = document.createElement('span');
         marker.dataset.marker = '';
@@ -348,7 +354,7 @@ export const playSteps = (
     const img = imgOf(el);
     if (!before || before.type === piece.type || !el || !img) continue;
     const ghost = document.createElement('img');
-    ghost.src = `/images/${before.color}${before.type}.png`;
+    ghost.src = pieceSrc(before.color, before.type);
     ghost.alt = '';
     ghost.style.cssText =
       'position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
@@ -954,7 +960,7 @@ export const playSteps = (
     }
     await shake(el, 2, 500);
     const ghost = document.createElement('img');
-    ghost.src = `/images/${piece.color}${piece.type}.png`;
+    ghost.src = pieceSrc(piece.color, piece.type);
     ghost.alt = '';
     const { c, r } = at(square);
     ghost.style.cssText = `position:absolute;left:${c * SQ}%;top:${

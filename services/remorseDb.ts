@@ -19,6 +19,8 @@ import type {
   Trauma,
 } from '@/types/remorse';
 import type { PlayerIcon } from '@/lib/remorse/icons';
+import type { BoardThemeId } from '@/lib/remorse/boardThemes';
+import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import { HttpError } from './api';
 
 export const remorsePool = new Pool({
@@ -140,8 +142,11 @@ export const getProfile = async (email: string) => {
   const { rows } = await remorsePool.query<{
     username: string | null;
     icon: PlayerIcon | null;
+    piece_set: PieceSetId | null;
+    board_theme: BoardThemeId | null;
+    name_chosen: boolean;
   }>(
-    `SELECT username, icon
+    `SELECT username, icon, piece_set, board_theme, name_chosen
      FROM players
      WHERE email = $1`,
     [email],
@@ -149,7 +154,9 @@ export const getProfile = async (email: string) => {
   return {
     username: rows[0]?.username ?? email.split('@')[0],
     icon: rows[0]?.icon ?? null,
-    chosen: rows.length > 0,
+    pieceSet: rows[0]?.piece_set ?? null,
+    boardTheme: rows[0]?.board_theme ?? null,
+    chosen: rows[0]?.name_chosen ?? false,
   };
 };
 
@@ -162,11 +169,32 @@ export const setIcon = async (email: string, icon: PlayerIcon) => {
   );
 };
 
+export const setPieceSet = async (email: string, pieceSet: PieceSetId) => {
+  await remorsePool.query(
+    `INSERT INTO players (email, piece_set)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE SET piece_set = EXCLUDED.piece_set`,
+    [email, pieceSet],
+  );
+};
+
+export const setBoardTheme = async (
+  email: string,
+  boardTheme: BoardThemeId,
+) => {
+  await remorsePool.query(
+    `INSERT INTO players (email, board_theme)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE SET board_theme = EXCLUDED.board_theme`,
+    [email, boardTheme],
+  );
+};
+
 export const keepDefaultUsername = async (email: string) => {
   await remorsePool.query(
-    `INSERT INTO players (email)
-     VALUES ($1)
-     ON CONFLICT DO NOTHING`,
+    `INSERT INTO players (email, name_chosen)
+     VALUES ($1, true)
+     ON CONFLICT (email) DO UPDATE SET name_chosen = true`,
     [email],
   );
 };
@@ -182,9 +210,10 @@ export const setUsername = async (email: string, username: string) => {
   }
   try {
     await remorsePool.query(
-      `INSERT INTO players (email, username)
-       VALUES ($1, $2)
-       ON CONFLICT (email) DO UPDATE SET username = EXCLUDED.username`,
+      `INSERT INTO players (email, username, name_chosen)
+       VALUES ($1, $2, true)
+       ON CONFLICT (email) DO UPDATE
+       SET username = EXCLUDED.username, name_chosen = true`,
       [email, username],
     );
   } catch (error) {
