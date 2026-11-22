@@ -3,11 +3,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { type ReactNode, useId } from 'react';
 import { GoogleIcon } from '@/components/GoogleIcon';
-import {
-  healSvg,
-  SCENE_MARKER,
-  sceneSvg,
-} from '@/components/remorse-chess/landingArt';
+import { HeroScene } from '@/components/remorse-chess/HeroScene';
+import { healSvg } from '@/components/remorse-chess/landingArt';
 import { Marker } from '@/components/remorse-chess/Marker';
 import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
@@ -209,17 +206,8 @@ const LandingPage = (props: Props) => {
       </Head>
       <div className='mx-auto max-w-[1040px] text-[15px] leading-relaxed'>
         <div className='grid items-center gap-8 pt-3 pb-10 md:grid-cols-[1.05fr_1fr] md:pt-7'>
-          <div className='relative mx-auto aspect-[9/8] w-full max-w-[360px] overflow-hidden rounded-2xl border border-[#3a3733] md:order-last md:max-w-none'>
-            <Svg html={sceneSvg(id)} className='block size-full' />
-            <span className='absolute block' style={SCENE_MARKER}>
-              <Marker
-                trauma='guilt'
-                healed={false}
-                turnsLeft={0}
-                kills={0}
-                className='block aspect-[64/68]'
-              />
-            </span>
+          <div className='relative mx-auto aspect-[9/8] w-full max-w-[360px] overflow-hidden rounded-2xl md:order-last md:max-w-none'>
+            <HeroScene />
           </div>
           <div className='min-w-0'>
             <span className='inline-flex rounded-full border border-[#c98a1c]/45 bg-[#c98a1c]/15 px-2.5 py-0.5 text-xs font-semibold text-[#ffd27a]'>
