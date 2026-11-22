@@ -32,13 +32,15 @@ export const IconPicker = ({
           disabled={disabled}
           onClick={() => onChange(icon)}
           className={cn(
-            'grid cursor-pointer place-items-center rounded-full p-0.5 transition disabled:cursor-default',
+            // square cells so the selected ring stays round when the grid
+            // squeezes on phones
+            'grid aspect-square w-full max-w-11 cursor-pointer place-items-center rounded-full p-0.5 transition disabled:cursor-default',
             icon === selected
               ? 'bg-linear-to-b from-[#ffd27a] to-[#c98a1c]'
               : 'hover:bg-[#3a3733]',
           )}
         >
-          <PlayerAvatar icon={icon} className='size-10' />
+          <PlayerAvatar icon={icon} className='size-full' />
         </button>
       ))}
     </div>
