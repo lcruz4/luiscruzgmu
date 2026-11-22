@@ -67,7 +67,7 @@ export type GameEvent =
   | {
       type: 'gameOver';
       winner: Color | 'draw';
-      reason: 'king' | 'checkmate' | 'stalemate';
+      reason: 'king' | 'checkmate' | 'stalemate' | 'resign';
     };
 
 export type GameMode = 'online' | 'local';

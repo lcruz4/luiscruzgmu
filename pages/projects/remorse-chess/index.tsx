@@ -6,6 +6,7 @@ import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
 import { RecordCard } from '@/components/remorse-chess/RecordCard';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
+import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
   useArchive,
   useCreateGame,
@@ -277,6 +278,7 @@ const LobbyPage = ({ email }: { email: string }) => {
 
   return (
     <RemorseLayout>
+      <UsernamePrompt />
       <div className='mx-auto flex max-w-[760px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
         <section>
           <div className='mb-6 flex flex-wrap items-center gap-x-3 gap-y-2'>
@@ -292,17 +294,6 @@ const LobbyPage = ({ email }: { email: string }) => {
             >
               ✎ Edit
             </Link>
-            {yourMove > 0 && (
-              <a
-                href='#in-progress'
-                className='ml-auto inline-flex items-center gap-2 rounded-full border border-[#c98a1c]/45 bg-[#c98a1c]/15 py-1 pr-3 pl-1 text-sm font-semibold text-[#ffd27a]'
-              >
-                <b className='grid size-6 place-items-center rounded-full bg-[#c62828] text-xs text-white tabular-nums shadow-[0_1px_0_#120d0b]'>
-                  {yourMove}
-                </b>
-                {yourMove === 1 ? 'game waits' : 'games wait'} on your move
-              </a>
-            )}
           </div>
           <h2 className={h2}>New game</h2>
           {notify.permission === 'default' && (
@@ -391,8 +382,19 @@ const LobbyPage = ({ email }: { email: string }) => {
         )}
 
         {active.length > 0 && (
-          <section id='in-progress' className='scroll-mt-4'>
-            <h2 className={h2}>In progress</h2>
+          <section>
+            <h2 className={cn(h2, 'flex items-center gap-2')}>
+              In progress
+              {yourMove > 0 && (
+                <span
+                  className='grid h-6 min-w-6 place-items-center rounded-full bg-[#c62828] px-1.5 text-xs font-bold text-white tabular-nums shadow-[0_1px_0_#120d0b]'
+                  title={`${yourMove} waiting on your move`}
+                  aria-label={`${yourMove} waiting on your move`}
+                >
+                  {yourMove}
+                </span>
+              )}
+            </h2>
             <div className='flex flex-col gap-2'>{active.map(row)}</div>
           </section>
         )}

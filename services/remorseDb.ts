@@ -61,6 +61,7 @@ interface NameColumns {
 interface StepRow {
   step: number;
   color: Color;
+  resigned: boolean;
   events: GameEvent[];
   created_at: Date;
 }
@@ -75,12 +76,15 @@ const seatsOf = (game: GameRow, email: string): Color[] => {
 
 // Undo is the opponent's call: only the other side can take back a step.
 // A local game's owner sits on both sides, so they always can.
+// A resignation can't be taken back.
 const canUndoStep = (
   game: GameRow,
   email: string,
-  lastColor: Color | undefined,
+  last: { color: Color; resigned: boolean } | undefined,
 ) =>
-  lastColor !== undefined && seatsOf(game, email).includes(opponent(lastColor));
+  last !== undefined &&
+  !last.resigned &&
+  seatsOf(game, email).includes(opponent(last.color));
 
 export const listGames = async (email: string): Promise<GameSummary[]> => {
   const { rows } = await remorsePool.query<
@@ -125,14 +129,28 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
   }));
 };
 
-export const getUsername = async (email: string) => {
-  const { rows } = await remorsePool.query<{ username: string }>(
+// chosen: they've picked a name or kept the default when asked
+export const getProfile = async (email: string) => {
+  const { rows } = await remorsePool.query<{ username: string | null }>(
     `SELECT username
      FROM players
      WHERE email = $1`,
     [email],
   );
-  return rows[0]?.username ?? email.split('@')[0];
+  return {
+    username: rows[0]?.username ?? email.split('@')[0],
+    chosen: rows.length > 0,
+  };
+};
+
+export const keepDefaultUsername = async (email: string) => {
+  await remorsePool.query(
+    `INSERT INTO players (email)
+     VALUES ($1)
+     ON CONFLICT DO NOTHING`,
+    [email],
+  );
+  return getProfile(email);
 };
 
 const USERNAME = /^[A-Za-z0-9_-]{3,20}$/;
@@ -158,7 +176,7 @@ export const setUsername = async (email: string, username: string) => {
     }
     throw error;
   }
-  return username;
+  return { username, chosen: true };
 };
 
 export const playerStats = async (email: string): Promise<PlayerStats> => {
@@ -273,8 +291,12 @@ const lockGame = async (client: PoolClient, id: number) => {
 };
 
 const lastStep = async (client: PoolClient | Pool, id: number) => {
-  const { rows } = await client.query<{ step: number; color: Color }>(
-    `SELECT step, color
+  const { rows } = await client.query<{
+    step: number;
+    color: Color;
+    resigned: boolean;
+  }>(
+    `SELECT step, color, action->>'type' = 'resign' AS resigned
      FROM game_steps
      WHERE game_id = $1
      ORDER BY step DESC
@@ -312,7 +334,7 @@ export const getGame = async (
   const game = rows[0];
   if (!game) throw new HttpError(404, 'Game not found');
   const steps = await remorsePool.query<StepRow>(
-    `SELECT step, color, events, created_at
+    `SELECT step, color, events, created_at, action->>'type' = 'resign' AS resigned
      FROM game_steps
      WHERE game_id = $1
      ORDER BY step`,
@@ -343,7 +365,7 @@ export const getGame = async (
       }),
     ),
     you: seatsOf(game, email),
-    canUndo: canUndoStep(game, email, last?.color),
+    canUndo: canUndoStep(game, email, last),
     rematchId: rematch.rows[0]?.id ?? null,
   };
 };
@@ -404,13 +426,55 @@ export const playAction = async (
     );
   });
 
+// Online, you resign your own seat on either turn; locally the side to move
+// resigns
+export const resignGame = async (id: number, email: string, version: number) =>
+  withTransaction(async (client) => {
+    const game = await lockGame(client, id);
+    assertVersion(game, version);
+    const seats = seatsOf(game, email);
+    if (!seats.length) throw new HttpError(403, "You're not playing this game");
+    if (game.state.winner) throw new HttpError(400, 'The game is already over');
+    if (!game.white_email || !game.black_email) {
+      throw new HttpError(400, 'Wait for your opponent to join');
+    }
+    const color = game.mode === 'local' ? game.state.turn : seats[0];
+    const winner = opponent(color);
+    const state: GameState = { ...game.state, winner, extraMovePieceId: null };
+    const events: GameEvent[] = [
+      { type: 'gameOver', winner, reason: 'resign' },
+    ];
+    const step = ((await lastStep(client, id))?.step ?? 0) + 1;
+    await client.query(
+      `INSERT INTO game_steps (game_id, step, color, email, action, events, state_after)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        id,
+        step,
+        color,
+        email,
+        JSON.stringify({ type: 'resign' }),
+        JSON.stringify(events),
+        JSON.stringify(state),
+      ],
+    );
+    await client.query(
+      `UPDATE games
+       SET state = $2, version = version + 1
+       WHERE id = $1`,
+      [id, JSON.stringify(state)],
+    );
+  });
+
 export const undoStep = async (id: number, email: string, version: number) =>
   withTransaction(async (client) => {
     const game = await lockGame(client, id);
     assertVersion(game, version);
     const last = await lastStep(client, id);
     if (!last) throw new HttpError(400, 'Nothing to undo');
-    if (!canUndoStep(game, email, last.color)) {
+    if (last.resigned)
+      throw new HttpError(400, "A resignation can't be undone");
+    if (!canUndoStep(game, email, last)) {
       throw new HttpError(403, 'Only your opponent can undo your move');
     }
 

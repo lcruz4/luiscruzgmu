@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Board } from '@/components/remorse-chess/Board';
 import { GamePanel } from '@/components/remorse-chess/GamePanel';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
+import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import { useCreateGame, useGame } from '@/components/remorse-chess/useGame';
 import { requireLogin } from '@/services/auth';
 import type { GameResponse } from '@/types/remorse';
@@ -50,6 +51,7 @@ const GamePage = () => {
 
   return (
     <RemorseLayout title={yourMove ? 'Your move · Remorse Chess' : undefined}>
+      <UsernamePrompt />
       <div className='flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center'>
         <Board
           state={game.state}

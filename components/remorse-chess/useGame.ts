@@ -46,17 +46,21 @@ export const useGames = () =>
 
 const PROFILE_KEY = ['remorse-chess', 'profile'];
 
+// chosen: they've picked a name, or kept the default when asked
+type Profile = { username: string; chosen: boolean };
+
 export const useProfile = () =>
   useQuery({
     queryKey: PROFILE_KEY,
-    queryFn: () => request<{ username: string }>('/api/remorse-chess/profile'),
+    queryFn: () => request<Profile>('/api/remorse-chess/profile'),
   });
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (username: string) =>
-      request<{ username: string }>('/api/remorse-chess/profile', {
+    // null keeps the default name
+    mutationFn: (username: string | null) =>
+      request<Profile>('/api/remorse-chess/profile', {
         method: 'PUT',
         body: JSON.stringify({ username }),
       }),
@@ -105,6 +109,7 @@ export type GameCommand =
   | { type: 'selfHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'undo' }
+  | { type: 'resign' }
   | { type: 'join' };
 
 const fetchGame = (id: number, current: GameResponse | undefined) =>

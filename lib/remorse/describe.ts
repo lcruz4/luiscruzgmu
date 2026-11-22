@@ -1,4 +1,5 @@
 import type { Color, GameEvent, PieceRef, PieceType } from '@/types/remorse';
+import { opponent } from './moves';
 
 const NAMES: Record<PieceType, string> = {
   k: 'king',
@@ -69,6 +70,10 @@ export const describeEvent = (event: GameEvent): string => {
         ? `Checkmate. ${resultText(event.winner)}`
         : event.reason === 'stalemate'
         ? 'Stalemate. Draw'
+        : event.reason === 'resign' && event.winner !== 'draw'
+        ? `${colorName(opponent(event.winner))} resigned. ${resultText(
+            event.winner,
+          )}`
         : resultText(event.winner);
   }
 };

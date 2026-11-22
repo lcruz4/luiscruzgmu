@@ -1,15 +1,20 @@
 import { bodyOf, HttpError } from '@/services/api';
 import { remorseRoute } from '@/services/remorseApi';
-import { getUsername, setUsername } from '@/services/remorseDb';
+import {
+  getProfile,
+  keepDefaultUsername,
+  setUsername,
+} from '@/services/remorseDb';
 
-// Body: { username }
+// Body: { username }, or { username: null } to keep the default name
 export default remorseRoute({
-  GET: async (_req, email) => ({ username: await getUsername(email) }),
+  GET: (_req, email) => getProfile(email),
   PUT: async (req, email) => {
     const { username } = bodyOf(req);
+    if (username === null) return keepDefaultUsername(email);
     if (typeof username !== 'string') {
-      throw new HttpError(400, 'username must be text');
+      throw new HttpError(400, 'username must be text or null');
     }
-    return { username: await setUsername(email, username.trim()) };
+    return setUsername(email, username.trim());
   },
 });

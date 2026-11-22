@@ -35,10 +35,16 @@ export const GamePanel = ({
   rematchPending,
 }: GamePanelProps) => {
   const [copied, setCopied] = useState(false);
+  const [confirmResign, setConfirmResign] = useState(false);
   const { state } = game;
   const seatOpen =
     game.mode === 'online' && (!game.whiteEmail || !game.blackEmail);
   const yourTurn = game.you.includes(state.turn) && !state.winner;
+  const canResign =
+    hiddenFrom === null &&
+    !state.winner &&
+    game.you.length > 0 &&
+    Boolean(game.whiteEmail && game.blackEmail);
 
   const copyInvite = async () => {
     try {
@@ -120,6 +126,37 @@ export const GamePanel = ({
 
       {error && <p className='text-sm text-red-300'>{error}</p>}
 
+      {canResign && confirmResign && (
+        <div className='flex flex-col gap-2 rounded-md border border-red-400/40 bg-red-950/40 p-3 text-sm'>
+          <span className='text-white'>
+            {game.mode === 'local'
+              ? `Resign for ${colorName(state.turn).toLowerCase()}?`
+              : 'Resign this game?'}{' '}
+            <span className='text-[#cfcbc3]'>It can&apos;t be undone.</span>
+          </span>
+          <div className='flex gap-2'>
+            <button
+              type='button'
+              className='cursor-pointer rounded-md border border-red-400/60 bg-red-800 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40'
+              disabled={busy}
+              onClick={() => {
+                setConfirmResign(false);
+                onCommand({ type: 'resign' });
+              }}
+            >
+              Yes, resign
+            </button>
+            <button
+              type='button'
+              className={button}
+              onClick={() => setConfirmResign(false)}
+            >
+              Keep playing
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className='flex flex-wrap gap-2'>
         {game.canUndo && (
           <button
@@ -135,6 +172,16 @@ export const GamePanel = ({
         <button type='button' className={button} onClick={onFlip}>
           ⇅ Flip board
         </button>
+        {canResign && !confirmResign && (
+          <button
+            type='button'
+            className={button}
+            disabled={busy}
+            onClick={() => setConfirmResign(true)}
+          >
+            ⚑ Resign
+          </button>
+        )}
         {seatOpen && !game.you.length && (
           <button
             type='button'

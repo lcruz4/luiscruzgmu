@@ -221,6 +221,8 @@ export const playSteps = (
           ? `Checkmate · ${resultText(event.winner)}`
           : event.reason === 'stalemate'
           ? 'Stalemate · draw'
+          : event.reason === 'resign'
+          ? `Resigned · ${resultText(event.winner)}`
           : `King captured · ${resultText(event.winner)}`;
       default:
         return null;
