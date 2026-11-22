@@ -195,6 +195,12 @@ const LandingPage = (props: Props) => {
     >
       <Head>
         <title>Remorse Chess</title>
+        {/* In-page links glide to their section, clear of the header */}
+        <style>
+          {
+            '@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } } section[id] { scroll-margin-top: 16px; }'
+          }
+        </style>
         <meta
           name='description'
           content='Chess where every capture leaves a mark. Free to play online.'
