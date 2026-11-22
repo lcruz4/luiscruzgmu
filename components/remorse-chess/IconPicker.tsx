@@ -1,7 +1,6 @@
 import {
   DEFAULT_ICON,
-  MARKER_ICONS,
-  PIECE_ICONS,
+  PLAYER_ICONS,
   type PlayerIcon,
 } from '@/lib/remorse/icons';
 import { cn } from '@/lib/utils';
@@ -21,9 +20,9 @@ export const IconPicker = ({
     <div
       role='radiogroup'
       aria-label='Icon'
-      className='grid grid-cols-6 gap-2 sm:grid-cols-9'
+      className='grid max-w-[360px] grid-cols-6 gap-2'
     >
-      {[...PIECE_ICONS, ...MARKER_ICONS].map((icon) => (
+      {PLAYER_ICONS.map((icon) => (
         <button
           key={icon}
           type='button'

@@ -102,35 +102,49 @@ export interface MarkerProps {
   kills: number;
 }
 
+// The medallion and its face, without the ring or drips around it
+const face = (id: string, trauma: Trauma, bloodlust: boolean) => {
+  const gradient = `${id}-g`;
+  if (trauma === 'devastated') {
+    return medallion(gradient, '#7fb8ff', '#2c63c9', '#13265e') + BROKEN_HEART;
+  }
+  if (trauma === 'guilt') {
+    return (
+      `<defs><clipPath id="${id}-c"><circle cx="32" cy="32" r="19.6"/></clipPath></defs>` +
+      medallion(gradient, '#ffd27a', '#c98a1c', '#5e3a06') +
+      `<g clip-path="url(#${id}-c)">${HOOD}</g>`
+    );
+  }
+  if (trauma === 'unaffected') {
+    return medallion(gradient, '#b8c4cf', '#64717e', '#2b333b') + STONE_MASK;
+  }
+  return bloodlust
+    ? medallion(gradient, '#c0262b', '#6d0b10', '#260306') + grin(true)
+    : medallion(gradient, '#ff8a80', '#c62828', '#5a0d0d') + grin(false);
+};
+
+// Just the medallion, cropped so it fills its box (player icons)
+export const medallionSvg = (id: string, trauma: Trauma, bloodlust: boolean) =>
+  `<svg viewBox="9.5 9.5 45 45" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" aria-hidden="true">${face(
+    id,
+    trauma,
+    bloodlust,
+  )}</svg>`;
+
 export const markerSvg = (
   id: string,
   { trauma, healed, turnsLeft, kills }: MarkerProps,
 ) => {
-  const gradient = `${id}-g`;
-  let body = '';
+  const bloodlust = trauma === 'psychopath' && kills >= 3;
+  let body = face(id, trauma, bloodlust);
   if (trauma === 'devastated') {
     body =
       meter(turnsLeft, turnsLeft === 1 ? '#ff5a4e' : '#5fb2ff', '#d8eeff') +
-      medallion(gradient, '#7fb8ff', '#2c63c9', '#13265e') +
-      BROKEN_HEART;
-  } else if (trauma === 'guilt') {
-    body =
-      `<defs><clipPath id="${id}-c"><circle cx="32" cy="32" r="19.6"/></clipPath></defs>` +
-      medallion(gradient, '#ffd27a', '#c98a1c', '#5e3a06') +
-      `<g clip-path="url(#${id}-c)">${HOOD}</g>`;
-  } else if (trauma === 'unaffected') {
-    body = medallion(gradient, '#b8c4cf', '#64717e', '#2b333b') + STONE_MASK;
-  } else if (kills >= 3) {
-    body =
-      meter(3, '#ff2b2b', '#ffc2c2') +
-      DRIPS +
-      medallion(gradient, '#c0262b', '#6d0b10', '#260306') +
-      grin(true);
-  } else {
-    body =
-      meter(kills, '#e5383b', '#ffc9c9') +
-      medallion(gradient, '#ff8a80', '#c62828', '#5a0d0d') +
-      grin(false);
+      body;
+  } else if (bloodlust) {
+    body = meter(3, '#ff2b2b', '#ffc2c2') + DRIPS + body;
+  } else if (trauma === 'psychopath') {
+    body = meter(kills, '#e5383b', '#ffc9c9') + body;
   }
   if (healed) {
     body = `<defs><filter id="${id}-d"><feColorMatrix type="saturate" values="0.05"/>

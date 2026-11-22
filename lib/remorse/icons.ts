@@ -1,6 +1,7 @@
 import type { Trauma } from '@/types/remorse';
 
-// Pieces are image names (color + type); the rest are trauma markers
+// Pieces are image names (color + type); medallions are the trauma markers'
+// faces plus the bishop's heal
 export const PIECE_ICONS = [
   'wk',
   'wq',
@@ -15,27 +16,33 @@ export const PIECE_ICONS = [
   'bn',
   'bp',
 ] as const;
-export const MARKER_ICONS = [
+export const MEDALLION_ICONS = [
   'devastated',
   'guilt',
   'unaffected',
   'psychopath',
   'bloodlust',
+  'heal',
 ] as const;
 
 export type PieceIcon = (typeof PIECE_ICONS)[number];
-export type MarkerIcon = (typeof MARKER_ICONS)[number];
-export type PlayerIcon = PieceIcon | MarkerIcon;
+export type MedallionIcon = (typeof MEDALLION_ICONS)[number];
+export type PlayerIcon = PieceIcon | MedallionIcon;
 
 export const DEFAULT_ICON: PlayerIcon = 'wp';
 
-const ICONS: readonly string[] = [...PIECE_ICONS, ...MARKER_ICONS];
+// Picker order
+export const PLAYER_ICONS: readonly PlayerIcon[] = [
+  ...MEDALLION_ICONS,
+  ...PIECE_ICONS,
+];
 
 export const isPlayerIcon = (value: unknown): value is PlayerIcon =>
-  typeof value === 'string' && ICONS.includes(value);
+  PLAYER_ICONS.some((icon) => icon === value);
 
-export const isMarkerIcon = (icon: PlayerIcon): icon is MarkerIcon =>
-  MARKER_ICONS.some((marker) => marker === icon);
+export const isMedallionIcon = (icon: PlayerIcon): icon is MedallionIcon =>
+  MEDALLION_ICONS.some((medallion) => medallion === icon);
 
-export const markerTrauma = (icon: MarkerIcon): Trauma =>
-  icon === 'bloodlust' ? 'psychopath' : icon;
+export const medallionTrauma = (
+  icon: Exclude<MedallionIcon, 'heal'>,
+): Trauma => (icon === 'bloodlust' ? 'psychopath' : icon);

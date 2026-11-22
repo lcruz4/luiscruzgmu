@@ -38,7 +38,7 @@ export const PlayerStrip = ({
         className={cn(
           'size-9',
           !name && 'opacity-40',
-          toMove && 'border-[#c98a1c]',
+          toMove && 'ring-2 ring-[#c98a1c] ring-offset-2 ring-offset-[#161512]',
         )}
       />
       <div className='min-w-0 flex-1 leading-tight'>
