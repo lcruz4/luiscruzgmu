@@ -6,7 +6,7 @@ import {
   PieceSetPicker,
 } from '@/components/remorse-chess/BoardLookPickers';
 import { BoardPreview } from '@/components/remorse-chess/BoardPreview';
-import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
+import { PlayerPreview } from '@/components/remorse-chess/PlayerPreview';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import {
   useProfile,
@@ -78,17 +78,7 @@ const ProfilePage = ({ email }: { email: string }) => {
           onSubmit={submit}
           className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'
         >
-          <div className='flex items-center gap-3 rounded-lg bg-[#1d1b18] p-3'>
-            <PlayerAvatar icon={icon} className='size-12' />
-            <div className='min-w-0'>
-              <strong className='block truncate text-white'>
-                {username.trim() || 'Your name'}
-              </strong>
-              <span className='text-[13px] text-[#a29e96]'>
-                How opponents see you
-              </span>
-            </div>
-          </div>
+          <PlayerPreview icon={icon} username={username} />
           <label htmlFor='username' className='font-semibold text-white'>
             Username
           </label>
@@ -148,17 +138,17 @@ const ProfilePage = ({ email }: { email: string }) => {
               <BoardPreview pieceSet={pieceSet} board={board} />
             </div>
           </div>
-          <span className='font-semibold text-white'>Colors</span>
-          <BoardThemePicker
-            value={board}
-            onChange={(next) => lookUpdate.mutate({ boardTheme: next })}
-            disabled={!profile.data || lookUpdate.isPending}
-          />
-          <span className='mt-1 font-semibold text-white'>Pieces</span>
+          <span className='font-semibold text-white'>Pieces</span>
           <PieceSetPicker
             value={pieceSet}
             boardTheme={board}
             onChange={(next) => lookUpdate.mutate({ pieceSet: next })}
+            disabled={!profile.data || lookUpdate.isPending}
+          />
+          <span className='mt-1 font-semibold text-white'>Colors</span>
+          <BoardThemePicker
+            value={board}
+            onChange={(next) => lookUpdate.mutate({ boardTheme: next })}
             disabled={!profile.data || lookUpdate.isPending}
           />
           {lookUpdate.isError && (

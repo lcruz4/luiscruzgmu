@@ -144,8 +144,9 @@ export const getProfile = async (email: string) => {
     icon: PlayerIcon | null;
     piece_set: PieceSetId | null;
     board_theme: BoardThemeId | null;
+    name_chosen: boolean;
   }>(
-    `SELECT username, icon, piece_set, board_theme
+    `SELECT username, icon, piece_set, board_theme, name_chosen
      FROM players
      WHERE email = $1`,
     [email],
@@ -155,7 +156,7 @@ export const getProfile = async (email: string) => {
     icon: rows[0]?.icon ?? null,
     pieceSet: rows[0]?.piece_set ?? null,
     boardTheme: rows[0]?.board_theme ?? null,
-    chosen: rows.length > 0,
+    chosen: rows[0]?.name_chosen ?? false,
   };
 };
 
@@ -191,9 +192,9 @@ export const setBoardTheme = async (
 
 export const keepDefaultUsername = async (email: string) => {
   await remorsePool.query(
-    `INSERT INTO players (email)
-     VALUES ($1)
-     ON CONFLICT DO NOTHING`,
+    `INSERT INTO players (email, name_chosen)
+     VALUES ($1, true)
+     ON CONFLICT (email) DO UPDATE SET name_chosen = true`,
     [email],
   );
 };
@@ -209,9 +210,10 @@ export const setUsername = async (email: string, username: string) => {
   }
   try {
     await remorsePool.query(
-      `INSERT INTO players (email, username)
-       VALUES ($1, $2)
-       ON CONFLICT (email) DO UPDATE SET username = EXCLUDED.username`,
+      `INSERT INTO players (email, username, name_chosen)
+       VALUES ($1, $2, true)
+       ON CONFLICT (email) DO UPDATE
+       SET username = EXCLUDED.username, name_chosen = true`,
       [email, username],
     );
   } catch (error) {

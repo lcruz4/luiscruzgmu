@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import { IconPicker } from './IconPicker';
 import { Marker } from './Marker';
+import { PlayerPreview } from './PlayerPreview';
 import { useProfile, useUpdateProfile } from './useGame';
 
 // Asks a new player to pick a name once. Closing it keeps the default (their
@@ -54,6 +55,7 @@ export const UsernamePrompt = () => {
               </DialogDescription>
             </div>
           </div>
+          <PlayerPreview icon={icon ?? profile.data.icon} username={value} />
           <input
             value={value}
             onChange={(event) => setUsername(event.target.value)}
