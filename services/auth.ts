@@ -1,6 +1,6 @@
 import type { IncomingHttpHeaders } from 'http';
 import type { GetServerSideProps } from 'next';
-import { SIGN_IN_PATH } from '@/lib/auth';
+import { REMORSE_LANDING_PATH, SIGN_IN_PATH } from '@/lib/auth';
 import { logger } from './logger';
 
 // lcruz_auth app names; a user needs a role for the app to get through
@@ -74,7 +74,9 @@ export const requireLogin =
 
     return {
       redirect: {
-        destination: `${SIGN_IN_PATH}?${new URLSearchParams({
+        destination: `${
+          app === 'remorse-chess' ? REMORSE_LANDING_PATH : SIGN_IN_PATH
+        }?${new URLSearchParams({
           returnTo: resolvedUrl,
         })}`,
         permanent: false,

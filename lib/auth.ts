@@ -12,6 +12,8 @@ export const authLogoutUrl = (redirectTo: string) =>
   })}`;
 
 export const SIGN_IN_PATH = '/sign-in';
+export const REMORSE_LANDING_PATH = '/remorse-chess';
+export const REMORSE_HOME = '/projects/remorse-chess';
 const DEFAULT_RETURN_PATH = '/';
 const BASE = 'http://base.invalid';
 
@@ -26,4 +28,13 @@ export const safeReturnPath = (returnTo: unknown) => {
     // Unparseable; fall through
   }
   return DEFAULT_RETURN_PATH;
+};
+
+// Remorse sign-in only returns into the game; anything else goes to its lobby
+export const safeRemorsePath = (returnTo: unknown) => {
+  const path = safeReturnPath(returnTo);
+  const { pathname } = new URL(path, BASE);
+  return pathname === REMORSE_HOME || pathname.startsWith(`${REMORSE_HOME}/`)
+    ? path
+    : REMORSE_HOME;
 };

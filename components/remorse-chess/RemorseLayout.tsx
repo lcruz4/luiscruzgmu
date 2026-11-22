@@ -1,8 +1,23 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { REMORSE_LANDING_PATH } from '@/lib/auth';
+import { Wordmark } from './Wordmark';
 
-export const RemorseLayout = ({ children }: { children: ReactNode }) => (
+const RulesLink = () => (
+  <Link href={REMORSE_LANDING_PATH} className='text-sm text-[#a29e96]'>
+    Rules
+  </Link>
+);
+
+// `actions` sits at the right of the header; defaults to a link to the rules
+export const RemorseLayout = ({
+  children,
+  actions = <RulesLink />,
+}: {
+  children: ReactNode;
+  actions?: ReactNode;
+}) => (
   <div className='min-h-dvh bg-[#161512] font-sans text-[#e8e6e1]'>
     <Head>
       <title>Remorse Chess</title>
@@ -31,12 +46,10 @@ export const RemorseLayout = ({ children }: { children: ReactNode }) => (
       />
     </Head>
     <header className='flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))] pb-3'>
-      <Link
-        href='/projects/remorse-chess'
-        className='text-lg font-medium text-white'
-      >
-        Remorse Chess
+      <Link href='/projects/remorse-chess' className='flex'>
+        <Wordmark size='header' />
       </Link>
+      {actions}
     </header>
     <main className='px-4 pb-8'>{children}</main>
   </div>
