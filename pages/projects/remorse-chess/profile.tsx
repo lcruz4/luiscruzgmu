@@ -7,6 +7,7 @@ import {
   useProfile,
   useUpdateProfile,
 } from '@/components/remorse-chess/useGame';
+import type { PlayerIcon } from '@/lib/remorse/icons';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
 
@@ -16,22 +17,29 @@ const primary =
 const ProfilePage = ({ email }: { email: string }) => {
   const profile = useProfile();
   const update = useUpdateProfile();
-  const iconUpdate = useUpdateProfile();
   const [username, setUsername] = useState('');
+  const [icon, setIcon] = useState<PlayerIcon | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (profile.data) setUsername(profile.data.username);
+    if (!profile.data) return;
+    setUsername(profile.data.username);
+    setIcon(profile.data.icon);
   }, [profile.data]);
 
-  const changed =
+  const nameChanged =
     profile.data !== undefined && username.trim() !== profile.data.username;
+  const iconChanged = profile.data !== undefined && icon !== profile.data.icon;
+  const changed = nameChanged || iconChanged;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setSaved(false);
     update.mutate(
-      { username: username.trim() },
+      {
+        ...(nameChanged && { username: username.trim() }),
+        ...(iconChanged && icon && { icon }),
+      },
       { onSuccess: () => setSaved(true) },
     );
   };
@@ -45,42 +53,30 @@ const ProfilePage = ({ email }: { email: string }) => {
         >
           ← Your games
         </Link>
-        <div className='flex items-center gap-3'>
-          <PlayerAvatar
-            icon={profile.data?.icon ?? null}
-            className='size-16 border-[3px]'
-          />
-          <div className='min-w-0'>
-            <h1 className='text-[clamp(24px,4vw,30px)] leading-tight font-bold tracking-tight text-white'>
-              Profile
-            </h1>
-            <p className='truncate text-[13.5px] text-[#a29e96]'>
-              Signed in as {email}
-            </p>
-          </div>
+        <div>
+          <h1 className='text-[clamp(24px,4vw,30px)] leading-tight font-bold tracking-tight text-white'>
+            Profile
+          </h1>
+          <p className='truncate text-[13.5px] text-[#a29e96]'>
+            Signed in as {email}
+          </p>
         </div>
-
-        <section className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'>
-          <div className='flex items-center justify-between gap-3'>
-            <h2 className='font-semibold text-white'>Icon</h2>
-            {iconUpdate.isPending && (
-              <span className='text-sm text-[#a29e96]'>Saving…</span>
-            )}
-          </div>
-          <IconPicker
-            value={profile.data?.icon ?? null}
-            onChange={(icon) => iconUpdate.mutate({ icon })}
-            disabled={!profile.data || iconUpdate.isPending}
-          />
-          {iconUpdate.isError && (
-            <p className='text-sm text-red-300'>{iconUpdate.error.message}</p>
-          )}
-        </section>
 
         <form
           onSubmit={submit}
           className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'
         >
+          <div className='flex items-center gap-3 rounded-lg bg-[#1d1b18] p-3'>
+            <PlayerAvatar icon={icon} className='size-12' />
+            <div className='min-w-0'>
+              <strong className='block truncate text-white'>
+                {username.trim() || 'Your name'}
+              </strong>
+              <span className='text-[13px] text-[#a29e96]'>
+                How opponents see you
+              </span>
+            </div>
+          </div>
           <label htmlFor='username' className='font-semibold text-white'>
             Username
           </label>
@@ -102,9 +98,17 @@ const ProfilePage = ({ email }: { email: string }) => {
             )}
           />
           <p className='text-[13px] text-[#a29e96]'>
-            What opponents see in their games. 3 to 20 letters, numbers, dashes
-            or underscores.
+            3 to 20 letters, numbers, dashes or underscores.
           </p>
+          <span className='mt-1 font-semibold text-white'>Icon</span>
+          <IconPicker
+            value={icon}
+            onChange={(next) => {
+              setIcon(next);
+              setSaved(false);
+            }}
+            disabled={!profile.data || update.isPending}
+          />
           {update.isError && (
             <p className='text-sm text-red-300'>{update.error.message}</p>
           )}

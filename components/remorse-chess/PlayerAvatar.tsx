@@ -55,7 +55,7 @@ export const PlayerAvatar = ({
         className={cn(
           'block size-8 flex-none overflow-hidden rounded-full',
           shape !== 'medallion' && 'border-2 border-[#120d0b]',
-          shape === 'figure' && 'bg-[#302d29] p-[8%]',
+          shape === 'figure' && 'bg-[#302d29]',
           className,
         )}
       >

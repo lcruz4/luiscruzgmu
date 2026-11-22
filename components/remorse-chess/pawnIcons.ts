@@ -145,7 +145,7 @@ const ART: Record<
 const VIEWBOX: Record<PawnShape, string> = {
   medallion: '1 1 62 62',
   tile: '6 6 52 52',
-  figure: '0 0 64 64',
+  figure: '-6 -6 76 76',
 };
 
 export const pawnShape = (icon: PawnIcon) => ART[icon].shape;

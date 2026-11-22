@@ -46,16 +46,12 @@ export type PlayerIcon = PieceIcon | MedallionIcon | PawnIcon;
 
 export const DEFAULT_ICON: PlayerIcon = 'wp';
 
-// Picker sections, in order
-export const ICON_GROUPS: { label: string; icons: readonly PlayerIcon[] }[] = [
-  { label: 'Markers', icons: MEDALLION_ICONS },
-  { label: 'Pawns', icons: PAWN_ICONS },
-  { label: 'Pieces', icons: PIECE_ICONS },
+// Picker order
+export const PLAYER_ICONS: readonly PlayerIcon[] = [
+  ...MEDALLION_ICONS,
+  ...PAWN_ICONS,
+  ...PIECE_ICONS,
 ];
-
-const PLAYER_ICONS: readonly PlayerIcon[] = ICON_GROUPS.flatMap(
-  (group) => group.icons,
-);
 
 export const isPlayerIcon = (value: unknown): value is PlayerIcon =>
   PLAYER_ICONS.some((icon) => icon === value);
