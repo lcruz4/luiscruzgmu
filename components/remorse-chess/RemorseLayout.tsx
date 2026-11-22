@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { REMORSE_LANDING_PATH } from '@/lib/auth';
+import { Wordmark } from './Wordmark';
 
 const RulesLink = () => (
   <Link href={REMORSE_LANDING_PATH} className='text-sm text-[#a29e96]'>
@@ -45,11 +46,8 @@ export const RemorseLayout = ({
       />
     </Head>
     <header className='flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))] pb-3'>
-      <Link
-        href='/projects/remorse-chess'
-        className='text-lg font-medium text-white'
-      >
-        Remorse Chess
+      <Link href='/projects/remorse-chess' className='flex'>
+        <Wordmark size='header' />
       </Link>
       {actions}
     </header>

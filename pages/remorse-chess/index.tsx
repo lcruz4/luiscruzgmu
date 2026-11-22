@@ -11,6 +11,7 @@ import {
 import { Marker } from '@/components/remorse-chess/Marker';
 import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
+import { Wordmark } from '@/components/remorse-chess/Wordmark';
 import { authLoginUrl, REMORSE_HOME, safeRemorsePath } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { getAuthenticatedEmail } from '@/services/auth';
@@ -224,9 +225,12 @@ const LandingPage = (props: Props) => {
             <span className='inline-flex rounded-full border border-[#c98a1c]/45 bg-[#c98a1c]/15 px-2.5 py-0.5 text-xs font-semibold text-[#ffd27a]'>
               ✦ Free to play, open to everyone
             </span>
-            <h1 className='mt-3.5 mb-3 text-[clamp(32px,5vw,48px)] leading-[1.08] font-bold tracking-tight text-balance text-white'>
-              Chess where every capture leaves a mark
+            <h1 className='mt-5 mb-4'>
+              <Wordmark size='hero' />
             </h1>
+            <p className='mb-3 text-[clamp(22px,3vw,28px)] leading-tight font-bold tracking-tight text-balance text-white'>
+              Chess where every capture leaves a mark
+            </p>
             <p className='mb-5 max-w-[46ch] text-[17px] text-[#a29e96]'>
               The first time a piece takes another, it rolls a die. Some pieces
               are crushed by guilt. Some shrug. Some start to enjoy it.
