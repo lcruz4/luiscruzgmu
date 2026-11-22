@@ -118,6 +118,20 @@ export const useArchive = () => {
   });
 };
 
+export const useCancelGame = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      request<null>(`${API}/${id}`, { method: 'DELETE' }, null),
+    onSuccess: (_result, id) =>
+      queryClient.setQueryData<GameSummary[]>(
+        GAMES_KEY,
+        (games) => games?.filter((game) => game.id !== id),
+      ),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: GAMES_KEY }),
+  });
+};
+
 export type GameCommand =
   | MoveAction
   | { type: 'selfHeal'; pieceId: string }

@@ -10,6 +10,7 @@ import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
   useArchive,
+  useCancelGame,
   useCreateGame,
   useGames,
   useProfile,
@@ -125,6 +126,49 @@ const CopyInvite = ({ id }: { id: number }) => {
   );
 };
 
+const CancelInvite = ({ id }: { id: number }) => {
+  const cancel = useCancelGame();
+  const [confirming, setConfirming] = useState(false);
+  if (!confirming) {
+    return (
+      <button
+        type='button'
+        className={small}
+        onClick={() => setConfirming(true)}
+      >
+        Cancel game
+      </button>
+    );
+  }
+  return (
+    <>
+      {cancel.isError && (
+        <span className='self-center text-xs text-red-300'>
+          {cancel.error.message}
+        </span>
+      )}
+      <button
+        type='button'
+        className={cn(
+          small,
+          'border-red-400/50 text-red-200 hover:bg-red-950/60',
+        )}
+        disabled={cancel.isPending}
+        onClick={() => cancel.mutate(id)}
+      >
+        Yes, cancel
+      </button>
+      <button
+        type='button'
+        className={small}
+        onClick={() => setConfirming(false)}
+      >
+        Keep
+      </button>
+    </>
+  );
+};
+
 const GameRow = ({
   game,
   email,
@@ -176,7 +220,12 @@ const GameRow = ({
       </Link>
       {(inviteOpen(game) || game.winner) && (
         <div className='ml-auto flex gap-2'>
-          {inviteOpen(game) && <CopyInvite id={game.id} />}
+          {inviteOpen(game) && (
+            <>
+              <CopyInvite id={game.id} />
+              <CancelInvite id={game.id} />
+            </>
+          )}
           {game.winner &&
             (game.rematchId ? (
               <Link href={gamePath(game.rematchId)} className={small}>
