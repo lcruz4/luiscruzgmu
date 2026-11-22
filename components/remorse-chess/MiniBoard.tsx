@@ -1,6 +1,7 @@
-import { BOARD_SRC, pieceSrc } from '@/lib/remorse/pieceSets';
+import { boardSrc } from '@/lib/remorse/boardThemes';
+import { pieceSrc } from '@/lib/remorse/pieceSets';
 import type { GameSummary } from '@/types/remorse';
-import { usePieceSet } from './usePieceSet';
+import { useBoardLook } from './useBoardLook';
 
 // A thumbnail of the position, from `flipped` = black's side
 export const MiniBoard = ({
@@ -10,11 +11,11 @@ export const MiniBoard = ({
   pieces: GameSummary['pieces'];
   flipped: boolean;
 }) => {
-  const pieceSet = usePieceSet();
+  const { pieceSet, boardTheme } = useBoardLook();
   return (
     <span
       className='relative block size-14 flex-none overflow-hidden rounded-md border border-[#120d0b] bg-cover'
-      style={{ backgroundImage: `url(${BOARD_SRC})` }}
+      style={{ backgroundImage: `url("${boardSrc(boardTheme)}")` }}
     >
       {pieces.map(({ color, type, square }) => {
         const file = square.charCodeAt(0) - 97;

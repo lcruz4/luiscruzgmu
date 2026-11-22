@@ -16,8 +16,9 @@ import type {
 import { playSteps } from './animate';
 import { Marker } from './Marker';
 import { traumaLabel } from './markerSvg';
-import { BOARD_SRC, type PieceSetId, pieceSrc } from '@/lib/remorse/pieceSets';
-import { usePieceSet } from './usePieceSet';
+import { boardSrc, boardTheme } from '@/lib/remorse/boardThemes';
+import { type PieceSetId, pieceSrc } from '@/lib/remorse/pieceSets';
+import { useBoardLook } from './useBoardLook';
 
 const FILES = 'abcdefgh';
 
@@ -60,7 +61,7 @@ export const Board = ({
   onSelfHeal,
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
-  const pieceSet = usePieceSet();
+  const { pieceSet, boardTheme: theme } = useBoardLook();
   const bySquare = new Map(state.pieces.map((piece) => [piece.square, piece]));
   // During a psychopath's extra move only that piece may move
   const isMine = (piece?: Piece) =>
@@ -201,7 +202,7 @@ export const Board = ({
       className='relative aspect-square w-full max-w-[min(640px,calc(100dvh-140px))] select-none'
     >
       <img
-        src={BOARD_SRC}
+        src={boardSrc(theme)}
         alt=''
         className='absolute inset-0 h-full w-full rounded-sm'
       />
@@ -362,6 +363,7 @@ export const Board = ({
         <PromotionPicker
           color={state.turn}
           pieceSet={pieceSet}
+          light={boardTheme(theme).light}
           column={squares.indexOf(promotion.to) % 8}
           fromTop={squares.indexOf(promotion.to) < 8}
           onPick={(type) => {
@@ -380,6 +382,7 @@ export const Board = ({
 const PromotionPicker = ({
   color,
   pieceSet,
+  light,
   column,
   fromTop,
   onPick,
@@ -387,6 +390,8 @@ const PromotionPicker = ({
 }: {
   color: GameState['turn'];
   pieceSet: PieceSetId;
+  // the board's light square color
+  light: string;
   column: number;
   fromTop: boolean;
   onPick: (type: PromotionType) => void;
@@ -395,17 +400,17 @@ const PromotionPicker = ({
   <div className='absolute inset-0 z-40 bg-black/40' onClick={onCancel}>
     <div
       className={cn(
-        'absolute flex w-[12.5%] rounded-sm bg-[#d9c39a] shadow-lg shadow-black/60',
+        'absolute flex w-[12.5%] rounded-sm shadow-lg shadow-black/60',
         fromTop ? 'top-0 flex-col' : 'bottom-0 flex-col-reverse',
       )}
-      style={{ left: `${column * 12.5}%` }}
+      style={{ left: `${column * 12.5}%`, backgroundColor: light }}
     >
       {PROMOTIONS.map((type) => (
         <button
           key={type}
           type='button'
           aria-label={`Promote to ${type}`}
-          className='aspect-square w-full hover:bg-[#f0dfb8]'
+          className='aspect-square w-full hover:bg-white/30'
           onClick={(event) => {
             event.stopPropagation();
             onPick(type);

@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { PlayerIcon } from '@/lib/remorse/icons';
+import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import type {
   Color,
@@ -53,6 +54,7 @@ type Profile = {
   username: string;
   icon: PlayerIcon | null;
   pieceSet: PieceSetId | null;
+  boardTheme: BoardThemeId | null;
   chosen: boolean;
 };
 
@@ -70,6 +72,7 @@ export const useUpdateProfile = () => {
       username?: string | null;
       icon?: PlayerIcon;
       pieceSet?: PieceSetId;
+      boardTheme?: BoardThemeId;
     }) =>
       request<Profile>('/api/remorse-chess/profile', {
         method: 'PUT',

@@ -9,12 +9,13 @@ import {
   type PieceIcon,
   type PlayerIcon,
 } from '@/lib/remorse/icons';
+import { boardTheme } from '@/lib/remorse/boardThemes';
 import { pieceIconSrc } from '@/lib/remorse/pieceSets';
 import { cn } from '@/lib/utils';
 import { healSvg } from './landingArt';
 import { medallionSvg } from './markerSvg';
 import { pawnIconSvg, pawnShape } from './pawnIcons';
-import { usePieceSet } from './usePieceSet';
+import { useBoardLook } from './useBoardLook';
 
 // SVG strings come from our own art constants, never user input
 const Medallion = ({ icon }: { icon: MedallionIcon }) => {
@@ -41,10 +42,32 @@ const Pawn = ({ icon }: { icon: PawnIcon }) => {
   );
 };
 
-const PieceImage = ({ icon }: { icon: PieceIcon }) => {
-  const pieceSet = usePieceSet();
+// Pieces sit on the board's own square colors so black ones show
+const PieceAvatar = ({
+  icon,
+  className,
+}: {
+  icon: PieceIcon;
+  className?: string;
+}) => {
+  const look = useBoardLook();
+  const theme = boardTheme(look.boardTheme);
   return (
-    <img src={pieceIconSrc(pieceSet, icon)} alt='' className='size-[86%]' />
+    <span
+      className={cn(
+        'grid size-8 flex-none place-items-center overflow-hidden rounded-full border-2 border-[#514d47]',
+        className,
+      )}
+      style={{
+        backgroundColor: icon.startsWith('w') ? theme.dark : theme.light,
+      }}
+    >
+      <img
+        src={pieceIconSrc(look.pieceSet, icon)}
+        alt=''
+        className='size-[86%]'
+      />
+    </span>
   );
 };
 
@@ -80,16 +103,5 @@ export const PlayerAvatar = ({
       </span>
     );
   }
-  return (
-    <span
-      className={cn(
-        'grid size-8 flex-none place-items-center overflow-hidden rounded-full border-2 border-[#514d47]',
-        // pieces sit on the board's own square colors so black ones show
-        shown.startsWith('w') ? 'bg-[#6e4c34]' : 'bg-[#d9c39a]',
-        className,
-      )}
-    >
-      <PieceImage icon={shown} />
-    </span>
-  );
+  return <PieceAvatar icon={shown} className={className} />;
 };

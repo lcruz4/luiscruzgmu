@@ -1,4 +1,4 @@
-// Generates the Remorse Chess piece sets and board as SVGs under
+// Generates the Remorse Chess piece sets as SVGs under
 // public/images/remorse. Run with `npm run remorse:pieces` after editing.
 // Pieces are drawn on a 64-unit grid: body parts are filled and outlined,
 // details are strokes on top.
@@ -12,7 +12,6 @@ const OUT_DIR = join(
 );
 
 const OUTLINE = '#120d0b';
-const BOARD = { light: '#d9c39a', dark: '#6e4c34' };
 const SIDES = {
   w: {
     gradient: ['#fffdf7', '#f1e9da', '#c9bba2'],
@@ -412,18 +411,6 @@ const pieceSvg = (shape, fit, side) => {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="g" cx="36%" cy="24%" r="85%"><stop offset="0" stop-color="${light}"/><stop offset=".5" stop-color="${mid}"/><stop offset="1" stop-color="${dark}"/></radialGradient></defs><g transform="${fit}">${body}</g></svg>\n`;
 };
 
-const boardSvg = () => {
-  let squares = '';
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      if ((row + col) % 2) {
-        squares += `<rect x="${col}" y="${row}" width="1" height="1"/>`;
-      }
-    }
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="${BOARD.light}"/><g fill="${BOARD.dark}">${squares}</g></svg>\n`;
-};
-
 const write = (path, content) => {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content);
@@ -439,7 +426,4 @@ for (const [id, { shapes, fit }] of Object.entries(SETS)) {
     }
   }
 }
-write(join(OUT_DIR, 'board.svg'), boardSvg());
-console.log(
-  `Wrote ${Object.keys(SETS).length} piece sets and the board to ${OUT_DIR}`,
-);
+console.log(`Wrote ${Object.keys(SETS).length} piece sets to ${OUT_DIR}`);

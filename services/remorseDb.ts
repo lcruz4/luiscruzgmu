@@ -19,6 +19,7 @@ import type {
   Trauma,
 } from '@/types/remorse';
 import type { PlayerIcon } from '@/lib/remorse/icons';
+import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import { HttpError } from './api';
 
@@ -142,8 +143,9 @@ export const getProfile = async (email: string) => {
     username: string | null;
     icon: PlayerIcon | null;
     piece_set: PieceSetId | null;
+    board_theme: BoardThemeId | null;
   }>(
-    `SELECT username, icon, piece_set
+    `SELECT username, icon, piece_set, board_theme
      FROM players
      WHERE email = $1`,
     [email],
@@ -152,6 +154,7 @@ export const getProfile = async (email: string) => {
     username: rows[0]?.username ?? email.split('@')[0],
     icon: rows[0]?.icon ?? null,
     pieceSet: rows[0]?.piece_set ?? null,
+    boardTheme: rows[0]?.board_theme ?? null,
     chosen: rows.length > 0,
   };
 };
@@ -171,6 +174,18 @@ export const setPieceSet = async (email: string, pieceSet: PieceSetId) => {
      VALUES ($1, $2)
      ON CONFLICT (email) DO UPDATE SET piece_set = EXCLUDED.piece_set`,
     [email, pieceSet],
+  );
+};
+
+export const setBoardTheme = async (
+  email: string,
+  boardTheme: BoardThemeId,
+) => {
+  await remorsePool.query(
+    `INSERT INTO players (email, board_theme)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE SET board_theme = EXCLUDED.board_theme`,
+    [email, boardTheme],
   );
 };
 

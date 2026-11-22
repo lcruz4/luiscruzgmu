@@ -17,8 +17,6 @@ export const DEFAULT_PIECE_SET: PieceSetId = 'mourners';
 export const isPieceSet = (id: unknown): id is PieceSetId =>
   PIECE_SETS.some((set) => set.id === id);
 
-export const BOARD_SRC = '/images/remorse/board.svg';
-
 export const pieceSrc = (set: PieceSetId, color: Color, type: PieceType) =>
   `/images/remorse/pieces/${set}/${color}${type}.svg`;
 

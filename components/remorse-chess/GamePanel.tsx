@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import type { GameEvent, GameResponse } from '@/types/remorse';
 import { Marker } from './Marker';
 import type { GameCommand } from './useGame';
-import { usePieceSet } from './usePieceSet';
+import { useBoardLook } from './useBoardLook';
 
 const btn =
   'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 px-3.5 py-2 text-sm font-semibold disabled:cursor-default disabled:opacity-50';
@@ -110,7 +110,7 @@ export const GamePanel = ({
 }: GamePanelProps) => {
   const [copied, setCopied] = useState(false);
   const [confirmResign, setConfirmResign] = useState(false);
-  const pieceSet = usePieceSet();
+  const { pieceSet } = useBoardLook();
   const { state } = game;
   const online = game.mode === 'online';
   const seatOpen = online && (!game.whiteEmail || !game.blackEmail);
