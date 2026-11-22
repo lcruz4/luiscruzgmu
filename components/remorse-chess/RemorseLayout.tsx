@@ -6,7 +6,7 @@ import { Wordmark } from './Wordmark';
 
 const DefaultActions = () => (
   <nav className='flex items-center gap-4 text-sm text-[#a29e96]'>
-    <Link href={REMORSE_LANDING_PATH}>Rules</Link>
+    <Link href={`${REMORSE_LANDING_PATH}#rules`}>Rules</Link>
     <Link href='/projects/remorse-chess/profile'>Profile</Link>
     <button
       type='button'
