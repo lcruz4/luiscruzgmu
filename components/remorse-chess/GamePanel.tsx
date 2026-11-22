@@ -73,12 +73,12 @@ export const GamePanel = ({
           <span className='mr-2 inline-block h-3 w-3 rounded-full border border-black bg-white align-middle' />
           {game.mode === 'local'
             ? 'You (both sides)'
-            : game.whiteEmail ?? 'Waiting for a player'}
+            : game.whiteName ?? 'Waiting for a player'}
         </span>
         {game.mode === 'online' && (
           <span>
             <span className='mr-2 inline-block h-3 w-3 rounded-full border border-[#888] bg-black align-middle' />
-            {game.blackEmail ?? 'Waiting for a player'}
+            {game.blackName ?? 'Waiting for a player'}
           </span>
         )}
       </div>

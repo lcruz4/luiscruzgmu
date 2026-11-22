@@ -4,16 +4,17 @@ import type { ReactNode } from 'react';
 import { REMORSE_LANDING_PATH } from '@/lib/auth';
 import { Wordmark } from './Wordmark';
 
-const RulesLink = () => (
-  <Link href={REMORSE_LANDING_PATH} className='text-sm text-[#a29e96]'>
-    Rules
-  </Link>
+const DefaultActions = () => (
+  <nav className='flex items-center gap-4 text-sm text-[#a29e96]'>
+    <Link href={REMORSE_LANDING_PATH}>Rules</Link>
+    <Link href='/projects/remorse-chess/profile'>Profile</Link>
+  </nav>
 );
 
-// `actions` sits at the right of the header; defaults to a link to the rules
+// `actions` sits at the right of the header; defaults to rules and profile links
 export const RemorseLayout = ({
   children,
-  actions = <RulesLink />,
+  actions = <DefaultActions />,
   title = 'Remorse Chess',
 }: {
   children: ReactNode;

@@ -44,6 +44,29 @@ export const useGames = () =>
     refetchIntervalInBackground: true,
   });
 
+const PROFILE_KEY = ['remorse-chess', 'profile'];
+
+export const useProfile = () =>
+  useQuery({
+    queryKey: PROFILE_KEY,
+    queryFn: () => request<{ username: string }>('/api/remorse-chess/profile'),
+  });
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (username: string) =>
+      request<{ username: string }>('/api/remorse-chess/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ username }),
+      }),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(PROFILE_KEY, profile);
+      queryClient.invalidateQueries({ queryKey: GAMES_KEY });
+    },
+  });
+};
+
 export const useStats = () =>
   useQuery({
     queryKey: ['remorse-chess', 'stats'],

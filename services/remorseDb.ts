@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import { Pool, PoolClient } from 'pg';
+import { DatabaseError, Pool, PoolClient } from 'pg';
 import {
   applyAction,
   initialState,
@@ -52,6 +52,12 @@ interface GameRow {
   version: number;
 }
 
+// null while the seat is empty
+interface NameColumns {
+  white_name: string | null;
+  black_name: string | null;
+}
+
 interface StepRow {
   step: number;
   color: Color;
@@ -78,13 +84,22 @@ const canUndoStep = (
 
 export const listGames = async (email: string): Promise<GameSummary[]> => {
   const { rows } = await remorsePool.query<
-    GameRow & { updated_at: Date; archived: boolean; rematch_id: number | null }
+    GameRow &
+      NameColumns & {
+        updated_at: Date;
+        archived: boolean;
+        rematch_id: number | null;
+      }
   >(
     `SELECT g.id, g.mode, g.white_email, g.black_email, g.state, g.updated_at,
-            a.game_id IS NOT NULL AS archived, r.id AS rematch_id
+            a.game_id IS NOT NULL AS archived, r.id AS rematch_id,
+            COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
+            COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name
      FROM games g
      LEFT JOIN game_archives a ON a.game_id = g.id AND a.email = $1
      LEFT JOIN games r ON r.rematch_of = g.id
+     LEFT JOIN players pw ON pw.email = g.white_email
+     LEFT JOIN players pb ON pb.email = g.black_email
      WHERE g.white_email = $1 OR g.black_email = $1
      ORDER BY g.updated_at DESC
      LIMIT 50`,
@@ -95,6 +110,8 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     mode: row.mode,
     whiteEmail: row.white_email,
     blackEmail: row.black_email,
+    whiteName: row.white_name,
+    blackName: row.black_name,
     turn: row.state.turn,
     winner: row.state.winner,
     pieces: row.state.pieces.map(({ color, type, square }) => ({
@@ -106,6 +123,42 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     rematchId: row.rematch_id,
     updatedAt: row.updated_at.toISOString(),
   }));
+};
+
+export const getUsername = async (email: string) => {
+  const { rows } = await remorsePool.query<{ username: string }>(
+    `SELECT username
+     FROM players
+     WHERE email = $1`,
+    [email],
+  );
+  return rows[0]?.username ?? email.split('@')[0];
+};
+
+const USERNAME = /^[A-Za-z0-9_-]{3,20}$/;
+
+export const setUsername = async (email: string, username: string) => {
+  if (!USERNAME.test(username)) {
+    throw new HttpError(
+      400,
+      'Use 3 to 20 letters, numbers, dashes or underscores',
+    );
+  }
+  try {
+    await remorsePool.query(
+      `INSERT INTO players (email, username)
+       VALUES ($1, $2)
+       ON CONFLICT (email) DO UPDATE SET username = EXCLUDED.username`,
+      [email, username],
+    );
+  } catch (error) {
+    // unique_violation on players_username
+    if (error instanceof DatabaseError && error.code === '23505') {
+      throw new HttpError(409, 'That username is taken');
+    }
+    throw error;
+  }
+  return username;
 };
 
 export const playerStats = async (email: string): Promise<PlayerStats> => {
@@ -246,10 +299,14 @@ export const getGame = async (
   id: number,
   email: string,
 ): Promise<GameResponse> => {
-  const { rows } = await remorsePool.query<GameRow>(
-    `SELECT id, mode, created_by, white_email, black_email, initial_state, state, version
-     FROM games
-     WHERE id = $1`,
+  const { rows } = await remorsePool.query<GameRow & NameColumns>(
+    `SELECT g.id, g.mode, g.created_by, g.white_email, g.black_email, g.initial_state, g.state, g.version,
+            COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
+            COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name
+     FROM games g
+     LEFT JOIN players pw ON pw.email = g.white_email
+     LEFT JOIN players pb ON pb.email = g.black_email
+     WHERE g.id = $1`,
     [id],
   );
   const game = rows[0];
@@ -273,6 +330,8 @@ export const getGame = async (
     mode: game.mode,
     whiteEmail: game.white_email,
     blackEmail: game.black_email,
+    whiteName: game.white_name,
+    blackName: game.black_name,
     state: game.state,
     version: game.version,
     steps: steps.rows.map(

@@ -10,6 +10,7 @@ import {
   useArchive,
   useCreateGame,
   useGames,
+  useProfile,
   useStats,
 } from '@/components/remorse-chess/useGame';
 import { useYourMoveAlerts } from '@/components/remorse-chess/useYourMoveAlerts';
@@ -38,12 +39,10 @@ type Status = { label: string; tone: 'gold' | 'plain' | 'dim' };
 const seatOf = (game: GameSummary, email: string): Color =>
   game.whiteEmail === email ? 'w' : 'b';
 
-const nameOf = (email: string) => email.split('@')[0];
-
 const opponentOf = (game: GameSummary, email: string) => {
   if (game.mode === 'local') return 'Pass and play';
-  const other = game.whiteEmail === email ? game.blackEmail : game.whiteEmail;
-  return other ? `vs ${nameOf(other)}` : 'Waiting for an opponent';
+  const other = game.whiteEmail === email ? game.blackName : game.whiteName;
+  return other ? `vs ${other}` : 'Waiting for an opponent';
 };
 
 const inviteOpen = (game: GameSummary) =>
@@ -232,6 +231,7 @@ const LobbyPage = ({ email }: { email: string }) => {
   const router = useRouter();
   const games = useGames();
   const stats = useStats();
+  const profile = useProfile();
   const create = useCreateGame();
   const [showArchived, setShowArchived] = useState(false);
 
@@ -276,16 +276,35 @@ const LobbyPage = ({ email }: { email: string }) => {
   );
 
   return (
-    <RemorseLayout title={yourMove ? `(${yourMove}) Remorse Chess` : undefined}>
+    <RemorseLayout>
       <div className='mx-auto flex max-w-[760px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
         <section>
-          <h1 className='mb-4 text-[clamp(24px,4vw,30px)] font-bold tracking-tight text-white'>
-            {yourMove > 0
-              ? `${yourMove} ${
-                  yourMove === 1 ? 'game is' : 'games are'
-                } waiting on you`
-              : 'Start a game'}
-          </h1>
+          <div className='mb-6 flex flex-wrap items-center gap-x-3 gap-y-2'>
+            <h1 className='text-[clamp(26px,4.5vw,34px)] leading-tight font-bold tracking-tight text-white'>
+              {profile.data?.username ?? (
+                <span className='inline-block h-8 w-40 animate-pulse rounded-md bg-[#262421] align-middle' />
+              )}
+            </h1>
+            <Link
+              href='/projects/remorse-chess/profile'
+              className='text-sm text-[#a29e96] hover:text-white'
+              aria-label='Edit your username'
+            >
+              ✎ Edit
+            </Link>
+            {yourMove > 0 && (
+              <a
+                href='#in-progress'
+                className='ml-auto inline-flex items-center gap-2 rounded-full border border-[#c98a1c]/45 bg-[#c98a1c]/15 py-1 pr-3 pl-1 text-sm font-semibold text-[#ffd27a]'
+              >
+                <b className='grid size-6 place-items-center rounded-full bg-[#c62828] text-xs text-white tabular-nums shadow-[0_1px_0_#120d0b]'>
+                  {yourMove}
+                </b>
+                {yourMove === 1 ? 'game waits' : 'games wait'} on your move
+              </a>
+            )}
+          </div>
+          <h2 className={h2}>New game</h2>
           {notify.permission === 'default' && (
             <button
               type='button'
@@ -372,7 +391,7 @@ const LobbyPage = ({ email }: { email: string }) => {
         )}
 
         {active.length > 0 && (
-          <section>
+          <section id='in-progress' className='scroll-mt-4'>
             <h2 className={h2}>In progress</h2>
             <div className='flex flex-col gap-2'>{active.map(row)}</div>
           </section>

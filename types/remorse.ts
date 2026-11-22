@@ -84,6 +84,8 @@ export interface GameSummary {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  whiteName: string | null;
+  blackName: string | null;
   turn: Color;
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
@@ -107,6 +109,8 @@ export interface GameResponse {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  whiteName: string | null;
+  blackName: string | null;
   state: GameState;
   version: number;
   steps: GameStep[];
