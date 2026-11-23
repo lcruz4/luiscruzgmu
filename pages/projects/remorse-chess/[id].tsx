@@ -11,6 +11,7 @@ import {
   useCreateGame,
   useGame,
 } from '@/components/remorse-chess/useGame';
+import { useBadgeSync } from '@/components/remorse-chess/useYourMoveAlerts';
 import { inCheck, opponent } from '@/lib/remorse/engine';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameResponse } from '@/types/remorse';
@@ -22,7 +23,7 @@ const lastMoveOf = (game: GameResponse) => {
   return null;
 };
 
-const GamePage = () => {
+const GamePage = ({ email }: { email: string }) => {
   const router = useRouter();
   const id =
     typeof router.query.id === 'string' ? Number(router.query.id) : undefined;
@@ -33,6 +34,7 @@ const GamePage = () => {
   // steps from here on are still animating, so the panel holds them back
   const [hiddenFrom, setHiddenFrom] = useState<number | null>(null);
   const game = query.data;
+  useBadgeSync(email, game?.version);
 
   if (!game) {
     return (

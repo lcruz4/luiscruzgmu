@@ -1,4 +1,10 @@
-import type { Color, GameEvent, PieceRef, PieceType } from '@/types/remorse';
+import type {
+  Color,
+  GameEvent,
+  GameSummary,
+  PieceRef,
+  PieceType,
+} from '@/types/remorse';
 import { opponent } from './moves';
 
 const NAMES: Record<PieceType, string> = {
@@ -77,3 +83,12 @@ export const describeEvent = (event: GameEvent): string => {
         : resultText(event.winner);
   }
 };
+
+// An online game with both seats taken, not over, waiting on this email.
+// Matches yourMoveCount in services/remorsePush.ts.
+export const isYourMove = (game: GameSummary, email: string) =>
+  game.mode === 'online' &&
+  !game.winner &&
+  !!game.whiteEmail &&
+  !!game.blackEmail &&
+  (game.turn === 'w' ? game.whiteEmail : game.blackEmail) === email;

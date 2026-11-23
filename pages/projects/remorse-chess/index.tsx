@@ -17,7 +17,7 @@ import {
   useStats,
 } from '@/components/remorse-chess/useGame';
 import { useYourMoveAlerts } from '@/components/remorse-chess/useYourMoveAlerts';
-import { colorName, resultText } from '@/lib/remorse/describe';
+import { colorName, isYourMove, resultText } from '@/lib/remorse/describe';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameSummary } from '@/types/remorse';
@@ -71,9 +71,6 @@ const statusOf = (game: GameSummary, email: string): Status => {
     ? { label: 'Your move', tone: 'gold' }
     : { label: 'Their move', tone: 'plain' };
 };
-
-const isYourMove = (game: GameSummary, email: string) =>
-  statusOf(game, email).tone === 'gold';
 
 const ago = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
