@@ -21,7 +21,7 @@ export const escapeHtml = (value: string) =>
 // From and subject are set on the Resend template
 export const sendEmail = async (options: {
   to: string;
-  replyTo: string;
+  replyTo?: string;
   template: { id: string; variables: Record<string, string> };
 }) => {
   const { error } = await resend.emails.send(options);

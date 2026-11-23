@@ -611,3 +611,31 @@ export const joinGame = async (id: number, email: string) =>
       [id, email],
     );
   });
+
+export const appStorePledges = async (email: string | null) => {
+  const { rows } = await remorsePool.query<{ count: number; pledged: boolean }>(
+    `SELECT count(*)::int AS count,
+            coalesce(bool_or(email = $1), false) AS pledged
+     FROM app_store_pledges`,
+    [email],
+  );
+  return { count: rows[0]?.count ?? 0, pledged: rows[0]?.pledged ?? false };
+};
+
+export const setAppStorePledge = async (email: string, pledged: boolean) => {
+  if (pledged) {
+    await remorsePool.query(
+      `INSERT INTO app_store_pledges (email)
+       VALUES ($1)
+       ON CONFLICT (email) DO NOTHING`,
+      [email],
+    );
+  } else {
+    await remorsePool.query(
+      `DELETE FROM app_store_pledges
+       WHERE email = $1`,
+      [email],
+    );
+  }
+  return appStorePledges(email);
+};
