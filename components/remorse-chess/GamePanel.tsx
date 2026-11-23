@@ -6,6 +6,8 @@ import type { GameEvent, GameResponse } from '@/types/remorse';
 import { Marker } from './Marker';
 import type { GameCommand } from './useGame';
 import { useBoardLook } from './useBoardLook';
+import { RuleIcon, ruleMentioned } from './RuleIcon';
+import type { TutorialKey } from '@/lib/remorse/tutorial';
 import { buttonSm, ghostButton, goldButton, redButton } from './buttons';
 
 const primary = cn(goldButton, buttonSm);
@@ -27,6 +29,29 @@ const eventTone = (event: GameEvent) => {
     default:
       return 'text-[#ffd27a]';
   }
+};
+
+// Opens the rules on what a log line is about
+const LogRuleIcon = ({
+  event,
+  onRules,
+}: {
+  event: GameEvent;
+  onRules: (slide: TutorialKey) => void;
+}) => {
+  const rule = ruleMentioned(event);
+  if (!rule) return null;
+  return (
+    <button
+      type='button'
+      aria-label='Show this rule'
+      title='Show this rule'
+      className='mr-1.5 inline-block size-[20px] cursor-pointer align-[-5px] hover:brightness-125'
+      onClick={() => onRules(rule)}
+    >
+      <RuleIcon rule={rule} className='block size-full' />
+    </button>
+  );
 };
 
 const Die = ({ value }: { value: number }) => (
@@ -84,7 +109,8 @@ interface GamePanelProps {
   busy: boolean;
   onCommand: (command: GameCommand) => void;
   onFlip: () => void;
-  onRules: () => void;
+  // opens the rules dialog on a slide
+  onRules: (slide: TutorialKey) => void;
   onRematch: () => void;
   rematchPending: boolean;
   onCancel: () => void;
@@ -350,7 +376,11 @@ export const GamePanel = ({
         <button type='button' className={ghost} onClick={onFlip}>
           ⇅ Flip board
         </button>
-        <button type='button' className={ghost} onClick={onRules}>
+        <button
+          type='button'
+          className={ghost}
+          onClick={() => onRules('intro')}
+        >
           ? Rules
         </button>
         {canResign && !confirmResign && (
@@ -395,6 +425,7 @@ export const GamePanel = ({
                 {step.events.map((event, index) => (
                   <div key={index} className={eventTone(event)}>
                     {event.type === 'roll' && <Die value={event.roll} />}
+                    <LogRuleIcon event={event} onRules={onRules} />
                     {describeEvent(event)}
                   </div>
                 ))}

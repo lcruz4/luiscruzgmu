@@ -44,9 +44,6 @@ const useSlides = (): Record<TutorialKey, Slide> => {
           <div className='flex flex-col items-center gap-1.5'>
             <Marker {...marker} className='block h-[78px] w-[72px]' />
             <Dice roll={roll} />
-            <span className='text-xs text-[#a29e96] tabular-nums'>
-              {roll.length} in 6
-            </span>
           </div>
         ),
         body: <p>{text}</p>,

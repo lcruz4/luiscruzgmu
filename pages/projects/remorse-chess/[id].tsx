@@ -177,7 +177,7 @@ const GamePage = () => {
               mutation.mutate(command);
             }}
             onFlip={() => setFlip(!flip)}
-            onRules={() => setRulesSlide('intro')}
+            onRules={setRulesSlide}
             rematchPending={rematch.isPending}
             cancelPending={cancel.isPending}
             onCancel={() =>
