@@ -72,12 +72,6 @@ const useSlides = (): Record<TutorialKey, Slide> => {
           <p className='mt-2'>
             Its marker shows up on the piece. Here&apos;s what each one means.
           </p>
-          <Link
-            href='/projects/remorse-chess/tutorial'
-            className='mt-2 inline-block font-semibold text-[#ffd27a] hover:underline'
-          >
-            Rather learn by playing? Try the tutorial →
-          </Link>
         </>
       ),
     },
@@ -144,10 +138,19 @@ export const RulesDialog = ({
           </div>
         </div>
         {last && (
-          <p className='mt-2 text-[13px] text-[#a29e96]'>
-            Everything else is regular chess: castling, en passant, promotion,
-            check, checkmate and stalemate.
-          </p>
+          <>
+            <p className='mt-2 text-[13px] text-[#a29e96]'>
+              Everything else is regular chess: castling, en passant, promotion,
+              check, checkmate and stalemate.
+            </p>
+            <Link
+              href='/projects/remorse-chess/tutorial'
+              onClick={onClose}
+              className='mt-3 justify-self-start text-[15px] font-semibold text-[#ffd27a] hover:underline'
+            >
+              Rather learn by playing? Try the tutorial →
+            </Link>
+          </>
         )}
         <div className='mt-4 flex items-center justify-between gap-3'>
           <div className='flex gap-1.5'>
