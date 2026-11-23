@@ -236,7 +236,7 @@ const LandingPage = (props: Props) => {
         <section id='rules' className={section}>
           <h2 className={h2}>The rules</h2>
           <p className={kicker}>
-            When a piece makes its first capture, roll a d6. The result is that
+            When a piece makes its first capture, roll a die. The result is that
             piece&apos;s trauma for the rest of the game.
           </p>
           <div className='grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4'>

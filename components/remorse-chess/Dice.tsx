@@ -1,4 +1,4 @@
-// The d6 faces that give a trauma
+// The die faces that give a trauma
 export const Dice = ({ roll }: { roll: number[] }) => (
   <span className='flex gap-1'>
     {roll.map((n) => (

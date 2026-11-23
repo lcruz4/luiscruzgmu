@@ -399,6 +399,12 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
           </div>
+          <Link
+            href='/projects/remorse-chess/tutorial'
+            className='mt-3 inline-block text-[15px] font-semibold text-[#ffd27a] hover:underline'
+          >
+            New to Remorse? Play the tutorial →
+          </Link>
           {create.isError && (
             <p className='mt-3 text-sm text-red-300'>{create.error.message}</p>
           )}

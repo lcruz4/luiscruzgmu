@@ -48,6 +48,8 @@ interface BoardProps {
   onMove: (from: string, to: string, promotion?: PromotionType) => void;
   // a friendly bishop's own marker: it can spend the turn healing itself
   onSelfHeal: (piece: Piece) => void;
+  // tutorial: the only move allowed, highlighted on the board
+  guide?: { from: string; to: string } | null;
 }
 
 export const Board = ({
@@ -59,6 +61,7 @@ export const Board = ({
   lastMove,
   onMove,
   onSelfHeal,
+  guide,
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
   const { pieceSet, boardTheme: theme } = useBoardLook();
@@ -67,7 +70,8 @@ export const Board = ({
   const isMine = (piece?: Piece) =>
     canMove &&
     piece?.color === state.turn &&
-    (!state.extraMovePieceId || piece.id === state.extraMovePieceId);
+    (!state.extraMovePieceId || piece.id === state.extraMovePieceId) &&
+    (!guide || piece.square === guide.from);
 
   // A pawn reaching the last rank waits for the player to pick its new piece
   const [promotion, setPromotion] = useState<{
@@ -76,6 +80,7 @@ export const Board = ({
   } | null>(null);
   const requestMove = (from: string, to: string) => {
     if (!legalMoves(state, from).includes(to)) return;
+    if (guide && (from !== guide.from || to !== guide.to)) return;
     const piece = bySquare.get(from);
     const lastRank = piece?.color === 'w' ? '8' : '1';
     if (piece?.type === 'p' && to[1] === lastRank) {
@@ -155,7 +160,11 @@ export const Board = ({
       ? state.pieces.find((p) => p.type === 'k' && p.color !== mate.winner)?.id
       : undefined;
   const moveFrom = drag?.from ?? selected;
-  const targets = new Set(moveFrom ? legalMoves(state, moveFrom) : []);
+  const targets = new Set(
+    moveFrom
+      ? legalMoves(state, moveFrom).filter((to) => !guide || to === guide.to)
+      : [],
+  );
   const checkedKing =
     !state.winner && inCheck(state, state.turn)
       ? state.pieces.find((p) => p.color === state.turn && p.type === 'k')
@@ -210,7 +219,11 @@ export const Board = ({
         {squares.map((square, index) => {
           const piece = bySquare.get(square);
           const selfHeal =
-            piece && isMine(piece) && piece.type === 'b' && canBeHealed(piece);
+            !guide &&
+            piece &&
+            isMine(piece) &&
+            piece.type === 'b' &&
+            canBeHealed(piece);
           const rankLabel = index % 8 === 0;
           const fileLabel = index >= 56;
           return (
@@ -224,6 +237,12 @@ export const Board = ({
               )}
               onClick={() => handleClick(square)}
             >
+              {canMove && guide?.from === square && (
+                <div className='pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_0_4px_#ffd27a]' />
+              )}
+              {canMove && guide?.to === square && (
+                <div className='pointer-events-none absolute inset-0 z-10 bg-[#ffd27a]/40 shadow-[inset_0_0_0_4px_#ffd27a] motion-safe:animate-pulse' />
+              )}
               {checkedKing === square && (
                 <div
                   data-check

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { type ReactNode, useId } from 'react';
 import {
   Dialog,
@@ -65,12 +66,18 @@ const useSlides = (): Record<TutorialKey, Slide> => {
       body: (
         <>
           <p>
-            Normal chess until a piece makes its first capture. Then a d6
-            decides how that piece copes, for the rest of the game.
+            Normal chess until a piece makes its first capture. Then a die
+            decides that piece&apos;s trauma for the rest of the game.
           </p>
           <p className='mt-2'>
             Its marker shows up on the piece. Here&apos;s what each one means.
           </p>
+          <Link
+            href='/projects/remorse-chess/tutorial'
+            className='mt-2 inline-block font-semibold text-[#ffd27a] hover:underline'
+          >
+            Rather learn by playing? Try the tutorial →
+          </Link>
         </>
       ),
     },
