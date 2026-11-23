@@ -1,10 +1,4 @@
-import {
-  colorName,
-  pieceName,
-  resultText,
-  typeName,
-} from '@/lib/remorse/describe';
-import { RULES } from '@/lib/remorse/engine';
+import { colorName, pieceName, resultText } from '@/lib/remorse/describe';
 import type {
   Color,
   GameEvent,
@@ -61,14 +55,6 @@ const markerHtml = (piece: Piece) =>
         kills: piece.kills,
       })
     : '';
-
-const ROLL_TEXT: Record<Trauma, (name: string) => string> = {
-  devastated: (name) =>
-    `${name} is devastated: dies in ${RULES.devastatedTurns} turns unless a bishop heals it`,
-  guilt: (name) => `${name} is guilt-ridden: can't capture until healed`,
-  unaffected: (name) => `${name} is unaffected`,
-  psychopath: (name) => `${name} is a psychopath`,
-};
 
 export const playSteps = (
   scene: Scene,
@@ -172,6 +158,13 @@ export const playSteps = (
     });
   };
 
+  let notified = false;
+  const notify = () => {
+    if (notified) return;
+    notified = true;
+    onDone();
+  };
+
   let finished = false;
   const cleanup = () => {
     if (finished) return;
@@ -179,46 +172,20 @@ export const playSteps = (
     alive = false;
     for (const animation of mine) animation.cancel();
     fx.replaceChildren();
-    onDone();
+    notify();
   };
 
-  // Gives each new event its help label only
+  // Labels only for what the board doesn't already show; the log has the rest
   const labelFor = (event: GameEvent): string | null => {
     switch (event.type) {
-      case 'roll':
-        return `Rolled ${event.roll} · ${ROLL_TEXT[event.trauma](
-          pieceName(event.piece),
-        )}`;
-      case 'reactivate':
-        return `${pieceName(event.piece)} captured again and is ${
-          event.trauma === 'guilt' ? 'guilt-ridden' : event.trauma
-        } once more`;
-      case 'kill':
-        return `${pieceName(event.piece)}: psychopath ${event.kills}/${
-          RULES.bloodlustKills
-        }`;
       case 'bloodlust':
         return `${pieceName(
           event.piece,
         )} is in bloodlust: it only moves to capture, friend or foe`;
       case 'extraMove':
         return `${pieceName(event.piece)} may move again`;
-      case 'skipExtraMove':
-        return `${pieceName(event.piece)} skipped its extra move`;
-      case 'heal':
-        return event.healer.id === event.piece.id
-          ? `${pieceName(event.piece)} healed itself`
-          : `${pieceName(event.healer)} healed the ${typeName(
-              event.piece.type,
-            )}`;
-      case 'death':
-        return `${pieceName(event.piece)} died of grief`;
       case 'check':
         return `${colorName(event.color)} is in check`;
-      case 'promote':
-        return `${colorName(event.piece.color)} pawn promoted to a ${typeName(
-          event.piece.type,
-        )}, markers kept`;
       case 'gameOver':
         return event.reason === 'checkmate'
           ? `Checkmate · ${resultText(event.winner)}`
@@ -246,14 +213,18 @@ export const playSteps = (
   const tickText = (piece: Piece) =>
     piece.turnsLeft === 1
       ? `${pieceName(piece)}: last turn to be healed`
-      : `${pieceName(piece)}: ${piece.turnsLeft} turns left to be healed`;
+      : null;
 
   if (reduced) {
     for (const event of events) {
       const text = labelFor(event);
       if (text) say(text);
     }
-    for (const piece of ticks) say(tickText(piece));
+    for (const piece of ticks) {
+      const text = tickText(piece);
+      if (text) say(text);
+    }
+    notify();
     labels.then(cleanup);
     return cleanup;
   }
@@ -584,22 +555,12 @@ export const playSteps = (
     }).then(() => die.remove());
   };
 
-  // The label waits for the die to land so it doesn't give the result away
-  const roll = async (
-    piece: PieceRef,
-    value: number,
-    trauma: Trauma,
-    text: string | null,
-  ) => {
+  const roll = async (piece: PieceRef, value: number, trauma: Trauma) => {
     const square = visual.get(piece.id);
     const el = pieceEl(piece.id);
     const img = imgOf(el);
-    if (!square || !el || !img) {
-      if (text) say(text);
-      return;
-    }
+    if (!square || !el || !img) return;
     await rollDie(square, value);
-    if (text) say(text);
     if (trauma === 'devastated') {
       ring(square, '#5fb2ff', 0.4, 2.6, 800, 3);
       reveal(
@@ -1230,7 +1191,8 @@ export const playSteps = (
         (piece) => tickStep.get(piece.color) === stepIndex,
       );
       for (const piece of due) {
-        say(tickText(piece));
+        const text = tickText(piece);
+        if (text) say(text);
         await tick(piece);
       }
     };
@@ -1245,7 +1207,7 @@ export const playSteps = (
         await runTicks();
       }
       const text = labelFor(event);
-      if (text && event.type !== 'heal' && event.type !== 'roll') say(text);
+      if (text) say(text);
       switch (event.type) {
         case 'capture':
           if (event.captured.type === 'k') {
@@ -1256,7 +1218,7 @@ export const playSteps = (
           await promote(event.piece);
           break;
         case 'roll':
-          await roll(event.piece, event.roll, event.trauma, text);
+          await roll(event.piece, event.roll, event.trauma);
           break;
         case 'reactivate':
           await swapMarker(event.piece.id, [{ opacity: 1 }, { opacity: 1 }], 0);
@@ -1275,7 +1237,6 @@ export const playSteps = (
           break;
         case 'heal': {
           if (event.healer.id === event.piece.id) {
-            if (text) say(text);
             await selfHeal(event.piece);
             break;
           }
@@ -1286,11 +1247,6 @@ export const playSteps = (
               break;
             handled.add(j);
             patients.push(later.piece);
-          }
-          for (const patient of patients) {
-            say(
-              `${pieceName(event.healer)} healed the ${typeName(patient.type)}`,
-            );
           }
           await heal(event.healer, patients);
           break;
@@ -1316,6 +1272,8 @@ export const playSteps = (
       if (!alive || over) break;
       await playStep(stepEvents, i);
     }
+    // The panel catches up now; any label still showing fades on its own
+    notify();
     await labels;
     cleanup();
   })();

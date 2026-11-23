@@ -6,8 +6,13 @@ import { GoogleIcon } from '@/components/GoogleIcon';
 import { HeroScene } from '@/components/remorse-chess/HeroScene';
 import { healSvg } from '@/components/remorse-chess/landingArt';
 import { Marker } from '@/components/remorse-chess/Marker';
-import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
+import {
+  BLOODLUST_ITEMS,
+  BLOODLUST_MARKER,
+  FATES,
+  HEAL_ITEMS,
+} from '@/components/remorse-chess/rulesContent';
 import { Wordmark } from '@/components/remorse-chess/Wordmark';
 import { authLoginUrl, REMORSE_HOME, safeRemorsePath } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -81,38 +86,6 @@ const STEPS = [
     'Live with what you capture',
     'Normal chess until the first capture. Then the die decides.',
   ],
-];
-
-const FATES: {
-  marker: MarkerProps;
-  roll: number[];
-  name: string;
-  text: string;
-}[] = [
-  {
-    marker: { trauma: 'devastated', healed: false, turnsLeft: 3, kills: 0 },
-    roll: [1],
-    name: 'Devastated',
-    text: "Heartbroken. Can't capture, give check or guard a square. It dies of grief after 3 of its own turns unless a bishop heals it.",
-  },
-  {
-    marker: { trauma: 'guilt', healed: false, turnsLeft: 0, kills: 0 },
-    roll: [2, 3],
-    name: 'Guilt-ridden',
-    text: "Still moves, but won't hurt anyone again. Can't capture, give check or guard a square until it's healed.",
-  },
-  {
-    marker: { trauma: 'unaffected', healed: false, turnsLeft: 0, kills: 0 },
-    roll: [4, 5],
-    name: 'Unaffected',
-    text: 'Feels nothing. Plays like a normal piece for the rest of the game.',
-  },
-  {
-    marker: { trauma: 'psychopath', healed: false, turnsLeft: 0, kills: 0 },
-    roll: [6],
-    name: 'Psychopath',
-    text: 'Every capture it makes earns an optional extra move with that piece. At 3 captures it falls into bloodlust.',
-  },
 ];
 
 const Callout = ({
@@ -310,28 +283,17 @@ const LandingPage = (props: Props) => {
                 <Svg html={healSvg(id)} className='block size-16 flex-none' />
               }
               title='Bishops heal'
-              items={[
-                'A bishop that moves next to guilt-ridden or devastated pieces of its own color heals them.',
-                'A hurt bishop can spend its turn healing itself.',
-                'A healed piece plays normally. If it captures again, its trauma comes back.',
-              ]}
+              items={HEAL_ITEMS}
             />
             <Callout
               art={
                 <Marker
-                  trauma='psychopath'
-                  healed={false}
-                  turnsLeft={0}
-                  kills={3}
+                  {...BLOODLUST_MARKER}
                   className='block h-[68px] w-16 flex-none'
                 />
               }
               title='Bloodlust'
-              items={[
-                'After 3 captures a psychopath can only move to capture.',
-                'It will take pieces of either color, its own king included.',
-                "Taking a king ends the game, whoever's it is.",
-              ]}
+              items={BLOODLUST_ITEMS}
             />
           </div>
           <p className='mt-4 text-[13.5px] text-[#a29e96]'>

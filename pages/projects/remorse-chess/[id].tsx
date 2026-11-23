@@ -1,18 +1,26 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Board } from '@/components/remorse-chess/Board';
 import { GamePanel } from '@/components/remorse-chess/GamePanel';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import { PlayerStrip } from '@/components/remorse-chess/PlayerStrip';
+import {
+  RuleCallout,
+  useNewRules,
+} from '@/components/remorse-chess/RuleCallout';
+import { RulesDialog } from '@/components/remorse-chess/RulesDialog';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
   useCancelGame,
   useCreateGame,
   useGame,
+  useMarkTutorialSeen,
+  useProfile,
 } from '@/components/remorse-chess/useGame';
 import { useBadgeSync } from '@/components/remorse-chess/useYourMoveAlerts';
 import { inCheck, opponent } from '@/lib/remorse/engine';
+import type { TutorialKey } from '@/lib/remorse/tutorial';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameResponse } from '@/types/remorse';
 
@@ -35,6 +43,32 @@ const GamePage = () => {
   const [hiddenFrom, setHiddenFrom] = useState<number | null>(null);
   const game = query.data;
   useBadgeSync(game?.version);
+
+  const profile = useProfile();
+  const markSeen = useMarkTutorialSeen();
+  const [rulesSlide, setRulesSlide] = useState<TutorialKey | null>(null);
+  const newRules = useNewRules(game?.steps);
+  const onAnimating = newRules.onAnimating;
+  const handleAnimating = useCallback(
+    (start: number | null) => {
+      setHiddenFrom(start);
+      onAnimating(start);
+    },
+    [onAnimating],
+  );
+  const seen = profile.data?.tutorialSeen;
+  const callout = seen && newRules.found.find((rule) => !seen.includes(rule));
+
+  // The rules open on a first game, once the name prompt is out of the way
+  const needsIntro =
+    profile.data?.chosen === true &&
+    seen !== undefined &&
+    !seen.includes('intro');
+  useEffect(() => {
+    if (!needsIntro) return;
+    setRulesSlide('intro');
+    markSeen(['intro']);
+  }, [needsIntro, markSeen]);
 
   if (!game) {
     return (
@@ -75,6 +109,11 @@ const GamePage = () => {
   return (
     <RemorseLayout title={yourMove ? 'Your move · Remorse Chess' : undefined}>
       <UsernamePrompt />
+      <RulesDialog
+        slide={rulesSlide}
+        onSlide={setRulesSlide}
+        onClose={() => setRulesSlide(null)}
+      />
       <div className='mx-auto flex max-w-[1060px] flex-col gap-4'>
         <Link
           href='/projects/remorse-chess'
@@ -95,7 +134,7 @@ const GamePage = () => {
               <Board
                 state={game.state}
                 steps={game.steps}
-                onAnimating={setHiddenFrom}
+                onAnimating={handleAnimating}
                 flipped={flipped}
                 canMove={canMove}
                 lastMove={lastMoveOf(game)}
@@ -107,6 +146,16 @@ const GamePage = () => {
                 }
               />
             </div>
+            {callout && (
+              <RuleCallout
+                rule={callout}
+                onDismiss={() => markSeen([callout])}
+                onMore={() => {
+                  markSeen([callout]);
+                  setRulesSlide(callout);
+                }}
+              />
+            )}
             <PlayerStrip
               game={game}
               color={opponent(topColor)}
@@ -128,6 +177,7 @@ const GamePage = () => {
               mutation.mutate(command);
             }}
             onFlip={() => setFlip(!flip)}
+            onRules={() => setRulesSlide('intro')}
             rematchPending={rematch.isPending}
             cancelPending={cancel.isPending}
             onCancel={() =>

@@ -94,6 +94,7 @@ interface GamePanelProps {
   busy: boolean;
   onCommand: (command: GameCommand) => void;
   onFlip: () => void;
+  onRules: () => void;
   onRematch: () => void;
   rematchPending: boolean;
   onCancel: () => void;
@@ -107,6 +108,7 @@ export const GamePanel = ({
   busy,
   onCommand,
   onFlip,
+  onRules,
   onRematch,
   rematchPending,
   onCancel,
@@ -357,6 +359,9 @@ export const GamePanel = ({
       <div className='flex flex-wrap gap-2'>
         <button type='button' className={ghost} onClick={onFlip}>
           ⇅ Flip board
+        </button>
+        <button type='button' className={ghost} onClick={onRules}>
+          ? Rules
         </button>
         {canResign && !confirmResign && (
           <button

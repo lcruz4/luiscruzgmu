@@ -21,6 +21,7 @@ import type {
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
+import { isTutorialKey, type TutorialKey } from '@/lib/remorse/tutorial';
 import { HttpError } from './api';
 
 export const remorsePool = new Pool({
@@ -153,8 +154,9 @@ export const getProfile = async (email: string) => {
     piece_set: PieceSetId | null;
     board_theme: BoardThemeId | null;
     name_chosen: boolean;
+    tutorial_seen: string[];
   }>(
-    `SELECT username, icon, piece_set, board_theme, name_chosen
+    `SELECT username, icon, piece_set, board_theme, name_chosen, tutorial_seen
      FROM players
      WHERE email = $1`,
     [email],
@@ -165,7 +167,20 @@ export const getProfile = async (email: string) => {
     pieceSet: rows[0]?.piece_set ?? null,
     boardTheme: rows[0]?.board_theme ?? null,
     chosen: rows[0]?.name_chosen ?? false,
+    tutorialSeen: (rows[0]?.tutorial_seen ?? []).filter(isTutorialKey),
   };
+};
+
+export const markTutorialSeen = async (email: string, keys: TutorialKey[]) => {
+  await remorsePool.query(
+    `INSERT INTO players (email, tutorial_seen)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE
+     SET tutorial_seen = ARRAY(
+       SELECT DISTINCT unnest(players.tutorial_seen || EXCLUDED.tutorial_seen)
+     )`,
+    [email, keys],
+  );
 };
 
 export const setIcon = async (email: string, icon: PlayerIcon) => {

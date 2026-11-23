@@ -1,10 +1,12 @@
 import { isPlayerIcon } from '@/lib/remorse/icons';
 import { isBoardTheme } from '@/lib/remorse/boardThemes';
 import { isPieceSet } from '@/lib/remorse/pieceSets';
+import { isTutorialKey } from '@/lib/remorse/tutorial';
 import { bodyOf, HttpError } from '@/services/api';
 import { remorseRoute } from '@/services/remorseApi';
 import {
   getProfile,
+  markTutorialSeen,
   keepDefaultUsername,
   setBoardTheme,
   setIcon,
@@ -12,7 +14,8 @@ import {
   setUsername,
 } from '@/services/remorseDb';
 
-// Body: any of { username, icon, pieceSet, boardTheme }; username null keeps the default name
+// Body: any of { username, icon, pieceSet, boardTheme, tutorialSeen };
+// username null keeps the default name, tutorialSeen adds to what's seen
 export default remorseRoute({
   GET: (_req, email) => getProfile(email),
   PUT: async (req, email) => {
@@ -32,6 +35,13 @@ export default remorseRoute({
         throw new HttpError(400, 'Unknown board');
       }
       await setBoardTheme(email, body.boardTheme);
+    }
+    if (body.tutorialSeen !== undefined) {
+      const keys: unknown = body.tutorialSeen;
+      if (!Array.isArray(keys) || !keys.every(isTutorialKey)) {
+        throw new HttpError(400, 'Unknown tutorial key');
+      }
+      await markTutorialSeen(email, keys);
     }
     if (body.username === null) {
       await keepDefaultUsername(email);
