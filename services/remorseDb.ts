@@ -97,11 +97,18 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
       NameColumns & {
         updated_at: Date;
         archived: boolean;
+        your_move: boolean;
         rematch_id: number | null;
       }
   >(
     `SELECT g.id, g.mode, g.white_email, g.black_email, g.state, g.updated_at,
             a.game_id IS NOT NULL AS archived, r.id AS rematch_id,
+            (g.mode = 'online'
+              AND g.white_email IS NOT NULL
+              AND g.black_email IS NOT NULL
+              AND g.state->>'winner' IS NULL
+              AND CASE g.state->>'turn' WHEN 'w' THEN g.white_email ELSE g.black_email END = $1
+            ) AS your_move,
             COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
             COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
             pw.icon AS white_icon, pb.icon AS black_icon
@@ -132,6 +139,7 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
       square,
     })),
     archived: row.archived,
+    yourMove: row.your_move,
     rematchId: row.rematch_id,
     updatedAt: row.updated_at.toISOString(),
   }));

@@ -17,6 +17,8 @@ import {
   setArchived,
   undoStep,
 } from '@/services/remorseDb';
+import { logger } from '@/services/logger';
+import { notifyOpponent } from '@/services/remorsePush';
 
 const squareField = (value: unknown, name: string) => {
   if (typeof value !== 'string' || !/^[a-h][1-8]$/.test(value)) {
@@ -65,13 +67,21 @@ const postAction = async (req: NextApiRequest, email: string) => {
     await joinGame(id, email);
   } else if (body.type === 'archive' || body.type === 'unarchive') {
     await setArchived(id, email, body.type === 'archive');
+    return getGame(id, email);
   } else {
     throw new HttpError(
       400,
       "type must be 'move', 'selfHeal', 'skipExtraMove', 'undo', 'resign', 'join', 'archive' or 'unarchive'",
     );
   }
-  return getGame(id, email);
+  const game = await getGame(id, email);
+  // Not awaited: the mover shouldn't wait on push services
+  notifyOpponent(
+    game,
+    email,
+    body.type === 'undo' || body.type === 'join' ? body.type : 'other',
+  ).catch((error) => logger.error('Remorse notify failed:', error));
+  return game;
 };
 
 // ?since=<version the client has>: 204 while that's still current, so a poll

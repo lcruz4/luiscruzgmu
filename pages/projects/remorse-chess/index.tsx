@@ -67,13 +67,10 @@ const statusOf = (game: GameSummary, email: string): Status => {
     };
   }
   if (inviteOpen(game)) return { label: 'Invite pending', tone: 'plain' };
-  return game.turn === seat
+  return game.yourMove
     ? { label: 'Your move', tone: 'gold' }
     : { label: 'Their move', tone: 'plain' };
 };
-
-const isYourMove = (game: GameSummary, email: string) =>
-  statusOf(game, email).tone === 'gold';
 
 const ago = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
@@ -304,15 +301,13 @@ const LobbyPage = ({ email }: { email: string }) => {
   // Games waiting on you float to the top
   const active = visible
     .filter((game) => !game.winner)
-    .sort(
-      (a, b) => Number(isYourMove(b, email)) - Number(isYourMove(a, email)),
-    );
+    .sort((a, b) => Number(b.yourMove) - Number(a.yourMove));
   const finished = visible.filter((game) => game.winner);
 
   const alerts = useMemo(
     () =>
       games.data
-        ?.filter((game) => isYourMove(game, email))
+        ?.filter((game) => game.yourMove)
         .map((game) => ({
           id: game.id,
           text: `Your move ${opponentOf(game, email)}`,

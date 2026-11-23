@@ -34,14 +34,17 @@ const request = async <T>(
   return body;
 };
 
-const GAMES_KEY = ['remorse-chess', 'games'];
+export const GAMES_KEY = ['remorse-chess', 'games'];
+
+export const fetchGames = () => request<GameSummary[]>(API);
 
 // Polls (slower in a background tab) so the lobby can say when a game is
-// waiting on you
+// waiting on you; refetches on every visit since games change elsewhere
 export const useGames = () =>
   useQuery({
     queryKey: GAMES_KEY,
-    queryFn: () => request<GameSummary[]>(API),
+    queryFn: fetchGames,
+    refetchOnMount: 'always',
     refetchInterval: () =>
       typeof document !== 'undefined' && document.hidden ? 60_000 : 15_000,
     refetchIntervalInBackground: true,

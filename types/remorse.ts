@@ -95,6 +95,8 @@ export interface GameSummary {
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
   archived: boolean;
+  // an online game with both seats taken, not over, waiting on the viewer
+  yourMove: boolean;
   // the rematch of this game, once someone started one
   rematchId: number | null;
   updatedAt: string;
