@@ -15,7 +15,9 @@ self.addEventListener('push', (event) => {
       badge,
       self.registration.showNotification(data.title || 'Remorse Chess', {
         body: data.body,
-        icon: '/images/pwa/remorse-chess-192.png',
+        icon: '/images/pwa/remorse-chess-notification-256.png',
+        // Android status bar icon; only the alpha channel is used
+        badge: '/images/pwa/remorse-chess-badge-96.png',
         tag: data.tag,
         renotify: true,
         data: { url: data.url || '/projects/remorse-chess' },
