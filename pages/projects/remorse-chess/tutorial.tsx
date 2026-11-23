@@ -12,7 +12,7 @@ import { applyAction } from '@/lib/remorse/engine';
 import { TUTORIAL, tutorialStart } from '@/lib/remorse/tutorialScript';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
-import type { Color, GameState, GameStep } from '@/types/remorse';
+import type { Action, Color, GameState, GameStep } from '@/types/remorse';
 
 const primary = cn(goldButton, buttonSm);
 const ghost = cn(ghostButton, buttonSm);
@@ -21,14 +21,11 @@ const played = (
   state: GameState,
   steps: GameStep[],
   color: Color,
-  move: { from: string; to: string; roll?: number },
+  action: Action,
+  roll?: number,
 ) => {
   // The script test checks every first capture has its roll
-  const { state: next, events } = applyAction(
-    state,
-    { type: 'move', from: move.from, to: move.to },
-    () => move.roll ?? 1,
-  );
+  const { state: next, events } = applyAction(state, action, () => roll ?? 1);
   const step: GameStep = {
     step: steps.length + 1,
     color,
@@ -89,7 +86,10 @@ const Tutorial = ({ onRestart }: { onRestart: () => void }) => {
   useEffect(() => {
     if (beat?.kind !== 'them' || animating) return;
     const timer = setTimeout(() => {
-      setGame(played(game.state, game.steps, 'b', beat));
+      const { from, to, roll } = beat;
+      setGame(
+        played(game.state, game.steps, 'b', { type: 'move', from, to }, roll),
+      );
       setIndex(index + 1);
     }, 700);
     return () => clearTimeout(timer);
@@ -153,14 +153,27 @@ const Tutorial = ({ onRestart }: { onRestart: () => void }) => {
               flipped={false}
               canMove={yourMove}
               lastMove={lastMoveOf(game.steps)}
-              guide={beat?.kind === 'you' ? beat : null}
+              guide={
+                beat?.kind !== 'you'
+                  ? null
+                  : 'heal' in beat
+                  ? { from: beat.heal }
+                  : beat
+              }
               onMove={(from, to) => {
-                if (beat?.kind !== 'you') return;
+                if (beat?.kind !== 'you' || 'heal' in beat) return;
                 if (from !== beat.from || to !== beat.to) return;
-                setGame(played(game.state, game.steps, 'w', beat));
+                const action: Action = { type: 'move', from, to };
+                setGame(played(game.state, game.steps, 'w', action, beat.roll));
                 setIndex(index + 1);
               }}
-              onSelfHeal={() => undefined}
+              onSelfHeal={(piece) => {
+                if (beat?.kind !== 'you' || !('heal' in beat)) return;
+                if (piece.square !== beat.heal) return;
+                const action: Action = { type: 'selfHeal', pieceId: piece.id };
+                setGame(played(game.state, game.steps, 'w', action));
+                setIndex(index + 1);
+              }}
             />
           </div>
         </div>

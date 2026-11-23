@@ -48,8 +48,9 @@ interface BoardProps {
   onMove: (from: string, to: string, promotion?: PromotionType) => void;
   // a friendly bishop's own marker: it can spend the turn healing itself
   onSelfHeal: (piece: Piece) => void;
-  // tutorial: the only move allowed, highlighted on the board
-  guide?: { from: string; to: string } | null;
+  // tutorial: the only move allowed, highlighted on the board. Without `to`,
+  // the bishop on `from` must heal itself.
+  guide?: { from: string; to?: string } | null;
 }
 
 export const Board = ({
@@ -219,7 +220,7 @@ export const Board = ({
         {squares.map((square, index) => {
           const piece = bySquare.get(square);
           const selfHeal =
-            !guide &&
+            (!guide || (guide.from === square && !guide.to)) &&
             piece &&
             isMine(piece) &&
             piece.type === 'b' &&
