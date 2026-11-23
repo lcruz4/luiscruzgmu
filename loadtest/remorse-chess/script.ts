@@ -1,17 +1,19 @@
 // k6 load test for remorse chess. run.sh bundles this with the game engine so
 // the simulated players make legal moves. Settings are env vars (README.md).
 //
-// Each VU hosts one game, like the real client: every tick (POLL_S) each of
-// its players polls the game (with ?since= its version, so an unchanged game
-// answers 204), and after a think time the side to move plays.
+// Each VU hosts one game, like the real client. In an online game each player
+// holds the game's live stream open, refetches when the other player moves,
+// and polls every LIVE_POLL_S as a backstop (every POLL_S while its stream is
+// refused). A local game has no stream and polls every POLL_S. Polls send
+// ?since= the version the player has, so an unchanged game answers 204.
 // 7 in 10 VUs host an online game between two accounts, the rest a local game
 // one account plays both sides of. Ticks are short so a stop lands quickly.
-import { sleep } from 'k6';
 import { SharedArray } from 'k6/data';
 import exec from 'k6/execution';
 import http, { type Params, type RefinedResponse } from 'k6/http';
 import { Counter, Trend } from 'k6/metrics';
 import type { Options, Scenario } from 'k6/options';
+import { setTimeout } from 'k6/timers';
 import { inCheck, isHurt, legalMoves } from '@/lib/remorse/moves';
 import type {
   Color,
@@ -29,6 +31,10 @@ const BASE_URL = env('BASE_URL', '').replace(/\/$/, '');
 if (!BASE_URL) throw new Error('Set BASE_URL, e.g. BASE_URL=https://lcruz.dev');
 const MODE = env('MODE', 'ramp');
 const POLL_S = num('POLL_S', 2);
+const LIVE_POLL_S = num('LIVE_POLL_S', 30);
+const STREAM_S = num('STREAM_S', 60);
+const LIVE_RETRY_S = 30;
+const TICK_S = 1;
 const THINK_MIN_S = num('THINK_MIN_S', 5);
 const THINK_MAX_S = num('THINK_MAX_S', 15);
 const PREPLAY_MAX = num('PREPLAY_MAX', 40);
@@ -48,22 +54,29 @@ const rampStages = () =>
       { duration: env('STEP_HOLD', '3m'), target: Number(target) },
     ]);
 
+// Streams stop reopening once the scenario ends, and an iteration lasts until
+// its streams time out, so the graceful stop has to cover one stream
+const gracefulStop = `${STREAM_S + 15}s`;
+
 const SCENARIOS: Record<string, () => Scenario> = {
   smoke: () => ({
     executor: 'constant-vus',
     vus: num('VUS', 3),
     duration: env('DURATION', '1m'),
+    gracefulStop,
   }),
   hold: () => ({
     executor: 'constant-vus',
     vus: num('VUS', 50),
     duration: env('DURATION', '15m'),
+    gracefulStop,
   }),
   ramp: () => ({
     executor: 'ramping-vus',
     startVUs: 0,
     stages: rampStages(),
     gracefulRampDown: '5s',
+    gracefulStop,
   }),
 };
 const scenario = SCENARIOS[MODE];
@@ -73,8 +86,11 @@ if (!scenario) throw new Error(`MODE must be ${Object.keys(SCENARIOS)}`);
 export const options: Options = {
   scenarios: { [MODE]: scenario() },
   thresholds: {
-    http_req_failed: ['rate<0.01'],
+    // Streams end in a timeout by design (STREAM_S), so they're left out
+    'http_req_failed{stream:no}': ['rate<0.01'],
+    'http_req_duration{stream:no}': ['p(95)<1000'],
     'http_req_duration{name:poll}': ['p(95)<500'],
+    'http_req_duration{name:refetch}': ['p(95)<500'],
     'http_req_duration{name:move}': ['p(95)<1000'],
   },
   summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
@@ -106,6 +122,8 @@ const gamesFinished = new Counter('games_finished');
 const rejectedActions = new Counter('rejected_actions');
 const pollKb = new Trend('poll_kb');
 const unchangedPolls = new Counter('unchanged_polls');
+const streamsOpened = new Counter('streams_opened');
+const streamsRefused = new Counter('streams_refused');
 
 // --- Requests, and the abort rules -----------------------------------------
 
@@ -116,7 +134,7 @@ const params = (account: Account, name: string): Params => ({
     Cookie: `session_id=${account.sessionId}`,
     'Content-Type': 'application/json',
   },
-  tags: { name },
+  tags: { name, stream: 'no' },
   timeout: TIMEOUT,
   // A signed-out page redirects to sign-in; count that as denied, don't follow
   redirects: 0,
@@ -127,7 +145,7 @@ let deniedStreak = 0;
 
 // Revoked sessions (the server-side kill switch) answer 401, and a server
 // that's down fails or times out; either streak aborts the whole run.
-const track = (res: Response) => {
+const track = <R extends Pick<Response, 'status' | 'error'>>(res: R) => {
   const denied =
     res.status === 401 ||
     res.status === 403 ||
@@ -161,6 +179,9 @@ const post = (account: Account, path: string, body: object, name: string) =>
       params(account, name),
     ),
   );
+
+const delay = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const parse = <T>(res: Response): T | null => {
   if (res.status !== 200 || !res.body) return null;
@@ -215,20 +236,22 @@ const chooseAction = (state: GameState): Command | null => {
 
 interface Table {
   id: number;
+  online: boolean;
   players: Account[];
   seats: Record<Color, Account>;
   game: GameResponse | null;
   // the version each player's client has (-1: none yet), sent as ?since=
   seen: number[];
+  // per player: whether its live stream is open, and when it polls next
+  live: boolean[];
+  nextPollAt: number[];
+  done: boolean;
   nextMoveAt: number;
   // the first `preplay` moves skip think time, so some games run long early
   preplay: number;
   played: number;
   rejected: number;
 }
-
-// Module scope is per VU, so this survives from one tick to the next
-let table: Table | null = null;
 
 const LOCAL_SLOTS = [2, 5, 8];
 
@@ -269,6 +292,7 @@ const openTable = (): Table | null => {
   gamesStarted.add(1);
   return {
     id: created.id,
+    online,
     players,
     seats:
       created.color === 'w'
@@ -276,6 +300,9 @@ const openTable = (): Table | null => {
         : { w: players[players.length - 1], b: players[0] },
     game: null,
     seen: players.map(() => -1),
+    live: players.map(() => false),
+    nextPollAt: players.map(() => 0),
+    done: false,
     nextMoveAt: 0,
     preplay: Math.floor(Math.random() * (PREPLAY_MAX + 1)),
     played: 0,
@@ -283,18 +310,50 @@ const openTable = (): Table | null => {
   };
 };
 
-const poll = (t: Table) => {
+// k6 can't read a stream as it arrives, so this only holds the connection
+// open; the VU knows when moves happen and refetches for the other player
+// itself. The request times out after STREAM_S and reopens while the game
+// lasts. A refused stream (503: Redis down) retries later, like the client.
+// Past the scenario's end k6 interrupts iterations, and a stream reopened
+// after that never settles, so the run would never finish
+const ending = () => exec.scenario.progress >= 1;
+
+const openStream = (t: Table, i: number) => {
+  if (t.done || ending()) return;
+  t.live[i] = true;
+  streamsOpened.add(1);
+  http
+    .asyncRequest('GET', `${BASE_URL}${API}/${t.id}/live`, null, {
+      headers: { Cookie: `session_id=${t.players[i].sessionId}` },
+      tags: { name: 'live', stream: 'yes' },
+      timeout: `${STREAM_S}s`,
+      redirects: 0,
+      responseType: 'none',
+    })
+    .then((res) => {
+      // 1050: k6's request timeout, the stream's normal end here
+      if (res.error_code === 1050) return openStream(t, i);
+      t.live[i] = false;
+      t.nextPollAt[i] = Math.min(t.nextPollAt[i], Date.now() + POLL_S * 1000);
+      if (res.status === 503) streamsRefused.add(1);
+      else track(res);
+      setTimeout(() => openStream(t, i), LIVE_RETRY_S * 1000);
+    });
+};
+
+const poll = (t: Table, players: number[], name: string) => {
   const responses = http.batch(
-    t.players.map((account, i) => ({
+    players.map((i) => ({
       method: 'GET',
       url: `${BASE_URL}${API}/${t.id}${
         t.seen[i] < 0 ? '' : `?since=${t.seen[i]}`
       }`,
-      params: params(account, 'poll'),
+      params: params(t.players[i], name),
     })),
   );
   let latest: GameResponse | null = null;
-  for (const [i, res] of responses.entries()) {
+  for (const [n, res] of responses.entries()) {
+    const i = players[n];
     track(res);
     if (res.status === 204) unchangedPolls.add(1);
     if (res.status === 200 && typeof res.body === 'string') {
@@ -307,9 +366,17 @@ const poll = (t: Table) => {
   return latest;
 };
 
-// Polls, then plays a move if it's time; returns false when the game is done
+// Polls whoever is due, then plays a move if it's time; returns false when
+// the game is done
 const tick = (t: Table) => {
-  t.game = poll(t) ?? t.game;
+  const now = Date.now();
+  const due = t.players.flatMap((_, i) => (now >= t.nextPollAt[i] ? [i] : []));
+  if (due.length) {
+    t.game = poll(t, due, 'poll') ?? t.game;
+    for (const i of due) {
+      t.nextPollAt[i] = now + (t.live[i] ? LIVE_POLL_S : POLL_S) * 1000;
+    }
+  }
   const game = t.game;
   if (!game) return true;
   if (game.state.winner) {
@@ -332,10 +399,14 @@ const tick = (t: Table) => {
   const next = parse<GameResponse>(res);
   if (next) {
     t.game = next;
-    t.seen[t.players.indexOf(player)] = next.version;
+    const mover = t.players.indexOf(player);
+    t.seen[mover] = next.version;
     t.played += 1;
     t.nextMoveAt = Date.now() + thinkMs(t);
     moves.add(1);
+    // The other player's stream gets the new version, so its client refetches
+    const other = t.players.findIndex((_, i) => i !== mover);
+    if (t.online && t.live[other]) poll(t, [other], 'refetch');
   } else if (res.status === 400) {
     rejectedActions.add(1);
     t.rejected += 1;
@@ -345,9 +416,21 @@ const tick = (t: Table) => {
   return true;
 };
 
-export default () => {
-  const started = Date.now();
-  table ??= openTable();
-  if (table && !tick(table)) table = null;
-  sleep(Math.max(0, POLL_S - (Date.now() - started) / 1000));
+// One iteration plays one game. The iteration ends once its streams time out
+// (up to STREAM_S), like a tab left open on a finished game.
+export default async () => {
+  const t = openTable();
+  if (!t) {
+    await delay(POLL_S * 1000);
+    return;
+  }
+  if (t.online) {
+    for (const i of t.players.keys()) openStream(t, i);
+  }
+  for (;;) {
+    const started = Date.now();
+    if (ending() || !tick(t)) break;
+    await delay(Math.max(0, TICK_S * 1000 - (Date.now() - started)));
+  }
+  t.done = true;
 };
