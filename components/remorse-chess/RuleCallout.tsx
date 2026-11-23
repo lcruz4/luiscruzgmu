@@ -1,15 +1,8 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { type RuleKey, ruleOf } from '@/lib/remorse/tutorial';
 import type { GameStep, Trauma } from '@/types/remorse';
-import { healSvg } from './landingArt';
-import { Marker } from './Marker';
-import type { MarkerProps } from './markerSvg';
-import {
-  BLOODLUST_ITEMS,
-  BLOODLUST_MARKER,
-  FATES,
-  HEAL_ITEMS,
-} from './rulesContent';
+import { RuleIcon } from './RuleIcon';
+import { BLOODLUST_ITEMS, FATES, HEAL_ITEMS } from './rulesContent';
 
 // Rules that came up in steps the board just finished animating. Pass
 // `onAnimating` on to the board; steps on the page's first load don't count.
@@ -43,12 +36,10 @@ export const useNewRules = (steps: GameStep[] | undefined) => {
 const fateNote = (trauma: Trauma): Note => {
   const fate = FATES.find(({ key }) => key === trauma);
   if (!fate) throw new Error(`No rule text for ${trauma}`);
-  return { marker: fate.marker, title: fate.name, text: fate.text };
+  return { title: fate.name, text: fate.text };
 };
 
 interface Note {
-  // null: the bishop healing art
-  marker: MarkerProps | null;
   title: string;
   text: string;
 }
@@ -58,9 +49,8 @@ const CONTENT: Record<RuleKey, Note> = {
   guilt: fateNote('guilt'),
   unaffected: fateNote('unaffected'),
   psychopath: fateNote('psychopath'),
-  heal: { marker: null, title: 'Bishops heal', text: HEAL_ITEMS[0] },
+  heal: { title: 'Bishops heal', text: HEAL_ITEMS[0] },
   bloodlust: {
-    marker: BLOODLUST_MARKER,
     title: 'Bloodlust',
     text: BLOODLUST_ITEMS[0],
   },
@@ -76,21 +66,13 @@ export const RuleCallout = ({
   onDismiss: () => void;
   onMore: () => void;
 }) => {
-  const id = `c${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
-  const { marker, title, text } = CONTENT[rule];
+  const { title, text } = CONTENT[rule];
   return (
     <div
       role='status'
       className='my-2 flex items-start gap-3 rounded-xl border border-[#c98a1c]/45 bg-[#2b2418] p-3 motion-safe:animate-in motion-safe:fade-in-0'
     >
-      {marker ? (
-        <Marker {...marker} className='block h-12 w-11 flex-none' />
-      ) : (
-        <span
-          className='block size-11 flex-none'
-          dangerouslySetInnerHTML={{ __html: healSvg(id) }}
-        />
-      )}
+      <RuleIcon rule={rule} className='block h-12 w-11 flex-none' />
       <div className='min-w-0 flex-1'>
         <strong className='block text-[15px] text-[#ffd27a]'>
           New rule: {title}

@@ -250,12 +250,7 @@ const LandingPage = (props: Props) => {
                     {...marker}
                     className='block h-[62px] w-[58px] flex-none'
                   />
-                  <div>
-                    <Dice roll={roll} />
-                    <div className='text-xs text-[#a29e96] tabular-nums'>
-                      {roll.length} in 6
-                    </div>
-                  </div>
+                  <Dice roll={roll} />
                 </div>
                 <h3 className='font-semibold text-white'>{name}</h3>
                 <p className='text-[13.5px] text-[#a29e96]'>{text}</p>
