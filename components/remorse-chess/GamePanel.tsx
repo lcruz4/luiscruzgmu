@@ -6,7 +6,7 @@ import type { GameEvent, GameResponse } from '@/types/remorse';
 import { Marker } from './Marker';
 import type { GameCommand } from './useGame';
 import { useBoardLook } from './useBoardLook';
-import { RuleIcon, ruleMentioned } from './RuleIcon';
+import { RuleIcon, ruleMentioned, ruleWords } from './RuleIcon';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
 import { buttonSm, ghostButton, goldButton, redButton } from './buttons';
 
@@ -31,27 +31,48 @@ const eventTone = (event: GameEvent) => {
   }
 };
 
-// Opens the rules on what a log line is about
-const LogRuleIcon = ({
+// A log line, with the words naming a rule as a link to it. Only the first
+// line about a rule in a step gets the link.
+const LogLine = ({
   event,
+  linked,
   onRules,
 }: {
   event: GameEvent;
+  linked: boolean;
   onRules: (slide: TutorialKey) => void;
 }) => {
+  const text = describeEvent(event);
   const rule = ruleMentioned(event);
-  if (!rule) return null;
+  const words = ruleWords(event);
+  const at = words ? text.indexOf(words) : -1;
+  if (!linked || !rule || !words || at < 0) return <>{text}</>;
   return (
-    <button
-      type='button'
-      aria-label='Show this rule'
-      title='Show this rule'
-      className='mr-1.5 inline-block size-[20px] cursor-pointer align-[-5px] hover:brightness-125'
-      onClick={() => onRules(rule)}
-    >
-      <RuleIcon rule={rule} className='block size-full' />
-    </button>
+    <>
+      {text.slice(0, at)}
+      <button
+        type='button'
+        title='Show this rule'
+        className='inline-flex cursor-pointer items-center gap-1 rounded underline decoration-dotted underline-offset-2 hover:bg-white/10 hover:decoration-solid'
+        onClick={() => onRules(rule)}
+      >
+        <RuleIcon rule={rule} medallion className='block size-4 flex-none' />
+        {words}
+      </button>
+      {text.slice(at + words.length)}
+    </>
   );
+};
+
+// Whether each event is the first in its step to mention its rule
+const firstMentions = (events: GameEvent[]) => {
+  const seen = new Set<string>();
+  return events.map((event) => {
+    const rule = ruleMentioned(event);
+    if (!rule || seen.has(rule)) return false;
+    seen.add(rule);
+    return true;
+  });
 };
 
 const Die = ({ value }: { value: number }) => (
@@ -422,13 +443,19 @@ export const GamePanel = ({
                 )}
               />
               <div className='min-w-0 flex-1'>
-                {step.events.map((event, index) => (
-                  <div key={index} className={eventTone(event)}>
-                    {event.type === 'roll' && <Die value={event.roll} />}
-                    <LogRuleIcon event={event} onRules={onRules} />
-                    {describeEvent(event)}
-                  </div>
-                ))}
+                {firstMentions(step.events).map((linked, index) => {
+                  const event = step.events[index];
+                  return (
+                    <div key={index} className={eventTone(event)}>
+                      {event.type === 'roll' && <Die value={event.roll} />}
+                      <LogLine
+                        event={event}
+                        linked={linked}
+                        onRules={onRules}
+                      />
+                    </div>
+                  );
+                })}
               </div>
               <span className='flex-none text-xs text-[#6b665e] tabular-nums'>
                 {step.step}
