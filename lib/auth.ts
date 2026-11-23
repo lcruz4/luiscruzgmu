@@ -12,7 +12,7 @@ export const authLogoutUrl = (redirectTo: string) =>
   })}`;
 
 export const SIGN_IN_PATH = '/sign-in';
-export const REMORSE_LANDING_PATH = '/remorse-chess';
+export const REMORSE_LANDING_PATH = '/projects/remorse-chess/welcome';
 export const REMORSE_HOME = '/projects/remorse-chess';
 const DEFAULT_RETURN_PATH = '/';
 const BASE = 'http://base.invalid';

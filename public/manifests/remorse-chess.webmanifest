@@ -3,7 +3,7 @@
   "name": "Remorse Chess",
   "short_name": "Remorse",
   "start_url": "/projects/remorse-chess",
-  "scope": "/",
+  "scope": "/projects/remorse-chess",
   "display": "fullscreen",
   "background_color": "#161512",
   "theme_color": "#161512",
