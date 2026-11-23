@@ -50,6 +50,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     await unsubscribe?.();
     logger.error(`GET ${req.url} failed:`, error);
+    // Once the stream has started a status can't be sent; the client reconnects
+    if (res.headersSent) return res.end();
     return res.status(500).json({ error: 'Internal server error' });
   }
 
