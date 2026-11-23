@@ -19,6 +19,7 @@ import {
 } from '@/services/remorseDb';
 import { logger } from '@/services/logger';
 import { notifyOpponent } from '@/services/remorsePush';
+import { publishGameChange } from '@/services/remorseLive';
 
 const squareField = (value: unknown, name: string) => {
   if (typeof value !== 'string' || !/^[a-h][1-8]$/.test(value)) {
@@ -75,6 +76,7 @@ const postAction = async (req: NextApiRequest, email: string) => {
     );
   }
   const game = await getGame(id, email);
+  publishGameChange(id, game.version);
   // Not awaited: the mover shouldn't wait on push services
   notifyOpponent(
     game,
@@ -97,7 +99,9 @@ const getAction = async (req: NextApiRequest, email: string) => {
 
 // Cancels an online game nobody has joined yet
 const deleteGame = async (req: NextApiRequest, email: string) => {
-  await cancelGame(idField(req.query.id, 'id'), email);
+  const id = idField(req.query.id, 'id');
+  await cancelGame(id, email);
+  publishGameChange(id, 'deleted');
   return NO_CONTENT;
 };
 

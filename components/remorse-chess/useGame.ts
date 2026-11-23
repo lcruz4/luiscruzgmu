@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
@@ -149,20 +150,70 @@ const fetchGame = (id: number, current: GameResponse | undefined) =>
     current,
   );
 
-// Polls so the other player's moves show up, sending the version it has so an
-// unchanged game costs the server little; every command answers with the new
-// game, and a stale version (409) refetches.
+// How often to poll while the live stream is open (only a safety net for a
+// missed event), and how long to wait before reopening a stream the browser
+// gave up on
+const LIVE_POLL_MS = 30_000;
+const POLL_MS = 2000;
+const LIVE_RETRY_MS = 30_000;
+
+// The game's live stream sends its version on connect and on every change;
+// one we don't have refetches the game. setLive: whether it's connected.
+const useLiveGame = (
+  id: number | undefined,
+  online: boolean,
+  setLive: (live: boolean) => void,
+) => {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!id || !online) return;
+    const key = ['remorse-chess', 'game', id];
+    let source: EventSource | undefined;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const open = () => {
+      const current = new EventSource(`${API}/${id}/live`);
+      source = current;
+      current.onopen = () => setLive(true);
+      current.onmessage = (event) => {
+        const game = queryClient.getQueryData<GameResponse>(key);
+        if (game && event.data !== String(game.version)) {
+          queryClient.invalidateQueries({ queryKey: key });
+        }
+      };
+      current.onerror = () => {
+        setLive(false);
+        // CLOSED: the server refused (e.g. 503) and the browser won't retry
+        if (current.readyState === EventSource.CLOSED) {
+          retry = setTimeout(open, LIVE_RETRY_MS);
+        }
+      };
+    };
+    open();
+    return () => {
+      clearTimeout(retry);
+      source?.close();
+      setLive(false);
+    };
+  }, [id, online, queryClient, setLive]);
+};
+
+// Gets the other player's moves from the live stream, polling slowly as a
+// backstop (or every 2s while the stream is down). Polls send the version it
+// has so an unchanged game costs the server little; every command answers
+// with the new game, and a stale version (409) refetches.
 export const useGame = (id: number | undefined) => {
   const queryClient = useQueryClient();
   const key = ['remorse-chess', 'game', id];
+  const [live, setLive] = useState(false);
   const query = useQuery({
     queryKey: key,
     queryFn: id
       ? () => fetchGame(id, queryClient.getQueryData<GameResponse>(key))
       : skipToken,
-    refetchInterval: 2000,
+    refetchInterval: live ? LIVE_POLL_MS : POLL_MS,
     staleTime: 0,
   });
+  useLiveGame(id, query.data?.mode === 'online', setLive);
   const mutation = useMutation({
     mutationFn: (command: GameCommand) =>
       request<GameResponse>(`${API}/${id}`, {
