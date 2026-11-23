@@ -1,7 +1,8 @@
 import { sendNotification, setVapidDetails, WebPushError } from 'web-push';
+import { type OpponentAction, pushMessage } from '@/lib/remorse/notify';
 import type { GameResponse } from '@/types/remorse';
 import { logger } from './logger';
-import { remorsePool } from './remorseDb';
+import { listGames, remorsePool } from './remorseDb';
 
 const publicKey = process.env.REMORSE_VAPID_PUBLIC_KEY;
 const privateKey = process.env.REMORSE_VAPID_PRIVATE_KEY;
@@ -36,22 +37,6 @@ export const deletePushSubscription = async (
      WHERE endpoint = $1 AND email = $2`,
     [endpoint, email],
   );
-};
-
-// Online games with both seats taken, not over, where it's this email's turn.
-// Matches isYourMove in lib/remorse/describe.ts.
-const yourMoveCount = async (email: string) => {
-  const { rows } = await remorsePool.query<{ count: number }>(
-    `SELECT count(*)::int AS count
-     FROM games
-     WHERE mode = 'online'
-       AND white_email IS NOT NULL
-       AND black_email IS NOT NULL
-       AND state->>'winner' IS NULL
-       AND CASE state->>'turn' WHEN 'w' THEN white_email ELSE black_email END = $1`,
-    [email],
-  );
-  return rows[0]?.count ?? 0;
 };
 
 const sendToEmail = async (email: string, payload: object) => {
@@ -94,31 +79,29 @@ const sendToEmail = async (email: string, payload: object) => {
 
 // After `actor` acted on an online game: tells the other player when it's now
 // their move or the game just ended
-export const notifyOpponent = async (game: GameResponse, actor: string) => {
+export const notifyOpponent = async (
+  game: GameResponse,
+  actor: string,
+  action: OpponentAction,
+) => {
   if (!publicKey || !privateKey || game.mode !== 'online') return;
   if (!game.whiteEmail || !game.blackEmail) return;
   const actorIsWhite = game.whiteEmail === actor;
   const recipient = actorIsWhite ? game.blackEmail : game.whiteEmail;
   const actorName = (actorIsWhite ? game.whiteName : game.blackName) ?? 'them';
-  const seat = actorIsWhite ? 'b' : 'w';
-  const { winner, turn } = game.state;
+  const message = pushMessage(
+    game,
+    actorIsWhite ? 'b' : 'w',
+    actorName,
+    action,
+  );
+  if (!message) return;
 
-  let body: string;
-  if (winner) {
-    const result =
-      winner === 'draw' ? 'Draw' : winner === seat ? 'You won' : 'You lost';
-    body = `${result} vs ${actorName}`;
-  } else if (turn === seat) {
-    body = `Your move vs ${actorName}`;
-  } else {
-    return;
-  }
-
+  const games = await listGames(recipient);
   await sendToEmail(recipient, {
-    title: 'Remorse Chess',
-    body,
+    ...message,
     tag: `remorse-${game.id}`,
     url: `/projects/remorse-chess/${game.id}`,
-    badge: await yourMoveCount(recipient),
+    badge: games.filter((g) => g.yourMove).length,
   });
 };

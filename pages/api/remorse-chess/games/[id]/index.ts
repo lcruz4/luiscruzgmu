@@ -76,9 +76,11 @@ const postAction = async (req: NextApiRequest, email: string) => {
   }
   const game = await getGame(id, email);
   // Not awaited: the mover shouldn't wait on push services
-  notifyOpponent(game, email).catch((error) =>
-    logger.error('Remorse notify failed:', error),
-  );
+  notifyOpponent(
+    game,
+    email,
+    body.type === 'undo' || body.type === 'join' ? body.type : 'other',
+  ).catch((error) => logger.error('Remorse notify failed:', error));
   return game;
 };
 

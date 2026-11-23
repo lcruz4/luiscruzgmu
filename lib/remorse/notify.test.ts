@@ -1,0 +1,147 @@
+import { initialState } from './engine';
+import { pushMessage } from './notify';
+import type {
+  GameEvent,
+  GameResponse,
+  GameStep,
+  Piece,
+  PieceRef,
+} from '@/types/remorse';
+
+const ref = (id: string, type: PieceRef['type'], color: 'w' | 'b' = 'w') => ({
+  id,
+  type,
+  color,
+});
+const knight = ref('wn-g', 'n');
+const queen = ref('bq-d', 'q', 'b');
+const rook = ref('br-a', 'r', 'b');
+
+const step = (color: 'w' | 'b', events: GameEvent[]): GameStep => ({
+  step: 0,
+  color,
+  events,
+  createdAt: '',
+});
+
+// White (the actor) just played `steps`; black is to move
+const game = (
+  steps: GameStep[],
+  knightState: Partial<Piece> | null = {},
+  winner: GameResponse['state']['winner'] = null,
+): GameResponse => {
+  const state = initialState();
+  const pieces = state.pieces.filter((p) => p.id !== knight.id);
+  if (knightState) {
+    const base = state.pieces.find((p) => p.id === knight.id);
+    if (base) pieces.push({ ...base, ...knightState });
+  }
+  return {
+    id: 1,
+    mode: 'online',
+    whiteEmail: 'w@x',
+    blackEmail: 'b@x',
+    whiteName: 'kayz',
+    blackName: 'luis',
+    whiteIcon: null,
+    blackIcon: null,
+    state: { ...state, pieces, turn: 'b', winner },
+    version: 1,
+    steps: [
+      step('b', [{ type: 'move', piece: rook, from: 'a8', to: 'a7' }]),
+      ...steps,
+    ],
+    you: ['b'],
+    canUndo: false,
+    rematchId: null,
+  };
+};
+
+const capture = (captured: PieceRef): GameEvent => ({
+  type: 'capture',
+  piece: knight,
+  captured,
+});
+
+const body = (g: GameResponse) => pushMessage(g, 'b', 'kayz', 'other')?.body;
+
+describe('pushMessage', () => {
+  it.each([
+    ['devastated', '... but they feel terrible about it 😢'],
+    ['guilt', '... but they feel bad about it 😔'],
+    ['unaffected', '... and they felt nothing 😐'],
+    ['psychopath', '... and they liked it 😈'],
+  ] as const)('a %s capture', (trauma, ending) => {
+    expect(body(game([step('w', [capture(queen)])], { trauma }))).toBe(
+      `Their knight took your queen${ending}`,
+    );
+  });
+
+  it('a psychopath taking two with its extra move', () => {
+    const g = game([step('w', [capture(queen)]), step('w', [capture(rook)])], {
+      trauma: 'psychopath',
+      kills: 2,
+    });
+    expect(body(g)).toBe(
+      'Their knight took your queen and rook... and they liked it 😈',
+    );
+  });
+
+  it('bloodlust', () => {
+    const g = game(
+      [step('w', [capture(queen), { type: 'bloodlust', piece: knight }])],
+      { trauma: 'psychopath', kills: 3 },
+    );
+    expect(body(g)).toBe(
+      "Their knight took your queen... and they'll do it again 🩸",
+    );
+  });
+
+  it('a capturer that has since died uses its roll', () => {
+    const g = game(
+      [
+        step('w', [
+          capture(queen),
+          { type: 'roll', piece: knight, roll: 1, trauma: 'devastated' },
+        ]),
+      ],
+      null,
+    );
+    expect(body(g)).toBe(
+      'Their knight took your queen... but they feel terrible about it 😢',
+    );
+  });
+
+  it('a plain move', () => {
+    const g = game([
+      step('w', [{ type: 'move', piece: knight, from: 'g1', to: 'f3' }]),
+    ]);
+    expect(pushMessage(g, 'b', 'kayz', 'other')).toEqual({
+      title: 'Your move vs kayz',
+      body: 'Their knight moved to f3.',
+    });
+  });
+
+  it('nothing while it is still the actor’s move', () => {
+    const g = game([step('w', [capture(queen)])], { trauma: 'psychopath' });
+    g.state.turn = 'w';
+    expect(pushMessage(g, 'b', 'kayz', 'other')).toBeNull();
+  });
+
+  it('a lost game', () => {
+    const g = game([step('w', [capture(ref('bk-e', 'k', 'b'))])], {}, 'w');
+    expect(pushMessage(g, 'b', 'kayz', 'other')).toEqual({
+      title: 'You lost vs kayz',
+      body: 'Their knight took your king.',
+    });
+  });
+
+  it('join and undo', () => {
+    expect(pushMessage(game([]), 'b', 'kayz', 'join')?.body).toBe(
+      'kayz joined your game.',
+    );
+    expect(pushMessage(game([]), 'b', 'kayz', 'undo')?.body).toBe(
+      'kayz took back your last move.',
+    );
+  });
+});

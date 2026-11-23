@@ -3,7 +3,7 @@ export enum NavItems {
   About = 'About',
   Projects = 'Projects',
   Contact = 'Contact',
-};
+}
 
 export interface BaseTheme {
   colors: {
@@ -15,11 +15,11 @@ export interface BaseTheme {
     halfSpicy: string;
     coolRanch: string;
     primaryBackground: string;
-  },
+  };
   breakpoints: {
     mobileMax: string;
     tabletMax: string;
-  },
+  };
   rems: {
     25: string;
     50: string;
@@ -38,10 +38,10 @@ export interface BaseTheme {
     500: string;
     1000: string;
     2000: string;
-  },
+  };
   other: {
     aboutHexagonGradient: string;
-  }
-};
+  };
+}
 
 export default BaseTheme;

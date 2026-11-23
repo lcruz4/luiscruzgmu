@@ -17,7 +17,7 @@ import {
   useStats,
 } from '@/components/remorse-chess/useGame';
 import { useYourMoveAlerts } from '@/components/remorse-chess/useYourMoveAlerts';
-import { colorName, isYourMove, resultText } from '@/lib/remorse/describe';
+import { colorName, resultText } from '@/lib/remorse/describe';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameSummary } from '@/types/remorse';
@@ -67,7 +67,7 @@ const statusOf = (game: GameSummary, email: string): Status => {
     };
   }
   if (inviteOpen(game)) return { label: 'Invite pending', tone: 'plain' };
-  return game.turn === seat
+  return game.yourMove
     ? { label: 'Your move', tone: 'gold' }
     : { label: 'Their move', tone: 'plain' };
 };
@@ -301,15 +301,13 @@ const LobbyPage = ({ email }: { email: string }) => {
   // Games waiting on you float to the top
   const active = visible
     .filter((game) => !game.winner)
-    .sort(
-      (a, b) => Number(isYourMove(b, email)) - Number(isYourMove(a, email)),
-    );
+    .sort((a, b) => Number(b.yourMove) - Number(a.yourMove));
   const finished = visible.filter((game) => game.winner);
 
   const alerts = useMemo(
     () =>
       games.data
-        ?.filter((game) => isYourMove(game, email))
+        ?.filter((game) => game.yourMove)
         .map((game) => ({
           id: game.id,
           text: `Your move ${opponentOf(game, email)}`,

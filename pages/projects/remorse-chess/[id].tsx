@@ -23,7 +23,7 @@ const lastMoveOf = (game: GameResponse) => {
   return null;
 };
 
-const GamePage = ({ email }: { email: string }) => {
+const GamePage = () => {
   const router = useRouter();
   const id =
     typeof router.query.id === 'string' ? Number(router.query.id) : undefined;
@@ -34,7 +34,7 @@ const GamePage = ({ email }: { email: string }) => {
   // steps from here on are still animating, so the panel holds them back
   const [hiddenFrom, setHiddenFrom] = useState<number | null>(null);
   const game = query.data;
-  useBadgeSync(email, game?.version);
+  useBadgeSync(game?.version);
 
   if (!game) {
     return (

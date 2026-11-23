@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { isYourMove } from '@/lib/remorse/describe';
 import { fetchGames, GAMES_KEY } from './useGame';
 
 type Alert = { id: number; text: string };
@@ -103,15 +102,13 @@ export const useYourMoveAlerts = (alerts: Alert[] | undefined) => {
 
 // On a game page: whenever the game changes (your move, theirs), reloads the
 // lobby list so the app badge and the lobby are current
-export const useBadgeSync = (email: string, version: number | undefined) => {
+export const useBadgeSync = (version: number | undefined) => {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (version === undefined) return;
     queryClient
       .fetchQuery({ queryKey: GAMES_KEY, queryFn: fetchGames, staleTime: 0 })
-      .then((games) =>
-        setBadge(games.filter((game) => isYourMove(game, email)).length),
-      )
+      .then((games) => setBadge(games.filter((game) => game.yourMove).length))
       .catch(() => undefined);
-  }, [queryClient, email, version]);
+  }, [queryClient, version]);
 };
