@@ -78,6 +78,22 @@ const describeTurn = (game: GameResponse, turn: GameStep[]) => {
   return null;
 };
 
+// How the game ended; a capture's mood doesn't matter once a king falls
+const gameOverText = (turn: GameStep[], actorName: string) => {
+  const events = turn.flatMap((step) => step.events);
+  const over = events.find((e) => e.type === 'gameOver');
+  if (over?.type !== 'gameOver') return 'Game over.';
+  if (over.reason === 'resign') return `${actorName} resigned.`;
+  if (over.reason === 'checkmate') return 'Checkmate. Game over.';
+  if (over.reason === 'stalemate') return 'Stalemate. Game over.';
+  const regicide = events.find(
+    (e) => e.type === 'capture' && e.captured.type === 'k',
+  );
+  return regicide?.type === 'capture'
+    ? `Their ${typeName(regicide.piece.type)} took your king. Game over.`
+    : 'Game over.';
+};
+
 // The push for the player in `seat` after the other player acted, or null
 // when it's still the actor's move
 export const pushMessage = (
@@ -90,19 +106,16 @@ export const pushMessage = (
   if (!winner && toMove !== seat) return null;
   const turn =
     action === 'other' ? lastTurn(game.steps, seat === 'w' ? 'b' : 'w') : [];
-  const what = describeTurn(game, turn);
 
   if (winner) {
     const result =
       winner === 'draw' ? 'Draw' : winner === seat ? 'You won' : 'You lost';
-    const resigned = turn
-      .flatMap((step) => step.events)
-      .some((e) => e.type === 'gameOver' && e.reason === 'resign');
     return {
       title: `${result} vs ${actorName}`,
-      body: resigned ? `${actorName} resigned.` : what ?? 'Game over.',
+      body: gameOverText(turn, actorName),
     };
   }
+  const what = describeTurn(game, turn);
   const body =
     action === 'join'
       ? `${actorName} joined your game.`
