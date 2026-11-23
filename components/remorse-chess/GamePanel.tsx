@@ -53,10 +53,14 @@ const LogLine = ({
       <button
         type='button'
         title='Show this rule'
-        className='inline-flex cursor-pointer items-center gap-1 rounded underline decoration-dotted underline-offset-2 hover:bg-white/10 hover:decoration-solid'
+        className='inline cursor-pointer rounded underline decoration-dotted underline-offset-2 hover:bg-white/10 hover:decoration-solid'
         onClick={() => onRules(rule)}
       >
-        <RuleIcon rule={rule} medallion className='block size-4 flex-none' />
+        <RuleIcon
+          rule={rule}
+          medallion
+          className='mr-1 inline-block size-4 align-[-3px]'
+        />
         {words}
       </button>
       {text.slice(at + words.length)}
