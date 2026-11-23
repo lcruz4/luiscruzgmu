@@ -128,12 +128,35 @@ describe('pushMessage', () => {
     expect(pushMessage(g, 'b', 'kayz', 'other')).toBeNull();
   });
 
-  it('a lost game', () => {
-    const g = game([step('w', [capture(ref('bk-e', 'k', 'b'))])], {}, 'w');
+  it('a king taken ends the game, mood or not', () => {
+    const g = game(
+      [
+        step('w', [capture(rook), { type: 'bloodlust', piece: knight }]),
+        step('w', [
+          capture(ref('bk-e', 'k', 'b')),
+          { type: 'gameOver', winner: 'w', reason: 'king' },
+        ]),
+      ],
+      { trauma: 'psychopath', kills: 3 },
+      'w',
+    );
     expect(pushMessage(g, 'b', 'kayz', 'other')).toEqual({
       title: 'You lost vs kayz',
-      body: 'Their knight took your king.',
+      body: 'Their knight took your rook and king. Game over.',
     });
+  });
+
+  it.each([
+    ['checkmate', 'Checkmate. Game over.'],
+    ['stalemate', 'Stalemate. Game over.'],
+    ['resign', 'kayz resigned.'],
+  ] as const)('a %s', (reason, text) => {
+    const g = game(
+      [step('w', [{ type: 'gameOver', winner: 'w', reason }])],
+      {},
+      'w',
+    );
+    expect(pushMessage(g, 'b', 'kayz', 'other')?.body).toBe(text);
   });
 
   it('join and undo', () => {
