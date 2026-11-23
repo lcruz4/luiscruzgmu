@@ -27,7 +27,6 @@ export const tutorialStart = (): GameState => ({
     piece('w', 'p', 'g2'),
     piece('w', 'p', 'h2'),
     piece('b', 'k', 'g8'),
-    piece('b', 'n', 'e8'),
     piece('b', 'n', 'h6'),
     piece('b', 'b', 'c8'),
     piece('b', 'b', 'b4'),
@@ -37,7 +36,6 @@ export const tutorialStart = (): GameState => ({
     piece('b', 'p', 'e5'),
     piece('b', 'p', 'f7'),
     piece('b', 'p', 'g7'),
-    piece('b', 'p', 'h7'),
   ],
   turn: 'w',
   extraMovePieceId: null,
@@ -144,12 +142,12 @@ export const TUTORIAL: Beat[] = [
   {
     kind: 'you',
     from: 'c8',
-    to: 'e8',
-    text: "Bloodlust: after 3 captures a psychopath can only move to capture, and it'll take pieces of either color. Its extra move is a capture too. Take the knight for checkmate.",
+    to: 'g8',
+    text: "Bloodlust: after 3 captures a psychopath can only move to capture, and it'll take pieces of either color. Its extra move is a capture too. Take the king: that ends the game, whoever's king it is.",
   },
   {
     kind: 'note',
-    title: 'Checkmate',
+    title: 'King captured',
     text: "That's everything. The rest is regular chess: castling, en passant, promotion, check and stalemate.",
   },
 ];

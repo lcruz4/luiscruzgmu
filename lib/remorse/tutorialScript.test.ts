@@ -1,4 +1,4 @@
-import type { Action } from '@/types/remorse';
+import type { Action, GameEvent } from '@/types/remorse';
 import { applyAction, inCheck, legalMoves } from './engine';
 import { TUTORIAL, tutorialStart } from './tutorialScript';
 
@@ -6,6 +6,7 @@ describe('tutorial script', () => {
   it('plays out legally with the scripted rolls', () => {
     let state = tutorialStart();
     const played: string[][] = [];
+    let last: GameEvent | undefined;
     for (const beat of TUTORIAL) {
       if (beat.kind === 'note') continue;
       expect(state.turn).toBe(beat.kind === 'you' ? 'w' : 'b');
@@ -26,6 +27,7 @@ describe('tutorial script', () => {
       });
       state = result.state;
       played.push(result.events.map((event) => event.type));
+      last = result.events.at(-1);
       // The devastated bishop lined up on the king never gives check
       if (played.length === 2) expect(inCheck(state, 'w')).toBe(false);
     }
@@ -44,6 +46,6 @@ describe('tutorial script', () => {
       ['move', 'capture', 'bloodlust', 'extraMove'],
       ['move', 'capture', 'gameOver'],
     ]);
-    expect(state.winner).toBe('w');
+    expect(last).toEqual({ type: 'gameOver', winner: 'w', reason: 'king' });
   });
 });
