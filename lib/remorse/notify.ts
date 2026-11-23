@@ -86,12 +86,12 @@ const gameOverText = (turn: GameStep[], actorName: string) => {
   if (over.reason === 'resign') return `${actorName} resigned.`;
   if (over.reason === 'checkmate') return 'Checkmate. Game over.';
   if (over.reason === 'stalemate') return 'Stalemate. Game over.';
-  const regicide = events.find(
-    (e) => e.type === 'capture' && e.captured.type === 'k',
-  );
-  return regicide?.type === 'capture'
-    ? `Their ${typeName(regicide.piece.type)} took your king. Game over.`
-    : 'Game over.';
+  const captures = events.flatMap((e) => (e.type === 'capture' ? [e] : []));
+  if (!captures.some((e) => e.captured.type === 'k')) return 'Game over.';
+  const taken = listOf(captures.map((e) => typeName(e.captured.type)));
+  return `Their ${typeName(
+    captures[0].piece.type,
+  )} took your ${taken}. Game over.`;
 };
 
 // The push for the player in `seat` after the other player acted, or null

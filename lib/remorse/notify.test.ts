@@ -142,7 +142,7 @@ describe('pushMessage', () => {
     );
     expect(pushMessage(g, 'b', 'kayz', 'other')).toEqual({
       title: 'You lost vs kayz',
-      body: 'Their knight took your king. Game over.',
+      body: 'Their knight took your rook and king. Game over.',
     });
   });
 
