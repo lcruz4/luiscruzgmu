@@ -4,10 +4,11 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
+import type { TutorialKey } from '@/lib/remorse/tutorial';
 import type {
   Color,
   GameResponse,
@@ -60,6 +61,7 @@ type Profile = {
   pieceSet: PieceSetId | null;
   boardTheme: BoardThemeId | null;
   chosen: boolean;
+  tutorialSeen: TutorialKey[];
 };
 
 export const useProfile = () =>
@@ -77,6 +79,7 @@ export const useUpdateProfile = () => {
       icon?: PlayerIcon;
       pieceSet?: PieceSetId;
       boardTheme?: BoardThemeId;
+      tutorialSeen?: TutorialKey[];
     }) =>
       request<Profile>('/api/remorse-chess/profile', {
         method: 'PUT',
@@ -87,6 +90,33 @@ export const useUpdateProfile = () => {
       queryClient.invalidateQueries({ queryKey: GAMES_KEY });
     },
   });
+};
+
+// Marks tutorial pieces seen right away; the save happens in the background
+export const useMarkTutorialSeen = () => {
+  const queryClient = useQueryClient();
+  const { mutate } = useMutation({
+    mutationFn: (keys: TutorialKey[]) =>
+      request<Profile>('/api/remorse-chess/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ tutorialSeen: keys }),
+      }),
+    onSuccess: (profile) => queryClient.setQueryData(PROFILE_KEY, profile),
+  });
+  return useCallback(
+    (keys: TutorialKey[]) => {
+      queryClient.setQueryData<Profile>(PROFILE_KEY, (profile) =>
+        profile
+          ? {
+              ...profile,
+              tutorialSeen: [...new Set([...profile.tutorialSeen, ...keys])],
+            }
+          : profile,
+      );
+      mutate(keys);
+    },
+    [queryClient, mutate],
+  );
 };
 
 export const useStats = () =>

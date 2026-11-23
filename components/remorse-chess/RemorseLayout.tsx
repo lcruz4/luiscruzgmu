@@ -1,26 +1,42 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { authLogoutUrl, REMORSE_LANDING_PATH } from '@/lib/auth';
+import type { TutorialKey } from '@/lib/remorse/tutorial';
+import { RulesDialog } from './RulesDialog';
 import { Wordmark } from './Wordmark';
 
-const DefaultActions = () => (
-  <nav className='flex items-center gap-4 text-sm text-[#a29e96]'>
-    <Link href={`${REMORSE_LANDING_PATH}#rules`}>Rules</Link>
-    <Link href='/projects/remorse-chess/profile'>Profile</Link>
-    <button
-      type='button'
-      className='cursor-pointer hover:text-white'
-      onClick={() => {
-        window.location.href = authLogoutUrl(
-          `${window.location.origin}${REMORSE_LANDING_PATH}`,
-        );
-      }}
-    >
-      Log out
-    </button>
-  </nav>
-);
+const DefaultActions = () => {
+  const [rulesSlide, setRulesSlide] = useState<TutorialKey | null>(null);
+  return (
+    <nav className='flex items-center gap-4 text-sm text-[#a29e96]'>
+      <button
+        type='button'
+        className='cursor-pointer hover:text-white'
+        onClick={() => setRulesSlide('intro')}
+      >
+        Rules
+      </button>
+      <RulesDialog
+        slide={rulesSlide}
+        onSlide={setRulesSlide}
+        onClose={() => setRulesSlide(null)}
+      />
+      <Link href='/projects/remorse-chess/profile'>Profile</Link>
+      <button
+        type='button'
+        className='cursor-pointer hover:text-white'
+        onClick={() => {
+          window.location.href = authLogoutUrl(
+            `${window.location.origin}${REMORSE_LANDING_PATH}`,
+          );
+        }}
+      >
+        Log out
+      </button>
+    </nav>
+  );
+};
 
 // `actions` sits at the right of the header; defaults to rules, profile and
 // log out
