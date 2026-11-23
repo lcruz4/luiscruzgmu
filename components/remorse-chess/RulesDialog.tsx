@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/dialog';
 import { type TutorialKey, TUTORIAL_KEYS } from '@/lib/remorse/tutorial';
 import { cn } from '@/lib/utils';
+import { buttonMd, ghostButton, goldButton } from './buttons';
+import { Dice } from './Dice';
 import { healSvg } from './landingArt';
 import { Marker } from './Marker';
 import {
@@ -15,19 +17,6 @@ import {
   FATES,
   HEAL_ITEMS,
 } from './rulesContent';
-
-const Dice = ({ roll }: { roll: number[] }) => (
-  <span className='flex gap-1'>
-    {roll.map((n) => (
-      <i
-        key={n}
-        className='grid size-[22px] place-items-center rounded-[5px] border-2 border-[#120d0b] bg-[#f7f3ea] text-xs font-bold text-[#120d0b] not-italic'
-      >
-        {n}
-      </i>
-    ))}
-  </span>
-);
 
 interface Slide {
   title: string;
@@ -107,16 +96,8 @@ const useSlides = (): Record<TutorialKey, Slide> => {
   };
 };
 
-const navBtn =
-  'cursor-pointer rounded-[10px] border-2 px-4 py-2 text-[15px] font-semibold disabled:cursor-default disabled:opacity-40';
-const ghost = cn(
-  navBtn,
-  'border-[#514d47] bg-[#302d29] text-[#e8e4dc] hover:bg-[#3a3733]',
-);
-const primary = cn(
-  navBtn,
-  'border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105',
-);
+const primary = cn(goldButton, buttonMd);
+const ghost = cn(ghostButton, buttonMd);
 
 // The rules one slide at a time; `slide` is controlled so a callout can open
 // it on its own rule

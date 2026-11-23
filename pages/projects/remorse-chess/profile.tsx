@@ -15,10 +15,10 @@ import {
 import { useBoardLook } from '@/components/remorse-chess/useBoardLook';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import { cn } from '@/lib/utils';
+import { buttonMd, goldButton } from '@/components/remorse-chess/buttons';
 import { requireLogin } from '@/services/auth';
 
-const primary =
-  'inline-flex cursor-pointer items-center justify-center rounded-[10px] border-2 border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] px-4 py-2.5 text-[15px] font-semibold text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105 disabled:cursor-default disabled:opacity-50';
+const primary = cn(goldButton, buttonMd);
 
 const ProfilePage = ({ email }: { email: string }) => {
   const profile = useProfile();

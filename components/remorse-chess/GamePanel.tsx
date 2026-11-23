@@ -6,21 +6,11 @@ import type { GameEvent, GameResponse } from '@/types/remorse';
 import { Marker } from './Marker';
 import type { GameCommand } from './useGame';
 import { useBoardLook } from './useBoardLook';
+import { buttonSm, ghostButton, goldButton, redButton } from './buttons';
 
-const btn =
-  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 px-3.5 py-2 text-sm font-semibold disabled:cursor-default disabled:opacity-50';
-const primary = cn(
-  btn,
-  'border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105',
-);
-const ghost = cn(
-  btn,
-  'border-[#514d47] bg-[#302d29] text-[#e8e4dc] hover:bg-[#3a3733]',
-);
-const danger = cn(
-  btn,
-  'border-[#120d0b] bg-linear-to-b from-[#e5484d] to-[#a3161b] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_2px_0_#120d0b] hover:brightness-110',
-);
+const primary = cn(goldButton, buttonSm);
+const ghost = cn(ghostButton, buttonSm);
+const danger = cn(redButton, buttonSm);
 
 const eventTone = (event: GameEvent) => {
   switch (event.type) {

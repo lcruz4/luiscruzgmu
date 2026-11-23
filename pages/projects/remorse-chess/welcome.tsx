@@ -14,6 +14,12 @@ import {
   HEAL_ITEMS,
 } from '@/components/remorse-chess/rulesContent';
 import { Wordmark } from '@/components/remorse-chess/Wordmark';
+import {
+  buttonMd,
+  ghostButton,
+  goldButton,
+} from '@/components/remorse-chess/buttons';
+import { Dice } from '@/components/remorse-chess/Dice';
 import { authLoginUrl, REMORSE_HOME, safeRemorsePath } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { getAuthenticatedEmail } from '@/services/auth';
@@ -31,18 +37,6 @@ const logIn = (returnTo: string) => {
   );
 };
 
-const btn =
-  'inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-[10px] border-2 font-semibold';
-const primary = cn(
-  btn,
-  'border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105',
-);
-const ghost = cn(
-  btn,
-  'border-[#514d47] bg-[#302d29] text-[#e8e4dc] hover:bg-[#3a3733]',
-);
-const big = 'px-4 py-2.5 text-[15px]';
-
 const GoogleDisc = () => (
   <span className='grid size-[22px] flex-none place-items-center rounded-full bg-white'>
     <GoogleIcon className='size-[15px]' />
@@ -57,13 +51,13 @@ const MainAction = ({
   className,
 }: Props & { className: string }) =>
   signedIn ? (
-    <Link href={REMORSE_HOME} className={cn(primary, className)}>
+    <Link href={REMORSE_HOME} className={cn(goldButton, className)}>
       Go to your games
     </Link>
   ) : (
     <button
       type='button'
-      className={cn(primary, className)}
+      className={cn(goldButton, className)}
       onClick={() => logIn(returnTo)}
     >
       <GoogleDisc />
@@ -148,14 +142,14 @@ const LandingPage = (props: Props) => {
           {signedIn ? (
             <Link
               href={REMORSE_HOME}
-              className={cn(primary, 'px-3 py-1.5 text-[13px]')}
+              className={cn(goldButton, 'gap-2.5 px-3 py-1.5 text-[13px]')}
             >
               Your games
             </Link>
           ) : (
             <button
               type='button'
-              className={cn(primary, 'px-3 py-1.5 text-[13px]')}
+              className={cn(goldButton, 'gap-2.5 px-3 py-1.5 text-[13px]')}
               onClick={() => logIn(returnTo)}
             >
               Sign in
@@ -197,8 +191,8 @@ const LandingPage = (props: Props) => {
               are crushed by guilt. Some shrug. Some start to enjoy it.
             </p>
             <div className='flex flex-wrap gap-2.5'>
-              <MainAction {...props} className={big} />
-              <a href='#rules' className={cn(ghost, big)}>
+              <MainAction {...props} className={buttonMd} />
+              <a href='#rules' className={cn(ghostButton, buttonMd)}>
                 Read the rules
               </a>
             </div>
@@ -257,16 +251,7 @@ const LandingPage = (props: Props) => {
                     className='block h-[62px] w-[58px] flex-none'
                   />
                   <div>
-                    <div className='flex gap-1'>
-                      {roll.map((n) => (
-                        <i
-                          key={n}
-                          className='grid size-[22px] place-items-center rounded-[5px] border-2 border-[#120d0b] bg-[#f7f3ea] text-xs font-bold text-[#120d0b] not-italic'
-                        >
-                          {n}
-                        </i>
-                      ))}
-                    </div>
+                    <Dice roll={roll} />
                     <div className='text-xs text-[#a29e96] tabular-nums'>
                       {roll.length} in 6
                     </div>
@@ -320,7 +305,7 @@ const LandingPage = (props: Props) => {
               href={TIKTOK}
               target='_blank'
               rel='noreferrer'
-              className={cn(ghost, big)}
+              className={cn(ghostButton, buttonMd)}
             >
               @bardelo_bardalini
             </a>
@@ -336,7 +321,7 @@ const LandingPage = (props: Props) => {
               ? 'Your games are waiting.'
               : 'Free account, one tap with Google.'}
           </p>
-          <MainAction {...props} className={big} />
+          <MainAction {...props} className={buttonMd} />
         </div>
       </div>
     </RemorseLayout>

@@ -19,19 +19,16 @@ import {
 import { useYourMoveAlerts } from '@/components/remorse-chess/useYourMoveAlerts';
 import { colorName, resultText } from '@/lib/remorse/describe';
 import { cn } from '@/lib/utils';
+import {
+  buttonMd,
+  ghostButton,
+  goldButton,
+} from '@/components/remorse-chess/buttons';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameSummary } from '@/types/remorse';
 
-const btn =
-  'inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-[10px] border-2 px-4 py-2.5 text-[15px] font-semibold disabled:cursor-default disabled:opacity-50';
-const primary = cn(
-  btn,
-  'border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105',
-);
-const ghost = cn(
-  btn,
-  'border-[#514d47] bg-[#302d29] text-[#e8e4dc] hover:bg-[#3a3733]',
-);
+const primary = cn(goldButton, buttonMd);
+const ghost = cn(ghostButton, buttonMd);
 const small =
   'cursor-pointer rounded-lg border border-[#514d47] bg-[#302d29] px-2.5 py-1 text-xs font-semibold text-[#e8e4dc] hover:bg-[#3a3733] disabled:cursor-default disabled:opacity-50';
 const h2 = 'mb-3 text-xl font-bold text-white';

@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { buttonMd, ghostButton, goldButton } from './buttons';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import { IconPicker } from './IconPicker';
 import { PlayerPreview } from './PlayerPreview';
@@ -77,7 +78,7 @@ export const UsernamePrompt = () => {
           <div className='flex flex-wrap justify-end gap-2'>
             <button
               type='button'
-              className='cursor-pointer rounded-[10px] border-2 border-[#514d47] bg-[#302d29] px-4 py-2 text-[15px] font-semibold text-[#e8e4dc] hover:bg-[#3a3733] disabled:opacity-50'
+              className={cn(ghostButton, buttonMd)}
               disabled={update.isPending}
               onClick={() => update.mutate({ username: null, icon })}
             >
@@ -85,7 +86,7 @@ export const UsernamePrompt = () => {
             </button>
             <button
               type='submit'
-              className='cursor-pointer rounded-[10px] border-2 border-[#120d0b] bg-linear-to-b from-[#ffd27a] to-[#c98a1c] px-4 py-2 text-[15px] font-semibold text-[#1a1209] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_2px_0_#120d0b] hover:brightness-105 disabled:opacity-50'
+              className={cn(goldButton, buttonMd)}
               disabled={update.isPending}
             >
               Save
