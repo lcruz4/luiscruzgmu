@@ -1096,15 +1096,24 @@ export const markFollowSeen = async (email: string, playerId: number) => {
   );
 };
 
-// Who you can challenge: players you follow who follow you back
+// Who you can challenge: players you follow who follow you back. Whoever you
+// played most recently comes first; people you haven't played, by name.
 export const listMutuals = async (email: string): Promise<PlayerRef[]> => {
   const { rows } = await remorsePool.query<PlayerRef>(
     `SELECT p.id, COALESCE(p.username, split_part(p.email, '@', 1)) AS name, p.icon
      FROM follows f
      JOIN follows back ON back.follower_email = f.followee_email AND back.followee_email = f.follower_email
      JOIN players p ON p.email = f.followee_email
+     LEFT JOIN LATERAL (
+       SELECT max(g.updated_at) AS played_at
+       FROM games g
+       WHERE g.mode = 'online'
+         AND ((g.white_email = $1 AND g.black_email = p.email)
+           OR (g.white_email = p.email AND g.black_email = $1))
+     ) last ON true
      WHERE f.follower_email = $1
-     ORDER BY lower(COALESCE(p.username, split_part(p.email, '@', 1)))`,
+     ORDER BY last.played_at DESC NULLS LAST,
+              lower(COALESCE(p.username, split_part(p.email, '@', 1)))`,
     [email],
   );
   return rows;
