@@ -777,12 +777,13 @@ export const createChallenge = async (email: string, playerId: number) =>
     }
     await ensurePlayer(client, email);
     // Challenging someone follows them
-    await client.query(
+    const followed = await client.query(
       `INSERT INTO follows (follower_email, followee_email)
        VALUES ($1, $2)
        ON CONFLICT DO NOTHING`,
       [email, opponentEmail],
     );
+    if (followed.rowCount) await announceFollow(client, email, opponentEmail);
     const theirs = await client.query<{
       id: number;
       white_email: string | null;
@@ -995,6 +996,29 @@ export const getPlayer = async (
   };
 };
 
+// Whether this is the pair's first follow; a repeat one is marked seen so
+// it doesn't show in their lobby again
+const announceFollow = async (
+  client: PoolClient | Pool,
+  follower: string,
+  followee: string,
+) => {
+  const { rowCount } = await client.query(
+    `INSERT INTO follow_notices (follower_email, followee_email)
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [follower, followee],
+  );
+  if (rowCount) return true;
+  await client.query(
+    `UPDATE follows
+     SET seen_at = now()
+     WHERE follower_email = $1 AND followee_email = $2`,
+    [follower, followee],
+  );
+  return false;
+};
+
 export const setFollowing = async (
   email: string,
   playerId: number,
@@ -1010,12 +1034,16 @@ export const setFollowing = async (
     );
     return { created: false, followee, mutual: false };
   }
-  const { rowCount } = await remorsePool.query(
+  const followed = await remorsePool.query(
     `INSERT INTO follows (follower_email, followee_email)
      VALUES ($1, $2)
      ON CONFLICT DO NOTHING`,
     [email, followee],
   );
+  // Announced once per pair: following again after an unfollow stays quiet
+  const announced = followed.rowCount
+    ? await announceFollow(remorsePool, email, followee)
+    : false;
   // Following back answers their follow. mutual: they already follow you
   const back = await remorsePool.query(
     `UPDATE follows
@@ -1024,7 +1052,7 @@ export const setFollowing = async (
     [followee, email],
   );
   return {
-    created: Boolean(rowCount),
+    created: announced,
     followee,
     mutual: Boolean(back.rowCount),
   };

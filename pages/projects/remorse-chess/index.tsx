@@ -108,13 +108,15 @@ const OpponentLabel = ({
   const other = opponent(game, email);
   if (game.mode === 'local' || !other) return <>{opponentOf(game, email)}</>;
   const name = (
-    <PlayerLink id={other.id} className='truncate'>
-      {other.name}
-    </PlayerLink>
+    <>
+      <PlayerAvatar icon={other.icon} className='size-6' />
+      <PlayerLink id={other.id} className='truncate'>
+        {other.name}
+      </PlayerLink>
+    </>
   );
   return (
     <>
-      <PlayerAvatar icon={other.icon} className='size-6' />
       {game.challenge?.you ? (
         <>
           {name}
