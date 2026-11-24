@@ -16,6 +16,7 @@ import type {
   GameState,
   GameStep,
   GameSummary,
+  NewFollower,
   PlayerPage,
   PlayerRef,
   PlayerStats,
@@ -1001,20 +1002,70 @@ export const setFollowing = async (
 ) => {
   const followee = await emailOfPlayer(remorsePool, playerId);
   if (followee === email) throw new HttpError(400, 'You can’t follow yourself');
-  if (following) {
-    await remorsePool.query(
-      `INSERT INTO follows (follower_email, followee_email)
-       VALUES ($1, $2)
-       ON CONFLICT DO NOTHING`,
-      [email, followee],
-    );
-  } else {
+  if (!following) {
     await remorsePool.query(
       `DELETE FROM follows
        WHERE follower_email = $1 AND followee_email = $2`,
       [email, followee],
     );
+    return { created: false, followee, mutual: false };
   }
+  const { rowCount } = await remorsePool.query(
+    `INSERT INTO follows (follower_email, followee_email)
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [email, followee],
+  );
+  // Following back answers their follow. mutual: they already follow you
+  const back = await remorsePool.query(
+    `UPDATE follows
+     SET seen_at = COALESCE(seen_at, now())
+     WHERE follower_email = $1 AND followee_email = $2`,
+    [followee, email],
+  );
+  return {
+    created: Boolean(rowCount),
+    followee,
+    mutual: Boolean(back.rowCount),
+  };
+};
+
+// Follows of you not yet seen in your lobby, newest first
+export const listNewFollowers = async (
+  email: string,
+): Promise<NewFollower[]> => {
+  const { rows } = await remorsePool.query<{
+    id: number;
+    name: string;
+    icon: PlayerIcon | null;
+    following_back: boolean;
+  }>(
+    `SELECT p.id, COALESCE(p.username, split_part(p.email, '@', 1)) AS name, p.icon,
+            EXISTS (
+              SELECT 1
+              FROM follows back
+              WHERE back.follower_email = $1 AND back.followee_email = f.follower_email
+            ) AS following_back
+     FROM follows f
+     JOIN players p ON p.email = f.follower_email
+     WHERE f.followee_email = $1 AND f.seen_at IS NULL
+     ORDER BY f.created_at DESC`,
+    [email],
+  );
+  return rows.map(({ following_back, ...player }) => ({
+    ...player,
+    followingBack: following_back,
+  }));
+};
+
+export const markFollowSeen = async (email: string, playerId: number) => {
+  await remorsePool.query(
+    `UPDATE follows
+     SET seen_at = now()
+     WHERE followee_email = $1
+       AND follower_email = (SELECT email FROM players WHERE id = $2)`,
+    [email, playerId],
+  );
 };
 
 // Who you can challenge: players you follow who follow you back

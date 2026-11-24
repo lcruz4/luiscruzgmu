@@ -133,7 +133,7 @@ const Actions = ({ player }: { player: PlayerPage }) => {
     );
   }
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex w-full flex-col gap-2 sm:w-auto'>
       <div className='flex flex-wrap gap-2'>
         {player.followsYou && (
           <button

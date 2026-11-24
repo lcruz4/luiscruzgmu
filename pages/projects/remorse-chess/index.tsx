@@ -33,6 +33,8 @@ import {
   useCancelGame,
   useCreateGame,
   useMutuals,
+  useNewFollowers,
+  useAnswerFollower,
   useGames,
   useProfile,
   useStats,
@@ -560,6 +562,66 @@ const ChallengePicker = ({
   );
 };
 
+// People who followed you since you last looked: follow back or dismiss
+const NewFollowers = () => {
+  const followers = useNewFollowers();
+  const answer = useAnswerFollower();
+  if (!followers.data?.length) return null;
+  return (
+    <section>
+      <h2 className={h2}>New followers</h2>
+      <div className='flex flex-col gap-2'>
+        {followers.data.map((follower) => (
+          <div
+            key={follower.id}
+            className='flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-[#262421] p-2.5 pr-3'
+          >
+            <PlayerAvatar icon={follower.icon} className='size-10' />
+            <span className='min-w-0 flex-[1_1_180px] text-[#e8e4dc]'>
+              <PlayerLink id={follower.id} className='font-semibold text-white'>
+                {follower.name}
+              </PlayerLink>{' '}
+              {follower.followingBack
+                ? 'followed you back. You can challenge each other now.'
+                : 'followed you.'}
+            </span>
+            <div className='ml-auto flex gap-2'>
+              {!follower.followingBack && (
+                <button
+                  type='button'
+                  className={cn(
+                    small,
+                    'border-[#c98a1c]/60 bg-[#c98a1c]/20 text-[#ffd27a] hover:bg-[#c98a1c]/30',
+                  )}
+                  disabled={answer.isPending}
+                  onClick={() =>
+                    answer.mutate({ id: follower.id, followBack: true })
+                  }
+                >
+                  Follow back
+                </button>
+              )}
+              <button
+                type='button'
+                className={small}
+                disabled={answer.isPending}
+                onClick={() =>
+                  answer.mutate({ id: follower.id, followBack: false })
+                }
+              >
+                {follower.followingBack ? 'OK' : 'Dismiss'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {answer.isError && (
+        <p className='mt-2 text-sm text-red-300'>{answer.error.message}</p>
+      )}
+    </section>
+  );
+};
+
 const LobbyPage = ({ email }: { email: string }) => {
   const router = useRouter();
   const games = useGames();
@@ -745,6 +807,8 @@ const LobbyPage = ({ email }: { email: string }) => {
             </p>
           </section>
         )}
+
+        <NewFollowers />
 
         {waiting.length > 0 && (
           <section>

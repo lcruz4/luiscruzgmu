@@ -14,6 +14,7 @@ import type {
   GameResponse,
   GameSummary,
   MoveAction,
+  NewFollower,
   PlayerPage,
   PlayerRef,
   PlayerStats,
@@ -177,6 +178,43 @@ export const useFollow = (id: number) => {
         player ? { ...player, following } : player,
       ),
     onSettled: () => queryClient.invalidateQueries({ queryKey: MUTUALS_KEY }),
+  });
+};
+
+const NEW_FOLLOWERS_KEY = ['remorse-chess', 'new-followers'];
+
+export const useNewFollowers = () =>
+  useQuery({
+    queryKey: NEW_FOLLOWERS_KEY,
+    queryFn: () => request<NewFollower[]>('/api/remorse-chess/followers'),
+    refetchOnMount: 'always',
+  });
+
+// Answers a new follower: follow them back, or just dismiss them
+export const useAnswerFollower = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, followBack }: { id: number; followBack: boolean }) =>
+      followBack
+        ? request<null>(
+            `/api/remorse-chess/players/${id}`,
+            { method: 'POST', body: JSON.stringify({ type: 'follow' }) },
+            null,
+          )
+        : request<null>(
+            '/api/remorse-chess/followers',
+            { method: 'POST', body: JSON.stringify({ playerId: id }) },
+            null,
+          ),
+    onSuccess: (_result, { id }) =>
+      queryClient.setQueryData<NewFollower[]>(
+        NEW_FOLLOWERS_KEY,
+        (followers) => followers?.filter((follower) => follower.id !== id),
+      ),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: NEW_FOLLOWERS_KEY });
+      queryClient.invalidateQueries({ queryKey: MUTUALS_KEY });
+    },
   });
 };
 

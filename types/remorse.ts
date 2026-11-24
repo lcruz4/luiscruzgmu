@@ -124,6 +124,12 @@ export interface PlayerRef {
   icon: PlayerIcon | null;
 }
 
+// Someone who followed you since you last looked; followingBack: you
+// already follow them
+export interface NewFollower extends PlayerRef {
+  followingBack: boolean;
+}
+
 // An online game on a player's page, open to anyone to watch
 export interface PlayerGame {
   id: number;
