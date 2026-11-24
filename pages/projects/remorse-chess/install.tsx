@@ -409,9 +409,6 @@ const AppStorePledge = ({ pledgeCount, clicks }: Props) => {
         {myClicks > 0 && (
           <span className='text-[13.5px] text-[#b9f0c4]' aria-live='polite'>
             You’re on the list. Thank you.
-            {myClicks > 1 && (
-              <span className='text-[#a29e96]'> Asked {myClicks} times.</span>
-            )}
           </span>
         )}
       </div>
