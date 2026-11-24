@@ -21,6 +21,7 @@ import {
 } from '@/components/remorse-chess/useGame';
 import { useYourMoveAlerts } from '@/components/remorse-chess/useYourMoveAlerts';
 import { colorName, resultText } from '@/lib/remorse/describe';
+import { gamePath, inviteUrl } from '@/lib/remorse/paths';
 import { cn } from '@/lib/utils';
 import {
   buttonMd,
@@ -45,7 +46,10 @@ const seatOf = (game: GameSummary, email: string): Color =>
 const opponentOf = (game: GameSummary, email: string) => {
   if (game.mode === 'local') return 'Pass and play';
   const other = game.whiteEmail === email ? game.blackName : game.whiteName;
-  return other ? `vs ${other}` : 'Waiting for an opponent';
+  if (other) return `vs ${other}`;
+  return game.matchmaking
+    ? 'Finding a random opponent'
+    : 'Waiting for a friend';
 };
 
 const inviteOpen = (game: GameSummary) =>
@@ -66,7 +70,12 @@ const statusOf = (game: GameSummary, email: string): Status => {
       tone: 'dim',
     };
   }
-  if (inviteOpen(game)) return { label: 'Invite pending', tone: 'plain' };
+  if (inviteOpen(game)) {
+    return {
+      label: game.matchmaking ? 'Looking' : 'Invite pending',
+      tone: 'plain',
+    };
+  }
   return game.yourMove
     ? { label: 'Your move', tone: 'gold' }
     : { label: 'Their move', tone: 'plain' };
@@ -101,15 +110,11 @@ const Chip = ({ label, tone }: Status) => (
   </span>
 );
 
-const gamePath = (id: number) => `/projects/remorse-chess/${id}`;
-
-const CopyInvite = ({ id }: { id: number }) => {
+const CopyInvite = ({ id, token }: { id: number; token: string }) => {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(
-        `${window.location.origin}${gamePath(id)}`,
-      );
+      await navigator.clipboard.writeText(inviteUrl(id, token));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -123,7 +128,7 @@ const CopyInvite = ({ id }: { id: number }) => {
   );
 };
 
-const CancelInvite = ({ id }: { id: number }) => {
+const CancelInvite = ({ id, label }: { id: number; label: string }) => {
   const cancel = useCancelGame();
   const [confirming, setConfirming] = useState(false);
   if (!confirming) {
@@ -133,7 +138,7 @@ const CancelInvite = ({ id }: { id: number }) => {
         className={small}
         onClick={() => setConfirming(true)}
       >
-        Cancel game
+        {label}
       </button>
     );
   }
@@ -219,8 +224,13 @@ const GameRow = ({
         <div className='ml-auto flex gap-2'>
           {inviteOpen(game) && (
             <>
-              <CopyInvite id={game.id} />
-              <CancelInvite id={game.id} />
+              {game.inviteToken && (
+                <CopyInvite id={game.id} token={game.inviteToken} />
+              )}
+              <CancelInvite
+                id={game.id}
+                label={game.matchmaking ? 'Stop looking' : 'Cancel game'}
+              />
             </>
           )}
           {game.winner &&
@@ -290,7 +300,7 @@ const LobbyPage = ({ email }: { email: string }) => {
   const [showArchived, setShowArchived] = useState(false);
 
   const open = ({ id }: { id: number }) => router.push(gamePath(id));
-  const start = (mode: 'online' | 'local') =>
+  const start = (mode: 'online' | 'local' | 'random') =>
     create.mutate({ mode }, { onSuccess: open });
   const rematch = (id: number) =>
     create.mutate({ rematchOf: id }, { onSuccess: open });
@@ -362,7 +372,26 @@ const LobbyPage = ({ email }: { email: string }) => {
               Notify me when it&apos;s my move →
             </button>
           )}
-          <div className='grid gap-3.5 sm:grid-cols-2'>
+          <div className='grid gap-3.5 sm:grid-cols-2 md:grid-cols-3'>
+            <ModeCard
+              marker={{
+                trauma: 'devastated',
+                healed: false,
+                turnsLeft: 2,
+                kills: 0,
+              }}
+              title='Play someone random'
+              text='Get paired with the next player looking for a game.'
+            >
+              <button
+                type='button'
+                className={primary}
+                disabled={create.isPending}
+                onClick={() => start('random')}
+              >
+                Find an opponent
+              </button>
+            </ModeCard>
             <ModeCard
               marker={{
                 trauma: 'psychopath',
@@ -375,7 +404,7 @@ const LobbyPage = ({ email }: { email: string }) => {
             >
               <button
                 type='button'
-                className={primary}
+                className={ghost}
                 disabled={create.isPending}
                 onClick={() => start('online')}
               >

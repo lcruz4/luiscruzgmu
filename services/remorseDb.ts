@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { DatabaseError, Pool, PoolClient } from 'pg';
 import {
   applyAction,
@@ -54,6 +54,8 @@ interface GameRow {
   initial_state: GameState;
   state: GameState;
   version: number;
+  invite_token: string | null;
+  matchmaking: boolean;
 }
 
 // null while the seat is empty
@@ -103,6 +105,7 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
       }
   >(
     `SELECT g.id, g.mode, g.white_email, g.black_email, g.state, g.updated_at,
+            g.invite_token, g.matchmaking,
             a.game_id IS NOT NULL AS archived, r.id AS rematch_id,
             (g.mode = 'online'
               AND g.white_email IS NOT NULL
@@ -142,6 +145,8 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     archived: row.archived,
     yourMove: row.your_move,
     rematchId: row.rematch_id,
+    inviteToken: row.invite_token,
+    matchmaking: row.matchmaking,
     updatedAt: row.updated_at.toISOString(),
   }));
 };
@@ -287,14 +292,68 @@ export const createGame = async (
   const state = initialState();
   const white = mode === 'local' || color === 'w' ? email : null;
   const black = mode === 'local' || color === 'b' ? email : null;
+  const inviteToken = mode === 'online' ? randomUUID() : null;
   const { rows } = await remorsePool.query<{ id: number }>(
-    `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state)
-     VALUES ($1, $2, $3, $4, $5, $5)
+    `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state, invite_token)
+     VALUES ($1, $2, $3, $4, $5, $5, $6)
      RETURNING id`,
-    [mode, email, white, black, JSON.stringify(state)],
+    [mode, email, white, black, JSON.stringify(state), inviteToken],
   );
-  return rows[0].id;
+  return { id: rows[0].id, color, inviteToken };
 };
+
+// Seats the player in the oldest random game waiting on someone else, or
+// opens one for them (reusing theirs if it's still waiting). The advisory
+// lock runs one search at a time so two players asking at once meet instead
+// of each opening a game. matched: they took a seat in someone's game.
+export const findMatch = async (email: string) =>
+  withTransaction(async (client) => {
+    await client.query(
+      `SELECT pg_advisory_xact_lock(hashtext('remorse-matchmaking'))`,
+    );
+    const waiting = await client.query<{
+      id: number;
+      created_by: string;
+      white_email: string | null;
+    }>(
+      `SELECT id, created_by, white_email
+       FROM games
+       WHERE matchmaking AND (white_email IS NULL OR black_email IS NULL)
+       ORDER BY created_by = $1 DESC, created_at
+       LIMIT 1`,
+      [email],
+    );
+    const game = waiting.rows[0];
+    if (game?.created_by === email) {
+      const color: Color = game.white_email ? 'w' : 'b';
+      return { id: game.id, color, matched: false };
+    }
+    if (game) {
+      await client.query(
+        `UPDATE games
+         SET white_email = COALESCE(white_email, $2),
+             black_email = COALESCE(black_email, $2),
+             version = version + 1
+         WHERE id = $1`,
+        [game.id, email],
+      );
+      const color: Color = game.white_email ? 'b' : 'w';
+      return { id: game.id, color, matched: true };
+    }
+    const color: Color = randomInt(2) ? 'b' : 'w';
+    const { rows } = await client.query<{ id: number }>(
+      `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state, matchmaking)
+       VALUES ('online', $1, $2, $3, $4, $4, true)
+       RETURNING id`,
+      [
+        email,
+        color === 'w' ? email : null,
+        color === 'b' ? email : null,
+        JSON.stringify(initialState()),
+      ],
+    );
+    return { id: rows[0].id, color, matched: false };
+  });
 
 // Same players, colors swapped. Both players asking land in one game: the
 // old game's row lock orders them and the second finds the first's rematch.
@@ -349,7 +408,8 @@ export const setArchived = async (
 
 const lockGame = async (client: PoolClient, id: number) => {
   const { rows } = await client.query<GameRow>(
-    `SELECT id, mode, created_by, white_email, black_email, initial_state, state, version
+    `SELECT id, mode, created_by, white_email, black_email, initial_state, state, version,
+            invite_token, matchmaking
      FROM games
      WHERE id = $1
      FOR UPDATE`,
@@ -392,6 +452,7 @@ export const getGame = async (
 ): Promise<GameResponse> => {
   const { rows } = await remorsePool.query<GameRow & NameColumns>(
     `SELECT g.id, g.mode, g.created_by, g.white_email, g.black_email, g.initial_state, g.state, g.version,
+            g.invite_token, g.matchmaking,
             COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
             COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
             pw.icon AS white_icon, pb.icon AS black_icon
@@ -417,6 +478,7 @@ export const getGame = async (
     [id],
   );
   const last = steps.rows.at(-1);
+  const you = seatsOf(game, email);
   return {
     id: game.id,
     mode: game.mode,
@@ -436,9 +498,12 @@ export const getGame = async (
         createdAt: row.created_at.toISOString(),
       }),
     ),
-    you: seatsOf(game, email),
+    you,
     canUndo: canUndoStep(game, email, last),
     rematchId: rematch.rows[0]?.id ?? null,
+    // Only the player waiting for an opponent gets the invite link's secret
+    inviteToken: you.length ? game.invite_token : null,
+    matchmaking: game.matchmaking,
   };
 };
 
@@ -593,7 +658,9 @@ export const cancelGame = async (id: number, email: string) =>
     );
   });
 
-export const joinGame = async (id: number, email: string) =>
+// Takes the open seat with the invite link's token. Random games fill only
+// through findMatch.
+export const joinGame = async (id: number, email: string, token: string) =>
   withTransaction(async (client) => {
     const game = await lockGame(client, id);
     if (game.mode !== 'online')
@@ -602,10 +669,14 @@ export const joinGame = async (id: number, email: string) =>
     if (game.white_email && game.black_email) {
       throw new HttpError(409, 'Both seats are taken');
     }
+    if (game.matchmaking || game.invite_token !== token) {
+      throw new HttpError(403, 'This invite link isn’t valid');
+    }
     await client.query(
       `UPDATE games
        SET white_email = COALESCE(white_email, $2),
            black_email = COALESCE(black_email, $2),
+           invite_token = NULL,
            version = version + 1
        WHERE id = $1`,
       [id, email],

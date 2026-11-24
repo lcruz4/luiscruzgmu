@@ -127,7 +127,9 @@ export const useStats = () =>
 
 export const useCreateGame = () =>
   useMutation({
-    mutationFn: (body: { mode: 'online' | 'local' } | { rematchOf: number }) =>
+    mutationFn: (
+      body: { mode: 'online' | 'local' | 'random' } | { rematchOf: number },
+    ) =>
       request<{ id: number; color: Color }>(API, {
         method: 'POST',
         body: JSON.stringify(body),
@@ -171,7 +173,7 @@ export type GameCommand =
   | { type: 'selfHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'resign' }
-  | { type: 'join' };
+  | { type: 'join'; inviteToken: string };
 
 const fetchGame = (id: number, current: GameResponse | undefined) =>
   request(

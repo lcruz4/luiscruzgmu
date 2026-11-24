@@ -20,6 +20,7 @@ import {
 } from '@/components/remorse-chess/useGame';
 import { useBadgeSync } from '@/components/remorse-chess/useYourMoveAlerts';
 import { inCheck, opponent } from '@/lib/remorse/engine';
+import { gamePath } from '@/lib/remorse/paths';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameResponse } from '@/types/remorse';
@@ -35,6 +36,8 @@ const GamePage = () => {
   const router = useRouter();
   const id =
     typeof router.query.id === 'string' ? Number(router.query.id) : undefined;
+  const invite =
+    typeof router.query.invite === 'string' ? router.query.invite : null;
   const { query, mutation } = useGame(id);
   const rematch = useCreateGame();
   const cancel = useCancelGame();
@@ -56,6 +59,13 @@ const GamePage = () => {
     },
     [onAnimating],
   );
+  // Once seated, the invite has done its job; keep it out of the address bar
+  const seated = Boolean(game?.you.length);
+  useEffect(() => {
+    if (!seated || !invite || id === undefined) return;
+    router.replace(gamePath(id), undefined, { shallow: true });
+  }, [seated, invite, id, router]);
+
   const seen = profile.data?.tutorialSeen;
   const callout = seen && newRules.found.find((rule) => !seen.includes(rule));
 
@@ -102,6 +112,7 @@ const GamePage = () => {
 
   const yourMove =
     game.mode === 'online' &&
+    Boolean(game.whiteEmail && game.blackEmail) &&
     hiddenFrom === null &&
     game.you.includes(game.state.turn) &&
     !game.state.winner;
@@ -180,6 +191,7 @@ const GamePage = () => {
             onRules={setRulesSlide}
             rematchPending={rematch.isPending}
             cancelPending={cancel.isPending}
+            invite={invite}
             onCancel={() =>
               cancel.mutate(game.id, {
                 onSuccess: () => router.push('/projects/remorse-chess'),

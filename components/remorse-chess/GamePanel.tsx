@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { colorName, describeEvent, resultText } from '@/lib/remorse/describe';
+import { inviteUrl } from '@/lib/remorse/paths';
 import { pieceSrc } from '@/lib/remorse/pieceSets';
 import { cn } from '@/lib/utils';
 import type { GameEvent, GameResponse } from '@/types/remorse';
@@ -140,6 +141,8 @@ interface GamePanelProps {
   rematchPending: boolean;
   onCancel: () => void;
   cancelPending: boolean;
+  // the token from the invite link this page was opened with
+  invite: string | null;
 }
 
 export const GamePanel = ({
@@ -154,6 +157,7 @@ export const GamePanel = ({
   rematchPending,
   onCancel,
   cancelPending,
+  invite,
 }: GamePanelProps) => {
   const [copied, setCopied] = useState(false);
   const [confirmResign, setConfirmResign] = useState(false);
@@ -175,9 +179,9 @@ export const GamePanel = ({
     : state.pieces.find((p) => p.id === state.extraMovePieceId);
   const opponentName = game.you.includes('w') ? game.blackName : game.whiteName;
 
-  const copyInvite = async () => {
+  const copyInvite = async (token: string) => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(inviteUrl(game.id, token));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -239,37 +243,65 @@ export const GamePanel = ({
         </StatusCard>
       );
     }
-    if (seatOpen) {
-      return game.you.length ? (
+    if (seatOpen && game.you.length) {
+      const cancelButton = (
+        <button
+          type='button'
+          className={ghost}
+          onClick={() => setConfirmCancel(true)}
+        >
+          {game.matchmaking ? 'Stop looking' : 'Cancel game'}
+        </button>
+      );
+      const token = game.inviteToken;
+      if (game.matchmaking || !token) {
+        return (
+          <StatusCard
+            tone='gold'
+            title='Finding you an opponent'
+            text='You’ll play the next person who looks for a random game. We’ll let you know when they join.'
+          >
+            {cancelButton}
+          </StatusCard>
+        );
+      }
+      return (
         <StatusCard
           tone='gold'
           title='Invite your opponent'
-          text='Send them this game’s link. Colors were drawn at random.'
+          text='Send them this invite link. Only someone with it can join. Colors were drawn at random.'
         >
           <div className='flex flex-wrap gap-2'>
-            <button type='button' className={primary} onClick={copyInvite}>
-              {copied ? 'Link copied' : 'Copy invite link'}
-            </button>
             <button
               type='button'
-              className={ghost}
-              onClick={() => setConfirmCancel(true)}
+              className={primary}
+              onClick={() => copyInvite(token)}
             >
-              Cancel game
+              {copied ? 'Link copied' : 'Copy invite link'}
             </button>
+            {cancelButton}
           </div>
         </StatusCard>
-      ) : (
-        <StatusCard tone='gold' title='A seat is open'>
+      );
+    }
+    if (seatOpen) {
+      return invite && !game.matchmaking ? (
+        <StatusCard tone='gold' title='You’re invited'>
           <button
             type='button'
             className={primary}
             disabled={busy}
-            onClick={() => onCommand({ type: 'join' })}
+            onClick={() => onCommand({ type: 'join', inviteToken: invite })}
           >
             Join as {game.whiteEmail ? 'black' : 'white'}
           </button>
         </StatusCard>
+      ) : (
+        <StatusCard
+          tone='plain'
+          title='Waiting for an opponent'
+          text='You can watch once the game starts.'
+        />
       );
     }
     if (psychopath) {
@@ -341,8 +373,12 @@ export const GamePanel = ({
       {seatOpen && game.you.length > 0 && confirmCancel && (
         <StatusCard
           tone='red'
-          title='Cancel this game?'
-          text='It’s deleted and the invite link stops working.'
+          title={game.matchmaking ? 'Stop looking?' : 'Cancel this game?'}
+          text={
+            game.matchmaking
+              ? 'The game is deleted.'
+              : 'It’s deleted and the invite link stops working.'
+          }
         >
           <div className='flex gap-2'>
             <button

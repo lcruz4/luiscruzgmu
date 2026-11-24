@@ -54,6 +54,8 @@ const game = (
     you: ['b'],
     canUndo: false,
     rematchId: null,
+    inviteToken: null,
+    matchmaking: false,
   };
 };
 

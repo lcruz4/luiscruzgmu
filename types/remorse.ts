@@ -99,6 +99,10 @@ export interface GameSummary {
   yourMove: boolean;
   // the rematch of this game, once someone started one
   rematchId: number | null;
+  // the invite link's secret while a friend game waits for its opponent
+  inviteToken: string | null;
+  // a random game: its open seat goes to the next player looking for one
+  matchmaking: boolean;
   updatedAt: string;
 }
 
@@ -128,4 +132,7 @@ export interface GameResponse {
   you: Color[];
   canUndo: boolean;
   rematchId: number | null;
+  // the invite link's secret; only sent to the player waiting on it
+  inviteToken: string | null;
+  matchmaking: boolean;
 }
