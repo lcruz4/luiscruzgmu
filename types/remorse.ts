@@ -142,9 +142,12 @@ export interface PlayerGame {
 export interface PlayerPage extends PlayerRef {
   // the viewer's own page
   you: boolean;
-  // the viewer follows them
+  // the viewer follows them, and the other way round: needed to challenge
   following: boolean;
+  followsYou: boolean;
   stats: PlayerStats;
+  // the viewer's finished games against them; null on your own page
+  headToHead: { wins: number; losses: number; draws: number } | null;
   games: PlayerGame[];
 }
 

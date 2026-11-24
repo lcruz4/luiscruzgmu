@@ -3,6 +3,13 @@ import { useRouter } from 'next/router';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Marker } from '@/components/remorse-chess/Marker';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   BoardIcon,
   DieIcon,
   LetterIcon,
@@ -25,7 +32,7 @@ import {
   useArchive,
   useCancelGame,
   useCreateGame,
-  useFollowing,
+  useMutuals,
   useGames,
   useProfile,
   useStats,
@@ -41,7 +48,7 @@ import {
 } from '@/components/remorse-chess/buttons';
 import { requireLogin } from '@/services/auth';
 import type { PlayerIcon } from '@/lib/remorse/icons';
-import type { Color, GameSummary } from '@/types/remorse';
+import type { Color, GameSummary, PlayerRef } from '@/types/remorse';
 
 const primary = cn(goldButton, buttonMd);
 const ghost = cn(ghostButton, buttonMd);
@@ -409,7 +416,111 @@ const ModeCard = ({
   </div>
 );
 
-// The players you follow, to pick one to challenge
+// How many players show in the card before the search takes over
+const SHOWN_PLAYERS = 4;
+
+const PlayerChip = ({
+  player,
+  busy,
+  onPick,
+}: {
+  player: PlayerRef;
+  busy: boolean;
+  onPick: (playerId: number) => void;
+}) => (
+  <button
+    type='button'
+    disabled={busy}
+    onClick={() => onPick(player.id)}
+    title={`Challenge ${player.name}`}
+    className='flex w-14 cursor-pointer flex-col items-center gap-1 rounded-lg py-1 text-xs text-[#e8e4dc] hover:bg-[#302d29] disabled:cursor-default disabled:opacity-50'
+  >
+    <PlayerAvatar icon={player.icon} className='size-10' />
+    <span className='w-full truncate text-center'>{player.name}</span>
+  </button>
+);
+
+// Search across everyone you can challenge
+const ChallengeSearch = ({
+  players,
+  busy,
+  onPick,
+}: {
+  players: PlayerRef[];
+  busy: boolean;
+  onPick: (playerId: number) => void;
+}) => {
+  const [query, setQuery] = useState('');
+  const matches = players.filter((player) =>
+    player.name.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  return (
+    <Dialog onOpenChange={(open) => !open && setQuery('')}>
+      <DialogTrigger asChild>
+        <button
+          type='button'
+          title='Search players'
+          aria-label='Search players'
+          className='flex w-14 cursor-pointer flex-col items-center gap-1 rounded-lg py-1 text-xs text-[#a29e96] hover:bg-[#302d29] hover:text-white'
+        >
+          <span className='grid size-10 place-items-center rounded-full border-2 border-dashed border-[#514d47]'>
+            <svg
+              viewBox='0 0 24 24'
+              className='size-5'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2.5'
+              strokeLinecap='round'
+              aria-hidden='true'
+            >
+              <circle cx='10.5' cy='10.5' r='6.5' />
+              <path d='M15.5 15.5 20 20' />
+            </svg>
+          </span>
+          Search
+        </button>
+      </DialogTrigger>
+      <DialogContent className='max-w-[calc(100%-32px)] gap-3 rounded-2xl border-[#3a3733] bg-[#262421] p-5 font-sans text-[#e8e6e1] sm:max-w-sm sm:rounded-2xl [&>button]:text-[#a29e96]'>
+        <DialogTitle className='text-lg font-bold text-white'>
+          Challenge a friend
+        </DialogTitle>
+        <DialogDescription className='text-[13px] text-[#a29e96]'>
+          Players who follow you and you follow back.
+        </DialogDescription>
+        <input
+          type='search'
+          autoFocus
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder='Search by name'
+          className='rounded-lg border border-[#514d47] bg-[#1d1b18] px-3 py-2 text-[15px] text-white outline-none placeholder:text-[#6b665e] focus:border-[#c98a1c]'
+        />
+        <ul className='flex max-h-[50dvh] flex-col overflow-y-auto'>
+          {matches.map((player) => (
+            <li key={player.id}>
+              <button
+                type='button'
+                disabled={busy}
+                onClick={() => onPick(player.id)}
+                className='flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left font-semibold text-[#e8e4dc] hover:bg-[#302d29] disabled:cursor-default disabled:opacity-50'
+              >
+                <PlayerAvatar icon={player.icon} className='size-8' />
+                <span className='truncate'>{player.name}</span>
+              </button>
+            </li>
+          ))}
+          {!matches.length && (
+            <li className='px-2 py-2 text-sm text-[#a29e96]'>
+              No one by that name.
+            </li>
+          )}
+        </ul>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// The card's players: a few to tap, then a search for the rest
 const ChallengePicker = ({
   onPick,
   busy,
@@ -417,35 +528,34 @@ const ChallengePicker = ({
   onPick: (playerId: number) => void;
   busy: boolean;
 }) => {
-  const following = useFollowing();
-  if (following.isPending) {
-    return <div className='h-12 animate-pulse rounded-xl bg-[#262421]' />;
-  }
-  if (following.isError) {
-    return <p className='text-sm text-red-300'>{following.error.message}</p>;
-  }
-  if (!following.data.length) {
+  const mutuals = useMutuals();
+  if (mutuals.isPending) {
     return (
-      <p className={cn(muted, 'rounded-xl bg-[#262421] p-4')}>
-        You aren’t following anyone yet. Tap a player’s name in any game to open
-        their page and follow them.
+      <div className='h-[62px] w-full animate-pulse rounded-lg bg-[#302d29]' />
+    );
+  }
+  if (mutuals.isError) {
+    return <p className='text-sm text-red-300'>{mutuals.error.message}</p>;
+  }
+  if (!mutuals.data.length) {
+    return (
+      <p className='text-[13px] text-[#a29e96]'>
+        No one yet. Tap a player’s name in any game to follow them. Once they
+        follow you back, they show up here.
       </p>
     );
   }
   return (
-    <div className='flex flex-wrap gap-2 rounded-xl bg-[#262421] p-3'>
-      {following.data.map((player) => (
-        <button
+    <div className='-mx-1 flex gap-1'>
+      {mutuals.data.slice(0, SHOWN_PLAYERS).map((player) => (
+        <PlayerChip
           key={player.id}
-          type='button'
-          disabled={busy}
-          onClick={() => onPick(player.id)}
-          className='flex cursor-pointer items-center gap-2 rounded-full border border-[#514d47] bg-[#302d29] py-1 pr-3.5 pl-1 text-sm font-semibold text-[#e8e4dc] hover:bg-[#3a3733] disabled:cursor-default disabled:opacity-50'
-        >
-          <PlayerAvatar icon={player.icon} className='size-7' />
-          {player.name}
-        </button>
+          player={player}
+          busy={busy}
+          onPick={onPick}
+        />
       ))}
+      <ChallengeSearch players={mutuals.data} busy={busy} onPick={onPick} />
     </div>
   );
 };
@@ -457,7 +567,6 @@ const LobbyPage = ({ email }: { email: string }) => {
   const profile = useProfile();
   const create = useCreateGame();
   const [showArchived, setShowArchived] = useState(false);
-  const [picking, setPicking] = useState(false);
 
   const open = ({ id }: { id: number }) => router.push(gamePath(id));
   const challenge = (playerId: number) =>
@@ -522,11 +631,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               />
             )}
             <h1 className='text-[clamp(26px,4.5vw,34px)] leading-tight font-bold tracking-tight text-white'>
-              {profile.data ? (
-                <PlayerLink id={profile.data.id}>
-                  {profile.data.username}
-                </PlayerLink>
-              ) : (
+              {profile.data?.username ?? (
                 <span className='inline-block h-8 w-40 animate-pulse rounded-md bg-[#262421] align-middle' />
               )}
             </h1>
@@ -566,16 +671,9 @@ const LobbyPage = ({ email }: { email: string }) => {
             <ModeCard
               icon={<SwordsIcon />}
               title='Challenge a friend'
-              text='Pick someone you follow. The game starts when they accept.'
+              text='Anyone you follow who follows you back. The game starts when they accept.'
             >
-              <button
-                type='button'
-                className={ghost}
-                disabled={create.isPending}
-                onClick={() => setPicking(!picking)}
-              >
-                {picking ? 'Hide players' : 'Pick a player'}
-              </button>
+              <ChallengePicker onPick={challenge} busy={create.isPending} />
             </ModeCard>
             <ModeCard
               icon={<LetterIcon />}
@@ -606,11 +704,6 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
           </div>
-          {picking && (
-            <div className='mt-3.5'>
-              <ChallengePicker onPick={challenge} busy={create.isPending} />
-            </div>
-          )}
           <Link
             href='/projects/remorse-chess/tutorial'
             className='mt-3 inline-block text-[15px] font-semibold text-[#ffd27a] hover:underline'

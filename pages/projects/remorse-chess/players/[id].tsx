@@ -6,7 +6,7 @@ import {
   PlayerLink,
   stretchedLink,
 } from '@/components/remorse-chess/PlayerLink';
-import { RecordCard } from '@/components/remorse-chess/RecordCard';
+import { RecordCard, Tally } from '@/components/remorse-chess/RecordCard';
 import {
   DefaultActions,
   RemorseLayout,
@@ -72,6 +72,29 @@ const GameRow = ({
   );
 };
 
+// Your finished games against this player
+const HeadToHead = ({
+  record,
+}: {
+  record: NonNullable<PlayerPage['headToHead']>;
+}) => {
+  const played = record.wins + record.losses + record.draws;
+  return (
+    <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
+      <div className='grid grid-cols-3 gap-2'>
+        <Tally value={record.wins} label='Your wins' gold />
+        <Tally value={record.losses} label='Their wins' />
+        <Tally value={record.draws} label='Draws' />
+      </div>
+      <p className={muted}>
+        {played
+          ? `${played} finished ${played === 1 ? 'game' : 'games'} between you.`
+          : 'You haven’t finished a game against each other yet.'}
+      </p>
+    </div>
+  );
+};
+
 const Actions = ({ player }: { player: PlayerPage }) => {
   const router = useRouter();
   const follow = useFollow(player.id);
@@ -89,19 +112,21 @@ const Actions = ({ player }: { player: PlayerPage }) => {
   return (
     <div className='flex flex-col gap-2'>
       <div className='flex flex-wrap gap-2'>
-        <button
-          type='button'
-          className={cn(goldButton, buttonSm)}
-          disabled={challenge.isPending}
-          onClick={() =>
-            challenge.mutate(
-              { challenge: player.id },
-              { onSuccess: ({ id }) => router.push(gamePath(id)) },
-            )
-          }
-        >
-          Challenge
-        </button>
+        {player.followsYou && (
+          <button
+            type='button'
+            className={cn(goldButton, buttonSm)}
+            disabled={challenge.isPending}
+            onClick={() =>
+              challenge.mutate(
+                { challenge: player.id },
+                { onSuccess: ({ id }) => router.push(gamePath(id)) },
+              )
+            }
+          >
+            Challenge
+          </button>
+        )}
         <button
           type='button'
           className={cn(ghostButton, buttonSm)}
@@ -111,6 +136,11 @@ const Actions = ({ player }: { player: PlayerPage }) => {
           {player.following ? '✓ Following' : '+ Follow'}
         </button>
       </div>
+      {!player.followsYou && (
+        <p className='text-xs text-[#a29e96]'>
+          You can challenge them once they follow you.
+        </p>
+      )}
       {(challenge.error ?? follow.error) && (
         <p className='text-sm text-red-300'>
           {(challenge.error ?? follow.error)?.message}
@@ -161,6 +191,13 @@ const PlayerPageView = () => {
               </div>
               <Actions player={data} />
             </section>
+
+            {data.headToHead && (
+              <section>
+                <h2 className={h2}>You vs {data.name}</h2>
+                <HeadToHead record={data.headToHead} />
+              </section>
+            )}
 
             <section>
               <h2 className={h2}>Record</h2>

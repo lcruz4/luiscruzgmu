@@ -764,9 +764,9 @@ const emailOfPlayer = async (client: PoolClient | Pool, id: number) => {
   return rows[0].email;
 };
 
-// An online game with one seat held for `playerId`. A challenge still
-// waiting between the same two players is reused; one they sent you is
-// accepted.
+// An online game with one seat held for `playerId`, who must follow you. A
+// challenge still waiting between the same two players is reused; one they
+// sent you is accepted.
 export const createChallenge = async (email: string, playerId: number) =>
   withTransaction(async (client) => {
     const opponentEmail = await emailOfPlayer(client, playerId);
@@ -803,6 +803,18 @@ export const createChallenge = async (email: string, playerId: number) =>
         created: false,
         accepted: true,
       };
+    }
+    const followsYou = await client.query(
+      `SELECT 1
+       FROM follows
+       WHERE follower_email = $1 AND followee_email = $2`,
+      [opponentEmail, email],
+    );
+    if (!followsYou.rowCount) {
+      throw new HttpError(
+        403,
+        'They have to follow you before you can challenge them',
+      );
     }
     const pending = await client.query<{
       id: number;
@@ -845,6 +857,26 @@ export const createChallenge = async (email: string, playerId: number) =>
     };
   });
 
+// Your finished online games against them, from your side
+const headToHead = async (email: string, opponentEmail: string) => {
+  const { rows } = await remorsePool.query<
+    Record<'wins' | 'losses' | 'draws', number>
+  >(
+    `SELECT
+       count(*) FILTER (WHERE (state->>'winner' = 'w' AND white_email = $1)
+                           OR (state->>'winner' = 'b' AND black_email = $1))::int AS wins,
+       count(*) FILTER (WHERE (state->>'winner' = 'w' AND black_email = $1)
+                           OR (state->>'winner' = 'b' AND white_email = $1))::int AS losses,
+       count(*) FILTER (WHERE state->>'winner' = 'draw')::int AS draws
+     FROM games
+     WHERE mode = 'online'
+       AND ((white_email = $1 AND black_email = $2)
+         OR (white_email = $2 AND black_email = $1))`,
+    [email, opponentEmail],
+  );
+  return rows[0];
+};
+
 // A player's public page: who they are, their record and their online games
 // against someone else, for anyone to watch
 export const getPlayer = async (
@@ -856,13 +888,19 @@ export const getPlayer = async (
     name: string;
     icon: PlayerIcon | null;
     following: boolean;
+    follows_you: boolean;
   }>(
     `SELECT p.email, COALESCE(p.username, split_part(p.email, '@', 1)) AS name, p.icon,
             EXISTS (
               SELECT 1
               FROM follows
               WHERE follower_email = $2 AND followee_email = p.email
-            ) AS following
+            ) AS following,
+            EXISTS (
+              SELECT 1
+              FROM follows
+              WHERE follower_email = p.email AND followee_email = $2
+            ) AS follows_you
      FROM players p
      WHERE p.id = $1`,
     [id, viewer],
@@ -895,7 +933,10 @@ export const getPlayer = async (
     icon: player.icon,
     you: player.email === viewer,
     following: player.following,
+    followsYou: player.follows_you,
     stats: await playerStats(player.email),
+    headToHead:
+      player.email === viewer ? null : await headToHead(viewer, player.email),
     games: games.rows.map((row) => ({
       id: row.id,
       whiteId: row.white_id,
@@ -939,10 +980,12 @@ export const setFollowing = async (
   }
 };
 
-export const listFollowing = async (email: string): Promise<PlayerRef[]> => {
+// Who you can challenge: players you follow who follow you back
+export const listMutuals = async (email: string): Promise<PlayerRef[]> => {
   const { rows } = await remorsePool.query<PlayerRef>(
     `SELECT p.id, COALESCE(p.username, split_part(p.email, '@', 1)) AS name, p.icon
      FROM follows f
+     JOIN follows back ON back.follower_email = f.followee_email AND back.followee_email = f.follower_email
      JOIN players p ON p.email = f.followee_email
      WHERE f.follower_email = $1
      ORDER BY lower(COALESCE(p.username, split_part(p.email, '@', 1)))`,

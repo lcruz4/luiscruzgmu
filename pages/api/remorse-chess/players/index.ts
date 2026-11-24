@@ -1,7 +1,7 @@
 import { remorseRoute } from '@/services/remorseApi';
-import { listFollowing } from '@/services/remorseDb';
+import { listMutuals } from '@/services/remorseDb';
 
-// The players you follow
+// The players you can challenge: you follow each other
 export default remorseRoute({
-  GET: (_req, email) => listFollowing(email),
+  GET: (_req, email) => listMutuals(email),
 });

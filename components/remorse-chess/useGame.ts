@@ -143,7 +143,7 @@ export const useCreateGame = () =>
   });
 
 const playerKey = (id: number | undefined) => ['remorse-chess', 'player', id];
-const FOLLOWING_KEY = ['remorse-chess', 'following'];
+const MUTUALS_KEY = ['remorse-chess', 'mutuals'];
 
 export const usePlayer = (id: number | undefined) =>
   useQuery({
@@ -153,9 +153,10 @@ export const usePlayer = (id: number | undefined) =>
       : skipToken,
   });
 
-export const useFollowing = () =>
+// Players you can challenge: you follow each other
+export const useMutuals = () =>
   useQuery({
-    queryKey: FOLLOWING_KEY,
+    queryKey: MUTUALS_KEY,
     queryFn: () => request<PlayerRef[]>('/api/remorse-chess/players'),
   });
 
@@ -175,7 +176,7 @@ export const useFollow = (id: number) => {
       queryClient.setQueryData<PlayerPage>(playerKey(id), (player) =>
         player ? { ...player, following } : player,
       ),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: FOLLOWING_KEY }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: MUTUALS_KEY }),
   });
 };
 

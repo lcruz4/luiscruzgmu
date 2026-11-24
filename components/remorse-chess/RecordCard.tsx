@@ -11,7 +11,7 @@ const FATES: { trauma: Trauma; name: string; odds: number; bar: string }[] = [
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
-const Tally = ({
+export const Tally = ({
   value,
   label,
   gold,
