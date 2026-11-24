@@ -855,13 +855,9 @@ export const getPlayer = async (
     email: string;
     name: string;
     icon: PlayerIcon | null;
-    followers: number;
     following: boolean;
   }>(
     `SELECT p.email, COALESCE(p.username, split_part(p.email, '@', 1)) AS name, p.icon,
-            (SELECT count(*)::int
-             FROM follows
-             WHERE followee_email = p.email) AS followers,
             EXISTS (
               SELECT 1
               FROM follows
@@ -898,7 +894,6 @@ export const getPlayer = async (
     name: player.name,
     icon: player.icon,
     you: player.email === viewer,
-    followers: player.followers,
     following: player.following,
     stats: await playerStats(player.email),
     games: games.rows.map((row) => ({

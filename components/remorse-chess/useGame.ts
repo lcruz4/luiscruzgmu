@@ -173,13 +173,7 @@ export const useFollow = (id: number) => {
       ),
     onSuccess: (_result, following) =>
       queryClient.setQueryData<PlayerPage>(playerKey(id), (player) =>
-        player
-          ? {
-              ...player,
-              following,
-              followers: player.followers + (following ? 1 : -1),
-            }
-          : player,
+        player ? { ...player, following } : player,
       ),
     onSettled: () => queryClient.invalidateQueries({ queryKey: FOLLOWING_KEY }),
   });

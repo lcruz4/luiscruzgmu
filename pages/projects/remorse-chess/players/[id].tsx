@@ -158,10 +158,6 @@ const PlayerPageView = () => {
                     </span>
                   )}
                 </h1>
-                <p className={muted}>
-                  {data.followers}{' '}
-                  {data.followers === 1 ? 'follower' : 'followers'}
-                </p>
               </div>
               <Actions player={data} />
             </section>

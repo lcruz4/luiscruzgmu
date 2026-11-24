@@ -142,7 +142,6 @@ export interface PlayerGame {
 export interface PlayerPage extends PlayerRef {
   // the viewer's own page
   you: boolean;
-  followers: number;
   // the viewer follows them
   following: boolean;
   stats: PlayerStats;
