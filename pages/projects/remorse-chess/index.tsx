@@ -2,7 +2,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Marker } from '@/components/remorse-chess/Marker';
-import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
+import {
+  BoardIcon,
+  DieIcon,
+  LetterIcon,
+  SwordsIcon,
+} from '@/components/remorse-chess/ModeIcons';
+import {
+  PlayerLink,
+  stretchedLink,
+} from '@/components/remorse-chess/PlayerLink';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
 import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RecordCard } from '@/components/remorse-chess/RecordCard';
@@ -12,9 +21,11 @@ import {
 } from '@/components/remorse-chess/RemorseLayout';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
+  useAcceptChallenge,
   useArchive,
   useCancelGame,
   useCreateGame,
+  useFollowing,
   useGames,
   useProfile,
   useStats,
@@ -29,6 +40,7 @@ import {
   goldButton,
 } from '@/components/remorse-chess/buttons';
 import { requireLogin } from '@/services/auth';
+import type { PlayerIcon } from '@/lib/remorse/icons';
 import type { Color, GameSummary } from '@/types/remorse';
 
 const primary = cn(goldButton, buttonMd);
@@ -40,16 +52,75 @@ const muted = 'text-[13.5px] text-[#a29e96]';
 
 type Status = { label: string; tone: 'gold' | 'plain' | 'dim' };
 
-const seatOf = (game: GameSummary, email: string): Color =>
-  game.whiteEmail === email ? 'w' : 'b';
+// A challenged player's seat is the open one
+const seatOf = (game: GameSummary, email: string): Color => {
+  if (game.whiteEmail === email) return 'w';
+  if (game.blackEmail === email) return 'b';
+  return game.whiteEmail ? 'b' : 'w';
+};
+
+// The other side: who you play, or who challenged you
+const opponent = (
+  game: GameSummary,
+  email: string,
+): { id: number | null; name: string; icon: PlayerIcon | null } | null => {
+  if (game.challenge && !game.challenge.you) {
+    const { playerId, name, icon } = game.challenge;
+    return { id: playerId, name, icon };
+  }
+  const white = seatOf(game, email) === 'b';
+  const name = white ? game.whiteName : game.blackName;
+  if (!name) return null;
+  return {
+    id: white ? game.whiteId : game.blackId,
+    name,
+    icon: white ? game.whiteIcon : game.blackIcon,
+  };
+};
 
 const opponentOf = (game: GameSummary, email: string) => {
   if (game.mode === 'local') return 'Pass and play';
-  const other = game.whiteEmail === email ? game.blackName : game.whiteName;
-  if (other) return `vs ${other}`;
+  const other = opponent(game, email);
+  if (game.challenge?.you) return `${other?.name} challenged you`;
+  if (game.challenge) return `Challenged ${other?.name}`;
+  if (other) return `vs ${other.name}`;
   return game.matchmaking
     ? 'Finding a random opponent'
     : 'Waiting for a friend';
+};
+
+const OpponentLabel = ({
+  game,
+  email,
+}: {
+  game: GameSummary;
+  email: string;
+}) => {
+  const other = opponent(game, email);
+  if (game.mode === 'local' || !other) return <>{opponentOf(game, email)}</>;
+  const name = (
+    <PlayerLink id={other.id} className='truncate'>
+      {other.name}
+    </PlayerLink>
+  );
+  return (
+    <>
+      <PlayerAvatar icon={other.icon} className='size-6' />
+      {game.challenge?.you ? (
+        <>
+          {name}
+          <span className='flex-none font-normal'>challenged you</span>
+        </>
+      ) : (
+        <>
+          <span className='flex-none font-normal text-[#a29e96]'>
+            {game.challenge ? 'Challenged' : 'vs'}
+          </span>
+          {name}
+        </>
+      )}
+    </>
+  );
 };
 
 const inviteOpen = (game: GameSummary) =>
@@ -70,9 +141,14 @@ const statusOf = (game: GameSummary, email: string): Status => {
       tone: 'dim',
     };
   }
+  if (game.challenge?.you) return { label: 'Your call', tone: 'gold' };
   if (inviteOpen(game)) {
     return {
-      label: game.matchmaking ? 'Looking' : 'Invite pending',
+      label: game.matchmaking
+        ? 'Looking'
+        : game.challenge
+        ? 'Challenge sent'
+        : 'Invite pending',
       tone: 'plain',
     };
   }
@@ -125,6 +201,43 @@ const CopyInvite = ({ id, token }: { id: number; token: string }) => {
     <button type='button' className={small} onClick={copy}>
       {copied ? 'Link copied' : 'Copy invite link'}
     </button>
+  );
+};
+
+const AnswerChallenge = ({ id }: { id: number }) => {
+  const router = useRouter();
+  const accept = useAcceptChallenge();
+  const decline = useCancelGame();
+  const error = accept.error ?? decline.error;
+  return (
+    <>
+      {error && (
+        <span className='self-center text-xs text-red-300'>
+          {error.message}
+        </span>
+      )}
+      <button
+        type='button'
+        className={cn(
+          small,
+          'border-[#c98a1c]/60 bg-[#c98a1c]/20 text-[#ffd27a] hover:bg-[#c98a1c]/30',
+        )}
+        disabled={accept.isPending || decline.isPending}
+        onClick={() =>
+          accept.mutate(id, { onSuccess: () => router.push(gamePath(id)) })
+        }
+      >
+        Accept
+      </button>
+      <button
+        type='button'
+        className={small}
+        disabled={accept.isPending || decline.isPending}
+        onClick={() => decline.mutate(id)}
+      >
+        Decline
+      </button>
+    </>
   );
 };
 
@@ -185,9 +298,13 @@ const GameRow = ({
   const archive = useArchive();
   const status = statusOf(game, email);
   const seat = seatOf(game, email);
+  const waiting = inviteOpen(game);
   const flipped = game.mode === 'online' && seat === 'b';
   const detail = [
-    game.mode === 'online' && `You play ${colorName(seat).toLowerCase()}`,
+    game.mode === 'online' &&
+      `${game.challenge?.you ? 'You’d play' : 'You play'} ${colorName(
+        seat,
+      ).toLowerCase()}`,
     timeAgo(game.updatedAt),
   ]
     .filter(Boolean)
@@ -196,40 +313,43 @@ const GameRow = ({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-[#262421] p-2.5 pr-3 transition-colors hover:bg-[#2c2a26]',
+        'relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-[#262421] p-2.5 pr-3 transition-colors hover:bg-[#2c2a26]',
         status.tone === 'gold' && 'ring-1 ring-[#c98a1c]/45',
         game.archived && 'opacity-70',
       )}
     >
-      <Link
-        href={gamePath(game.id)}
-        className='flex min-w-0 flex-[1_1_320px] items-center gap-3'
-      >
+      <div className='flex min-w-0 flex-[1_1_320px] items-center gap-3'>
         <MiniBoard pieces={game.pieces} flipped={flipped} />
         <div className='min-w-0 flex-1'>
           <strong className='flex min-w-0 items-center gap-1.5 font-semibold text-white'>
-            {game.mode === 'online' && !inviteOpen(game) && (
-              <PlayerAvatar
-                icon={seat === 'w' ? game.blackIcon : game.whiteIcon}
-                className='size-6'
-              />
-            )}
-            <span className='truncate'>{opponentOf(game, email)}</span>
+            <OpponentLabel game={game} email={email} />
           </strong>
-          <span className={cn(muted, 'block truncate')}>{detail}</span>
+          <Link
+            href={gamePath(game.id)}
+            className={cn(muted, 'block truncate', stretchedLink)}
+          >
+            {detail}
+          </Link>
         </div>
-        {!inviteOpen(game) && <Chip {...status} />}
-      </Link>
-      {(inviteOpen(game) || game.winner) && (
-        <div className='ml-auto flex gap-2'>
-          {inviteOpen(game) && (
+        {!waiting && <Chip {...status} />}
+      </div>
+      {(waiting || game.winner) && (
+        <div className='relative z-10 ml-auto flex gap-2'>
+          {game.challenge?.you && <AnswerChallenge id={game.id} />}
+          {waiting && !game.challenge?.you && (
             <>
               {game.inviteToken && (
                 <CopyInvite id={game.id} token={game.inviteToken} />
               )}
               <CancelInvite
                 id={game.id}
-                label={game.matchmaking ? 'Stop looking' : 'Cancel game'}
+                label={
+                  game.matchmaking
+                    ? 'Stop looking'
+                    : game.challenge
+                    ? 'Withdraw'
+                    : 'Cancel game'
+                }
               />
             </>
           )}
@@ -239,16 +359,14 @@ const GameRow = ({
                 Go to rematch
               </Link>
             ) : (
-              !inviteOpen(game) && (
-                <button
-                  type='button'
-                  className={small}
-                  disabled={rematchBusy}
-                  onClick={() => onRematch(game.id)}
-                >
-                  Rematch
-                </button>
-              )
+              <button
+                type='button'
+                className={small}
+                disabled={rematchBusy}
+                onClick={() => onRematch(game.id)}
+              >
+                Rematch
+              </button>
             ))}
           {game.winner && (
             <button
@@ -269,19 +387,19 @@ const GameRow = ({
 };
 
 const ModeCard = ({
-  marker,
+  icon,
   title,
   text,
   children,
 }: {
-  marker: MarkerProps;
+  icon: ReactNode;
   title: string;
   text: string;
   children: ReactNode;
 }) => (
   <div className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'>
     <div className='flex items-start gap-3'>
-      <Marker {...marker} className='block h-[62px] w-[58px] flex-none' />
+      {icon}
       <div>
         <h3 className='font-semibold text-white'>{title}</h3>
         <p className={muted}>{text}</p>
@@ -291,6 +409,47 @@ const ModeCard = ({
   </div>
 );
 
+// The players you follow, to pick one to challenge
+const ChallengePicker = ({
+  onPick,
+  busy,
+}: {
+  onPick: (playerId: number) => void;
+  busy: boolean;
+}) => {
+  const following = useFollowing();
+  if (following.isPending) {
+    return <div className='h-12 animate-pulse rounded-xl bg-[#262421]' />;
+  }
+  if (following.isError) {
+    return <p className='text-sm text-red-300'>{following.error.message}</p>;
+  }
+  if (!following.data.length) {
+    return (
+      <p className={cn(muted, 'rounded-xl bg-[#262421] p-4')}>
+        You aren’t following anyone yet. Tap a player’s name in any game to open
+        their page and follow them.
+      </p>
+    );
+  }
+  return (
+    <div className='flex flex-wrap gap-2 rounded-xl bg-[#262421] p-3'>
+      {following.data.map((player) => (
+        <button
+          key={player.id}
+          type='button'
+          disabled={busy}
+          onClick={() => onPick(player.id)}
+          className='flex cursor-pointer items-center gap-2 rounded-full border border-[#514d47] bg-[#302d29] py-1 pr-3.5 pl-1 text-sm font-semibold text-[#e8e4dc] hover:bg-[#3a3733] disabled:cursor-default disabled:opacity-50'
+        >
+          <PlayerAvatar icon={player.icon} className='size-7' />
+          {player.name}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const LobbyPage = ({ email }: { email: string }) => {
   const router = useRouter();
   const games = useGames();
@@ -298,8 +457,11 @@ const LobbyPage = ({ email }: { email: string }) => {
   const profile = useProfile();
   const create = useCreateGame();
   const [showArchived, setShowArchived] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   const open = ({ id }: { id: number }) => router.push(gamePath(id));
+  const challenge = (playerId: number) =>
+    create.mutate({ challenge: playerId }, { onSuccess: open });
   const start = (mode: 'online' | 'local' | 'random') =>
     create.mutate({ mode }, { onSuccess: open });
   const rematch = (id: number) =>
@@ -308,24 +470,34 @@ const LobbyPage = ({ email }: { email: string }) => {
   const list = useMemo(() => games.data ?? [], [games.data]);
   const visible = list.filter((game) => !game.archived);
   const archived = list.filter((game) => game.archived);
-  // Games waiting on you float to the top
+  // Games waiting on you float to the top; games still missing a player
+  // (invites, challenges, random searches) wait in their own section
   const active = visible
-    .filter((game) => !game.winner)
+    .filter((game) => !game.winner && !inviteOpen(game))
     .sort((a, b) => Number(b.yourMove) - Number(a.yourMove));
+  const waiting = visible
+    .filter((game) => !game.winner && inviteOpen(game))
+    .sort(
+      (a, b) =>
+        Number(Boolean(b.challenge?.you)) - Number(Boolean(a.challenge?.you)),
+    );
   const finished = visible.filter((game) => game.winner);
 
   const alerts = useMemo(
     () =>
       games.data
-        ?.filter((game) => game.yourMove)
+        ?.filter((game) => game.yourMove || game.challenge?.you)
         .map((game) => ({
           id: game.id,
-          text: `Your move ${opponentOf(game, email)}`,
+          text: game.yourMove
+            ? `Your move ${opponentOf(game, email)}`
+            : opponentOf(game, email),
         })),
     [games.data, email],
   );
+  const challenged = waiting.filter((game) => game.challenge?.you).length;
   const notify = useYourMoveAlerts(alerts);
-  const yourMove = alerts?.length ?? 0;
+  const yourMove = list.filter((game) => game.yourMove).length;
 
   const row = (game: GameSummary) => (
     <GameRow
@@ -350,7 +522,11 @@ const LobbyPage = ({ email }: { email: string }) => {
               />
             )}
             <h1 className='text-[clamp(26px,4.5vw,34px)] leading-tight font-bold tracking-tight text-white'>
-              {profile.data?.username ?? (
+              {profile.data ? (
+                <PlayerLink id={profile.data.id}>
+                  {profile.data.username}
+                </PlayerLink>
+              ) : (
                 <span className='inline-block h-8 w-40 animate-pulse rounded-md bg-[#262421] align-middle' />
               )}
             </h1>
@@ -372,14 +548,9 @@ const LobbyPage = ({ email }: { email: string }) => {
               Notify me when it&apos;s my move →
             </button>
           )}
-          <div className='grid gap-3.5 sm:grid-cols-2 md:grid-cols-3'>
+          <div className='grid gap-3.5 sm:grid-cols-2'>
             <ModeCard
-              marker={{
-                trauma: 'devastated',
-                healed: false,
-                turnsLeft: 2,
-                kills: 0,
-              }}
+              icon={<DieIcon />}
               title='Play someone random'
               text='Get paired with the next player looking for a game.'
             >
@@ -393,13 +564,22 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
             <ModeCard
-              marker={{
-                trauma: 'psychopath',
-                healed: false,
-                turnsLeft: 0,
-                kills: 0,
-              }}
-              title='Play a friend'
+              icon={<SwordsIcon />}
+              title='Challenge a friend'
+              text='Pick someone you follow. The game starts when they accept.'
+            >
+              <button
+                type='button'
+                className={ghost}
+                disabled={create.isPending}
+                onClick={() => setPicking(!picking)}
+              >
+                {picking ? 'Hide players' : 'Pick a player'}
+              </button>
+            </ModeCard>
+            <ModeCard
+              icon={<LetterIcon />}
+              title='Invite by link'
               text='Get an invite link to send. They join from any device.'
             >
               <button
@@ -412,12 +592,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
             <ModeCard
-              marker={{
-                trauma: 'guilt',
-                healed: false,
-                turnsLeft: 0,
-                kills: 0,
-              }}
+              icon={<BoardIcon />}
               title='Pass and play'
               text='Both sides on one device. Good for a table and a friend.'
             >
@@ -431,6 +606,11 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
           </div>
+          {picking && (
+            <div className='mt-3.5'>
+              <ChallengePicker onPick={challenge} busy={create.isPending} />
+            </div>
+          )}
           <Link
             href='/projects/remorse-chess/tutorial'
             className='mt-3 inline-block text-[15px] font-semibold text-[#ffd27a] hover:underline'
@@ -470,6 +650,24 @@ const LobbyPage = ({ email }: { email: string }) => {
             <p className={muted}>
               Start one above. Your pieces are already nervous.
             </p>
+          </section>
+        )}
+
+        {waiting.length > 0 && (
+          <section>
+            <h2 className={cn(h2, 'flex items-center gap-2')}>
+              Waiting
+              {challenged > 0 && (
+                <span
+                  className='grid h-6 min-w-6 place-items-center rounded-full bg-[#c62828] px-1.5 text-xs font-bold text-white tabular-nums shadow-[0_1px_0_#120d0b]'
+                  title={`${challenged} waiting on your answer`}
+                  aria-label={`${challenged} waiting on your answer`}
+                >
+                  {challenged}
+                </span>
+              )}
+            </h2>
+            <div className='flex flex-col gap-2'>{waiting.map(row)}</div>
           </section>
         )}
 

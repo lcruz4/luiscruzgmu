@@ -250,10 +250,25 @@ export const GamePanel = ({
           className={ghost}
           onClick={() => setConfirmCancel(true)}
         >
-          {game.matchmaking ? 'Stop looking' : 'Cancel game'}
+          {game.matchmaking
+            ? 'Stop looking'
+            : game.challenge
+            ? 'Withdraw challenge'
+            : 'Cancel game'}
         </button>
       );
       const token = game.inviteToken;
+      if (game.challenge) {
+        return (
+          <StatusCard
+            tone='gold'
+            title={`Waiting for ${game.challenge.name} to accept`}
+            text='They got your challenge. The game starts when they accept.'
+          >
+            {cancelButton}
+          </StatusCard>
+        );
+      }
       if (game.matchmaking || !token) {
         return (
           <StatusCard
@@ -284,8 +299,36 @@ export const GamePanel = ({
         </StatusCard>
       );
     }
+    if (seatOpen && game.challenge?.you) {
+      return (
+        <StatusCard
+          tone='gold'
+          title={`${game.whiteName ?? game.blackName} challenged you`}
+          text={`You’d play ${game.whiteEmail ? 'black' : 'white'}.`}
+        >
+          <div className='flex flex-wrap gap-2'>
+            <button
+              type='button'
+              className={primary}
+              disabled={busy}
+              onClick={() => onCommand({ type: 'join' })}
+            >
+              Accept
+            </button>
+            <button
+              type='button'
+              className={ghost}
+              disabled={cancelPending}
+              onClick={onCancel}
+            >
+              Decline
+            </button>
+          </div>
+        </StatusCard>
+      );
+    }
     if (seatOpen) {
-      return invite && !game.matchmaking ? (
+      return invite && !game.matchmaking && !game.challenge ? (
         <StatusCard tone='gold' title='You’re invited'>
           <button
             type='button'
@@ -342,6 +385,18 @@ export const GamePanel = ({
         />
       );
     }
+    if (!game.you.length) {
+      return (
+        <StatusCard
+          tone='plain'
+          title={`${
+            (state.turn === 'w' ? game.whiteName : game.blackName) ??
+            colorName(state.turn)
+          } to move`}
+          text='You’re watching. Moves show up as they’re played.'
+        />
+      );
+    }
     return yourTurn ? (
       <StatusCard
         tone='gold'
@@ -373,9 +428,15 @@ export const GamePanel = ({
       {seatOpen && game.you.length > 0 && confirmCancel && (
         <StatusCard
           tone='red'
-          title={game.matchmaking ? 'Stop looking?' : 'Cancel this game?'}
-          text={
+          title={
             game.matchmaking
+              ? 'Stop looking?'
+              : game.challenge
+              ? 'Withdraw your challenge?'
+              : 'Cancel this game?'
+          }
+          text={
+            game.matchmaking || game.challenge
               ? 'The game is deleted.'
               : 'It’s deleted and the invite link stops working.'
           }

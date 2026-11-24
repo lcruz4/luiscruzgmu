@@ -3,6 +3,7 @@ import type { PlayerIcon } from '@/lib/remorse/icons';
 import { cn } from '@/lib/utils';
 import type { Color, GameResponse } from '@/types/remorse';
 import { PlayerAvatar } from './PlayerAvatar';
+import { PlayerLink } from './PlayerLink';
 
 // One side of the board: who plays it and whether it's their move
 export const PlayerStrip = ({
@@ -49,7 +50,13 @@ export const PlayerStrip = ({
               name ? 'text-white' : 'text-[#a29e96]',
             )}
           >
-            {name ?? 'Waiting for a player'}
+            {name && !local ? (
+              <PlayerLink id={color === 'w' ? game.whiteId : game.blackId}>
+                {name}
+              </PlayerLink>
+            ) : (
+              name ?? 'Waiting for a player'
+            )}
           </strong>
           {you && <span className='text-xs text-[#a29e96]'>(you)</span>}
         </div>

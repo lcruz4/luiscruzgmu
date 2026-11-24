@@ -33,8 +33,16 @@ const Tally = ({
   </div>
 );
 
-// Win/loss record and how your capturing pieces rolled against the odds
-export const RecordCard = ({ stats }: { stats: PlayerStats }) => {
+// Win/loss record and how their capturing pieces rolled against the odds.
+// you: the viewer's own record
+export const RecordCard = ({
+  stats,
+  you = true,
+}: {
+  stats: PlayerStats;
+  you?: boolean;
+}) => {
+  const their = you ? 'Your' : 'Their';
   const rolls = Object.values(stats.traumas).reduce((a, b) => a + b, 0);
   const played = stats.wins + stats.losses + stats.draws;
   const top = rolls
@@ -60,12 +68,16 @@ export const RecordCard = ({ stats }: { stats: PlayerStats }) => {
             ? `Won ${pct(stats.wins / played)} of ${played} finished ${
                 played === 1 ? 'game' : 'games'
               }.`
-            : 'Finish an online game to start your record.'}
+            : you
+            ? 'Finish an online game to start your record.'
+            : 'No finished online games yet.'}
         </p>
       </div>
 
       <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
-        <h3 className='font-semibold text-white'>How your pieces took it</h3>
+        <h3 className='font-semibold text-white'>
+          How {their.toLowerCase()} pieces took it
+        </h3>
         {rolls ? (
           <>
             <div className='flex h-3 overflow-hidden rounded-full bg-[#302d29]'>
@@ -102,7 +114,7 @@ export const RecordCard = ({ stats }: { stats: PlayerStats }) => {
             </ul>
             {top && (
               <p className='text-[13px] text-[#a29e96]'>
-                {rolls} first captures. Your pieces lean{' '}
+                {rolls} first captures. {their} pieces lean{' '}
                 <strong className='text-[#ffd27a]'>
                   {top.name.toLowerCase()}
                 </strong>
@@ -112,7 +124,7 @@ export const RecordCard = ({ stats }: { stats: PlayerStats }) => {
           </>
         ) : (
           <p className='text-[13px] text-[#a29e96]'>
-            No captures yet. Your pieces are still innocent.
+            No captures yet. {their} pieces are still innocent.
           </p>
         )}
       </div>

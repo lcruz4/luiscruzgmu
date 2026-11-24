@@ -41,6 +41,8 @@ const game = (
     mode: 'online',
     whiteEmail: 'w@x',
     blackEmail: 'b@x',
+    whiteId: 1,
+    blackId: 2,
     whiteName: 'kayz',
     blackName: 'luis',
     whiteIcon: null,
@@ -56,6 +58,7 @@ const game = (
     rematchId: null,
     inviteToken: null,
     matchmaking: false,
+    challenge: null,
   };
 };
 

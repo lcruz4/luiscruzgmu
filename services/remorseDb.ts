@@ -8,6 +8,7 @@ import {
 } from '@/lib/remorse/engine';
 import type {
   Action,
+  Challenge,
   Color,
   GameEvent,
   GameMode,
@@ -15,6 +16,8 @@ import type {
   GameState,
   GameStep,
   GameSummary,
+  PlayerPage,
+  PlayerRef,
   PlayerStats,
   Trauma,
 } from '@/types/remorse';
@@ -56,15 +59,46 @@ interface GameRow {
   version: number;
   invite_token: string | null;
   matchmaking: boolean;
+  challenged_email: string | null;
 }
 
 // null while the seat is empty
 interface NameColumns {
+  white_id: number | null;
+  black_id: number | null;
   white_name: string | null;
   black_name: string | null;
   white_icon: PlayerIcon | null;
   black_icon: PlayerIcon | null;
 }
+
+// null when there's no challenge waiting
+interface ChallengeColumns {
+  challenged_email: string | null;
+  challenged_id: number | null;
+  challenged_name: string | null;
+  challenged_icon: PlayerIcon | null;
+}
+
+const challengeOf = (row: ChallengeColumns, email: string): Challenge | null =>
+  row.challenged_id !== null && row.challenged_name !== null
+    ? {
+        playerId: row.challenged_id,
+        name: row.challenged_name,
+        icon: row.challenged_icon,
+        you: row.challenged_email === email,
+      }
+    : null;
+
+// A player row gives them an id for their page
+const ensurePlayer = async (client: PoolClient | Pool, email: string) => {
+  await client.query(
+    `INSERT INTO players (email)
+     VALUES ($1)
+     ON CONFLICT DO NOTHING`,
+    [email],
+  );
+};
 
 interface StepRow {
   step: number;
@@ -97,7 +131,8 @@ const canUndoStep = (
 export const listGames = async (email: string): Promise<GameSummary[]> => {
   const { rows } = await remorsePool.query<
     GameRow &
-      NameColumns & {
+      NameColumns &
+      ChallengeColumns & {
         updated_at: Date;
         archived: boolean;
         your_move: boolean;
@@ -115,13 +150,17 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
             ) AS your_move,
             COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
             COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
-            pw.icon AS white_icon, pb.icon AS black_icon
+            pw.icon AS white_icon, pb.icon AS black_icon,
+            pw.id AS white_id, pb.id AS black_id,
+            g.challenged_email, pc.id AS challenged_id, pc.icon AS challenged_icon,
+            COALESCE(pc.username, split_part(g.challenged_email, '@', 1)) AS challenged_name
      FROM games g
      LEFT JOIN game_archives a ON a.game_id = g.id AND a.email = $1
      LEFT JOIN games r ON r.rematch_of = g.id
      LEFT JOIN players pw ON pw.email = g.white_email
      LEFT JOIN players pb ON pb.email = g.black_email
-     WHERE g.white_email = $1 OR g.black_email = $1
+     LEFT JOIN players pc ON pc.email = g.challenged_email
+     WHERE g.white_email = $1 OR g.black_email = $1 OR g.challenged_email = $1
      ORDER BY g.updated_at DESC
      LIMIT 50`,
     [email],
@@ -131,6 +170,8 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     mode: row.mode,
     whiteEmail: row.white_email,
     blackEmail: row.black_email,
+    whiteId: row.white_id,
+    blackId: row.black_id,
     whiteName: row.white_name,
     blackName: row.black_name,
     whiteIcon: row.white_icon,
@@ -147,13 +188,16 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     rematchId: row.rematch_id,
     inviteToken: row.invite_token,
     matchmaking: row.matchmaking,
+    challenge: challengeOf(row, email),
     updatedAt: row.updated_at.toISOString(),
   }));
 };
 
 // chosen: they've picked a name or kept the default when asked
 export const getProfile = async (email: string) => {
+  await ensurePlayer(remorsePool, email);
   const { rows } = await remorsePool.query<{
+    id: number;
     username: string | null;
     icon: PlayerIcon | null;
     piece_set: PieceSetId | null;
@@ -161,12 +205,13 @@ export const getProfile = async (email: string) => {
     name_chosen: boolean;
     tutorial_seen: string[];
   }>(
-    `SELECT username, icon, piece_set, board_theme, name_chosen, tutorial_seen
+    `SELECT id, username, icon, piece_set, board_theme, name_chosen, tutorial_seen
      FROM players
      WHERE email = $1`,
     [email],
   );
   return {
+    id: rows[0]?.id ?? null,
     username: rows[0]?.username ?? email.split('@')[0],
     icon: rows[0]?.icon ?? null,
     pieceSet: rows[0]?.piece_set ?? null,
@@ -293,6 +338,7 @@ export const createGame = async (
   const white = mode === 'local' || color === 'w' ? email : null;
   const black = mode === 'local' || color === 'b' ? email : null;
   const inviteToken = mode === 'online' ? randomUUID() : null;
+  await ensurePlayer(remorsePool, email);
   const { rows } = await remorsePool.query<{ id: number }>(
     `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state, invite_token)
      VALUES ($1, $2, $3, $4, $5, $5, $6)
@@ -311,6 +357,7 @@ export const findMatch = async (email: string) =>
     await client.query(
       `SELECT pg_advisory_xact_lock(hashtext('remorse-matchmaking'))`,
     );
+    await ensurePlayer(client, email);
     const waiting = await client.query<{
       id: number;
       created_by: string;
@@ -409,7 +456,7 @@ export const setArchived = async (
 const lockGame = async (client: PoolClient, id: number) => {
   const { rows } = await client.query<GameRow>(
     `SELECT id, mode, created_by, white_email, black_email, initial_state, state, version,
-            invite_token, matchmaking
+            invite_token, matchmaking, challenged_email
      FROM games
      WHERE id = $1
      FOR UPDATE`,
@@ -450,15 +497,21 @@ export const getGame = async (
   id: number,
   email: string,
 ): Promise<GameResponse> => {
-  const { rows } = await remorsePool.query<GameRow & NameColumns>(
+  const { rows } = await remorsePool.query<
+    GameRow & NameColumns & ChallengeColumns
+  >(
     `SELECT g.id, g.mode, g.created_by, g.white_email, g.black_email, g.initial_state, g.state, g.version,
             g.invite_token, g.matchmaking,
             COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
             COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
-            pw.icon AS white_icon, pb.icon AS black_icon
+            pw.icon AS white_icon, pb.icon AS black_icon,
+            pw.id AS white_id, pb.id AS black_id,
+            g.challenged_email, pc.id AS challenged_id, pc.icon AS challenged_icon,
+            COALESCE(pc.username, split_part(g.challenged_email, '@', 1)) AS challenged_name
      FROM games g
      LEFT JOIN players pw ON pw.email = g.white_email
      LEFT JOIN players pb ON pb.email = g.black_email
+     LEFT JOIN players pc ON pc.email = g.challenged_email
      WHERE g.id = $1`,
     [id],
   );
@@ -484,6 +537,8 @@ export const getGame = async (
     mode: game.mode,
     whiteEmail: game.white_email,
     blackEmail: game.black_email,
+    whiteId: game.white_id,
+    blackId: game.black_id,
     whiteName: game.white_name,
     blackName: game.black_name,
     whiteIcon: game.white_icon,
@@ -504,6 +559,7 @@ export const getGame = async (
     // Only the player waiting for an opponent gets the invite link's secret
     inviteToken: you.length ? game.invite_token : null,
     matchmaking: game.matchmaking,
+    challenge: challengeOf(game, email),
   };
 };
 
@@ -638,11 +694,11 @@ export const undoStep = async (id: number, email: string, version: number) =>
   });
 
 // Only while an online game waits for its opponent. The game is deleted, so
-// its invite link stops working.
+// its invite link stops working. The challenged player cancels to decline.
 export const cancelGame = async (id: number, email: string) =>
   withTransaction(async (client) => {
     const game = await lockGame(client, id);
-    if (!seatsOf(game, email).length) {
+    if (!seatsOf(game, email).length && game.challenged_email !== email) {
       throw new HttpError(403, "You're not playing this game");
     }
     if (game.mode !== 'online' || (game.white_email && game.black_email)) {
@@ -658,9 +714,13 @@ export const cancelGame = async (id: number, email: string) =>
     );
   });
 
-// Takes the open seat with the invite link's token. Random games fill only
-// through findMatch.
-export const joinGame = async (id: number, email: string, token: string) =>
+// Takes the open seat: the challenged player accepting, or anyone with the
+// invite link's token. Random games fill only through findMatch.
+export const joinGame = async (
+  id: number,
+  email: string,
+  token: string | undefined,
+) =>
   withTransaction(async (client) => {
     const game = await lockGame(client, id);
     if (game.mode !== 'online')
@@ -669,19 +729,232 @@ export const joinGame = async (id: number, email: string, token: string) =>
     if (game.white_email && game.black_email) {
       throw new HttpError(409, 'Both seats are taken');
     }
-    if (game.matchmaking || game.invite_token !== token) {
+    if (game.challenged_email) {
+      if (game.challenged_email !== email) {
+        throw new HttpError(403, 'This challenge is for someone else');
+      }
+    } else if (
+      game.matchmaking ||
+      !game.invite_token ||
+      game.invite_token !== token
+    ) {
       throw new HttpError(403, 'This invite link isn’t valid');
     }
+    await ensurePlayer(client, email);
     await client.query(
       `UPDATE games
        SET white_email = COALESCE(white_email, $2),
            black_email = COALESCE(black_email, $2),
            invite_token = NULL,
+           challenged_email = NULL,
            version = version + 1
        WHERE id = $1`,
       [id, email],
     );
   });
+
+const emailOfPlayer = async (client: PoolClient | Pool, id: number) => {
+  const { rows } = await client.query<{ email: string }>(
+    `SELECT email
+     FROM players
+     WHERE id = $1`,
+    [id],
+  );
+  if (!rows[0]) throw new HttpError(404, 'Player not found');
+  return rows[0].email;
+};
+
+// An online game with one seat held for `playerId`. A challenge still
+// waiting between the same two players is reused; one they sent you is
+// accepted.
+export const createChallenge = async (email: string, playerId: number) =>
+  withTransaction(async (client) => {
+    const opponentEmail = await emailOfPlayer(client, playerId);
+    if (opponentEmail === email) {
+      throw new HttpError(400, 'You can’t challenge yourself');
+    }
+    await ensurePlayer(client, email);
+    const theirs = await client.query<{
+      id: number;
+      white_email: string | null;
+    }>(
+      `UPDATE games
+       SET white_email = COALESCE(white_email, $1),
+           black_email = COALESCE(black_email, $1),
+           challenged_email = NULL,
+           version = version + 1
+       WHERE id = (
+         SELECT id
+         FROM games
+         WHERE created_by = $2 AND challenged_email = $1
+         ORDER BY created_at
+         LIMIT 1
+         FOR UPDATE
+       )
+       RETURNING id, white_email`,
+      [email, opponentEmail],
+    );
+    if (theirs.rows[0]) {
+      const color: Color = theirs.rows[0].white_email === email ? 'w' : 'b';
+      return {
+        id: theirs.rows[0].id,
+        color,
+        opponentEmail,
+        created: false,
+        accepted: true,
+      };
+    }
+    const pending = await client.query<{
+      id: number;
+      white_email: string | null;
+    }>(
+      `SELECT id, white_email
+       FROM games
+       WHERE created_by = $1 AND challenged_email = $2`,
+      [email, opponentEmail],
+    );
+    if (pending.rows[0]) {
+      const color: Color = pending.rows[0].white_email ? 'w' : 'b';
+      return {
+        id: pending.rows[0].id,
+        color,
+        opponentEmail,
+        created: false,
+        accepted: false,
+      };
+    }
+    const color: Color = randomInt(2) ? 'b' : 'w';
+    const { rows } = await client.query<{ id: number }>(
+      `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state, challenged_email)
+       VALUES ('online', $1, $2, $3, $4, $4, $5)
+       RETURNING id`,
+      [
+        email,
+        color === 'w' ? email : null,
+        color === 'b' ? email : null,
+        JSON.stringify(initialState()),
+        opponentEmail,
+      ],
+    );
+    return {
+      id: rows[0].id,
+      color,
+      opponentEmail,
+      created: true,
+      accepted: false,
+    };
+  });
+
+// A player's public page: who they are, their record and their online games
+// against someone else, for anyone to watch
+export const getPlayer = async (
+  id: number,
+  viewer: string,
+): Promise<PlayerPage> => {
+  const { rows } = await remorsePool.query<{
+    email: string;
+    name: string;
+    icon: PlayerIcon | null;
+    followers: number;
+    following: boolean;
+  }>(
+    `SELECT p.email, COALESCE(p.username, split_part(p.email, '@', 1)) AS name, p.icon,
+            (SELECT count(*)::int
+             FROM follows
+             WHERE followee_email = p.email) AS followers,
+            EXISTS (
+              SELECT 1
+              FROM follows
+              WHERE follower_email = $2 AND followee_email = p.email
+            ) AS following
+     FROM players p
+     WHERE p.id = $1`,
+    [id, viewer],
+  );
+  const player = rows[0];
+  if (!player) throw new HttpError(404, 'Player not found');
+  const games = await remorsePool.query<
+    NameColumns & { id: number; state: GameState; updated_at: Date }
+  >(
+    `SELECT g.id, g.state, g.updated_at,
+            COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
+            COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
+            pw.icon AS white_icon, pb.icon AS black_icon,
+            pw.id AS white_id, pb.id AS black_id
+     FROM games g
+     LEFT JOIN players pw ON pw.email = g.white_email
+     LEFT JOIN players pb ON pb.email = g.black_email
+     WHERE g.mode = 'online'
+       AND (g.white_email = $1 OR g.black_email = $1)
+       AND g.white_email IS NOT NULL
+       AND g.black_email IS NOT NULL
+       AND g.white_email <> g.black_email
+     ORDER BY g.updated_at DESC
+     LIMIT 30`,
+    [player.email],
+  );
+  return {
+    id,
+    name: player.name,
+    icon: player.icon,
+    you: player.email === viewer,
+    followers: player.followers,
+    following: player.following,
+    stats: await playerStats(player.email),
+    games: games.rows.map((row) => ({
+      id: row.id,
+      whiteId: row.white_id,
+      blackId: row.black_id,
+      whiteName: row.white_name,
+      blackName: row.black_name,
+      whiteIcon: row.white_icon,
+      blackIcon: row.black_icon,
+      turn: row.state.turn,
+      winner: row.state.winner,
+      pieces: row.state.pieces.map(({ color, type, square }) => ({
+        color,
+        type,
+        square,
+      })),
+      updatedAt: row.updated_at.toISOString(),
+    })),
+  };
+};
+
+export const setFollowing = async (
+  email: string,
+  playerId: number,
+  following: boolean,
+) => {
+  const followee = await emailOfPlayer(remorsePool, playerId);
+  if (followee === email) throw new HttpError(400, 'You can’t follow yourself');
+  if (following) {
+    await remorsePool.query(
+      `INSERT INTO follows (follower_email, followee_email)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [email, followee],
+    );
+  } else {
+    await remorsePool.query(
+      `DELETE FROM follows
+       WHERE follower_email = $1 AND followee_email = $2`,
+      [email, followee],
+    );
+  }
+};
+
+export const listFollowing = async (email: string): Promise<PlayerRef[]> => {
+  const { rows } = await remorsePool.query<PlayerRef>(
+    `SELECT p.id, COALESCE(p.username, split_part(p.email, '@', 1)) AS name, p.icon
+     FROM follows f
+     JOIN players p ON p.email = f.followee_email
+     WHERE f.follower_email = $1
+     ORDER BY lower(COALESCE(p.username, split_part(p.email, '@', 1)))`,
+    [email],
+  );
+  return rows;
+};
 
 export const appStorePledges = async (email: string) => {
   const { rows } = await remorsePool.query<{ count: number; clicks: number }>(

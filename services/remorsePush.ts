@@ -77,6 +77,21 @@ const sendToEmail = async (email: string, payload: object) => {
   );
 };
 
+// Tells a challenged player who's waiting on them
+export const notifyChallenge = async (
+  game: GameResponse,
+  recipient: string,
+) => {
+  if (!publicKey || !privateKey) return;
+  const challenger = game.whiteName ?? game.blackName ?? 'Someone';
+  await sendToEmail(recipient, {
+    title: `${challenger} challenged you`,
+    body: 'Accept to start the game.',
+    tag: `remorse-${game.id}`,
+    url: `/projects/remorse-chess/${game.id}`,
+  });
+};
+
 // After `actor` acted on an online game: tells the other player when it's now
 // their move or the game just ended
 export const notifyOpponent = async (

@@ -37,7 +37,7 @@ const promotionField = (value: unknown) => {
 
 // Body: { type, version, ... }
 //   move: { from, to, promotion? } · selfHeal: { pieceId } · skipExtraMove · undo · resign
-//   join: { inviteToken } from the invite link
+//   join: { inviteToken } from the invite link, or nothing to accept a challenge
 //   archive / unarchive: hide the game from your lobby or bring it back
 const postAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
@@ -66,7 +66,10 @@ const postAction = async (req: NextApiRequest, email: string) => {
   } else if (body.type === 'resign') {
     await resignGame(id, email, version());
   } else if (body.type === 'join') {
-    if (typeof body.inviteToken !== 'string') {
+    if (
+      body.inviteToken !== undefined &&
+      typeof body.inviteToken !== 'string'
+    ) {
       throw new HttpError(400, 'inviteToken must be text');
     }
     await joinGame(id, email, body.inviteToken);

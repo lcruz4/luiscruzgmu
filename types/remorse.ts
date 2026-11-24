@@ -86,6 +86,9 @@ export interface GameSummary {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  // their player pages
+  whiteId: number | null;
+  blackId: number | null;
   whiteName: string | null;
   blackName: string | null;
   // null: the default icon
@@ -103,7 +106,47 @@ export interface GameSummary {
   inviteToken: string | null;
   // a random game: its open seat goes to the next player looking for one
   matchmaking: boolean;
+  challenge: Challenge | null;
   updatedAt: string;
+}
+
+// The player a challenge waits on to accept; `you`: the viewer is them
+export interface Challenge {
+  playerId: number;
+  name: string;
+  icon: PlayerIcon | null;
+  you: boolean;
+}
+
+export interface PlayerRef {
+  id: number;
+  name: string;
+  icon: PlayerIcon | null;
+}
+
+// An online game on a player's page, open to anyone to watch
+export interface PlayerGame {
+  id: number;
+  whiteId: number | null;
+  blackId: number | null;
+  whiteName: string | null;
+  blackName: string | null;
+  whiteIcon: PlayerIcon | null;
+  blackIcon: PlayerIcon | null;
+  turn: Color;
+  winner: Color | 'draw' | null;
+  pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
+  updatedAt: string;
+}
+
+export interface PlayerPage extends PlayerRef {
+  // the viewer's own page
+  you: boolean;
+  followers: number;
+  // the viewer follows them
+  following: boolean;
+  stats: PlayerStats;
+  games: PlayerGame[];
 }
 
 export interface PlayerStats {
@@ -120,6 +163,9 @@ export interface GameResponse {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  // their player pages
+  whiteId: number | null;
+  blackId: number | null;
   whiteName: string | null;
   blackName: string | null;
   // null: the default icon
@@ -135,4 +181,5 @@ export interface GameResponse {
   // the invite link's secret; only sent to the player waiting on it
   inviteToken: string | null;
   matchmaking: boolean;
+  challenge: Challenge | null;
 }
