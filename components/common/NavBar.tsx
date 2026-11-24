@@ -46,14 +46,13 @@ export const NavBar = ({ items }: { items: any }) => {
       {items.map((item: any) => (
         <MenuItemWrapper
           onClick={() => {
-            const navElem = navElements.find((navElem) => navElem.id === item);
-            if (!navElem) {
-              return;
-            }
+            const section = navElements.find((navElem) => navElem.id === item)
+              ?.ref.current;
+            if (!section) return;
 
             window.scrollTo({
               behavior: 'smooth',
-              top: navElem.ref.current.offsetTop - 128,
+              top: section.offsetTop - 128,
             });
           }}
           key={item}
