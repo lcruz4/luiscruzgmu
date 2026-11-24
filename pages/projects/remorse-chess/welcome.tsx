@@ -20,7 +20,12 @@ import {
   goldButton,
 } from '@/components/remorse-chess/buttons';
 import { Dice } from '@/components/remorse-chess/Dice';
-import { authLoginUrl, REMORSE_HOME, safeRemorsePath } from '@/lib/auth';
+import {
+  authLoginUrl,
+  REMORSE_HOME,
+  REMORSE_INSTALL_PATH,
+  safeRemorsePath,
+} from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { getAuthenticatedEmail } from '@/services/auth';
 
@@ -139,6 +144,12 @@ const LandingPage = (props: Props) => {
           <a href='#how' className='hidden text-[#a29e96] sm:inline'>
             How to play
           </a>
+          <Link
+            href={REMORSE_INSTALL_PATH}
+            className='hidden text-[#a29e96] sm:inline'
+          >
+            Get the app
+          </Link>
           {signedIn ? (
             <Link
               href={REMORSE_HOME}

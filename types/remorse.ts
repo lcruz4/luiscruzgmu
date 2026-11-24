@@ -86,6 +86,9 @@ export interface GameSummary {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  // their player pages
+  whiteId: number | null;
+  blackId: number | null;
   whiteName: string | null;
   blackName: string | null;
   // null: the default icon
@@ -99,7 +102,66 @@ export interface GameSummary {
   yourMove: boolean;
   // the rematch of this game, once someone started one
   rematchId: number | null;
+  // the invite link's secret while a friend game waits for its opponent
+  inviteToken: string | null;
+  // a random game: its open seat goes to the next player looking for one
+  matchmaking: boolean;
+  challenge: Challenge | null;
   updatedAt: string;
+}
+
+// The player a challenge waits on to accept; `you`: the viewer is them
+export interface Challenge {
+  playerId: number;
+  name: string;
+  icon: PlayerIcon | null;
+  you: boolean;
+}
+
+export interface PlayerRef {
+  id: number;
+  name: string;
+  icon: PlayerIcon | null;
+}
+
+// Someone who followed you since you last looked; followingBack: you
+// already follow them
+export interface NewFollower extends PlayerRef {
+  followingBack: boolean;
+}
+
+// An online game on a player's page, open to anyone to watch
+export interface PlayerGame {
+  id: number;
+  whiteId: number | null;
+  blackId: number | null;
+  whiteName: string | null;
+  blackName: string | null;
+  whiteIcon: PlayerIcon | null;
+  blackIcon: PlayerIcon | null;
+  turn: Color;
+  winner: Color | 'draw' | null;
+  pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
+  updatedAt: string;
+}
+
+export interface PlayerPage extends PlayerRef {
+  // the viewer's own page
+  you: boolean;
+  // the viewer follows them, and the other way round: needed to challenge
+  following: boolean;
+  followsYou: boolean;
+  stats: PlayerStats;
+  // the viewer's games against them; null on your own page
+  headToHead: {
+    wins: number;
+    losses: number;
+    draws: number;
+    // first-capture rolls in those games, yours and theirs
+    yourTraumas: Record<Trauma, number>;
+    theirTraumas: Record<Trauma, number>;
+  } | null;
+  games: PlayerGame[];
 }
 
 export interface PlayerStats {
@@ -116,6 +178,9 @@ export interface GameResponse {
   mode: GameMode;
   whiteEmail: string | null;
   blackEmail: string | null;
+  // their player pages
+  whiteId: number | null;
+  blackId: number | null;
   whiteName: string | null;
   blackName: string | null;
   // null: the default icon
@@ -128,4 +193,8 @@ export interface GameResponse {
   you: Color[];
   canUndo: boolean;
   rematchId: number | null;
+  // the invite link's secret; only sent to the player waiting on it
+  inviteToken: string | null;
+  matchmaking: boolean;
+  challenge: Challenge | null;
 }

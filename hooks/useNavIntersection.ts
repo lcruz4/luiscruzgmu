@@ -7,7 +7,7 @@ export const useNavIntersection = (
   threshold: number,
   currentNavSection: NavItems,
 ) => {
-  const { navItem, navElements, setNavItem, addElement } = useNavStore();
+  const { navItem, setNavItem, setElement } = useNavStore();
   const [lastNav, setLastNav] = useState(navItem);
   const ref = useRef<HTMLDivElement>();
   const { ref: inViewRef, inView } = useInView({
@@ -25,12 +25,12 @@ export const useNavIntersection = (
     [inViewRef],
   );
 
-  if (!navElements.find(navElem => navElem.id === currentNavSection)) {
-    addElement({
+  useEffect(() => {
+    setElement({
       id: currentNavSection,
       ref: ref as React.MutableRefObject<HTMLDivElement>,
     });
-  }
+  }, [currentNavSection, setElement]);
 
   useEffect(() => {
     setNavItem(inView ? currentNavSection : lastNav);

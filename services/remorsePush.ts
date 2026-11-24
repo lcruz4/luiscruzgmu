@@ -77,6 +77,41 @@ const sendToEmail = async (email: string, payload: object) => {
   );
 };
 
+// Tells a player someone followed them. mutual: they already follow back,
+// so they can challenge each other now
+export const notifyFollow = async (
+  recipient: string,
+  follower: { id: number | null; name: string },
+  mutual: boolean,
+) => {
+  if (!publicKey || !privateKey) return;
+  await sendToEmail(recipient, {
+    title: `${follower.name} followed you`,
+    body: mutual
+      ? 'You follow each other now, so you can challenge them.'
+      : 'Follow back so you can challenge each other.',
+    tag: `remorse-follow-${follower.id}`,
+    url: follower.id
+      ? `/projects/remorse-chess/players/${follower.id}`
+      : '/projects/remorse-chess',
+  });
+};
+
+// Tells a challenged player who's waiting on them
+export const notifyChallenge = async (
+  game: GameResponse,
+  recipient: string,
+) => {
+  if (!publicKey || !privateKey) return;
+  const challenger = game.whiteName ?? game.blackName ?? 'Someone';
+  await sendToEmail(recipient, {
+    title: `${challenger} challenged you`,
+    body: 'Accept to start the game.',
+    tag: `remorse-${game.id}`,
+    url: `/projects/remorse-chess/${game.id}`,
+  });
+};
+
 // After `actor` acted on an online game: tells the other player when it's now
 // their move or the game just ended
 export const notifyOpponent = async (

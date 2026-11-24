@@ -11,7 +11,7 @@ const FATES: { trauma: Trauma; name: string; odds: number; bar: string }[] = [
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
-const Tally = ({
+export const Tally = ({
   value,
   label,
   gold,
@@ -33,19 +33,92 @@ const Tally = ({
   </div>
 );
 
-// Win/loss record and how your capturing pieces rolled against the odds
-export const RecordCard = ({ stats }: { stats: PlayerStats }) => {
-  const rolls = Object.values(stats.traumas).reduce((a, b) => a + b, 0);
-  const played = stats.wins + stats.losses + stats.draws;
+// How a side's capturing pieces rolled against the odds. whose: 'Your' or
+// 'Their'
+export const FatesCard = ({
+  traumas,
+  whose,
+  title = `How ${whose.toLowerCase()} pieces took it`,
+}: {
+  traumas: Record<Trauma, number>;
+  whose: string;
+  title?: string;
+}) => {
+  const rolls = Object.values(traumas).reduce((a, b) => a + b, 0);
   const top = rolls
     ? FATES.reduce((best, fate) =>
-        stats.traumas[fate.trauma] / rolls - fate.odds >
-        stats.traumas[best.trauma] / rolls - best.odds
+        traumas[fate.trauma] / rolls - fate.odds >
+        traumas[best.trauma] / rolls - best.odds
           ? fate
           : best,
       )
     : null;
 
+  return (
+    <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
+      <h3 className='font-semibold text-white'>{title}</h3>
+      {rolls ? (
+        <>
+          <div className='flex h-3 overflow-hidden rounded-full bg-[#302d29]'>
+            {FATES.map(({ trauma, bar }) => (
+              <span
+                key={trauma}
+                style={{
+                  width: pct(traumas[trauma] / rolls),
+                  background: bar,
+                }}
+              />
+            ))}
+          </div>
+          <ul className='grid grid-cols-2 gap-x-3 gap-y-1.5'>
+            {FATES.map(({ trauma, name, odds }) => (
+              <li key={trauma} className='flex items-center gap-2'>
+                <Marker
+                  trauma={trauma}
+                  healed={false}
+                  turnsLeft={trauma === 'devastated' ? 3 : 0}
+                  kills={0}
+                  className='block h-[30px] w-7 flex-none'
+                />
+                <span className='min-w-0 text-[13px] leading-tight'>
+                  <span className='block text-white'>{name}</span>
+                  <span className='text-[#a29e96] tabular-nums'>
+                    {traumas[trauma]} · {pct(traumas[trauma] / rolls)}{' '}
+                    <span className='opacity-70'>(odds {pct(odds)})</span>
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {top && (
+            <p className='text-[13px] text-[#a29e96]'>
+              {rolls} first captures. {whose} pieces lean{' '}
+              <strong className='text-[#ffd27a]'>
+                {top.name.toLowerCase()}
+              </strong>
+              .
+            </p>
+          )}
+        </>
+      ) : (
+        <p className='text-[13px] text-[#a29e96]'>
+          No captures yet. {whose} pieces are still innocent.
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Win/loss record and how their capturing pieces rolled against the odds.
+// you: the viewer's own record
+export const RecordCard = ({
+  stats,
+  you = true,
+}: {
+  stats: PlayerStats;
+  you?: boolean;
+}) => {
+  const played = stats.wins + stats.losses + stats.draws;
   return (
     <div className='grid gap-3.5 md:grid-cols-[1fr_1.4fr]'>
       <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
@@ -60,62 +133,12 @@ export const RecordCard = ({ stats }: { stats: PlayerStats }) => {
             ? `Won ${pct(stats.wins / played)} of ${played} finished ${
                 played === 1 ? 'game' : 'games'
               }.`
-            : 'Finish an online game to start your record.'}
+            : you
+            ? 'Finish an online game to start your record.'
+            : 'No finished online games yet.'}
         </p>
       </div>
-
-      <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
-        <h3 className='font-semibold text-white'>How your pieces took it</h3>
-        {rolls ? (
-          <>
-            <div className='flex h-3 overflow-hidden rounded-full bg-[#302d29]'>
-              {FATES.map(({ trauma, bar }) => (
-                <span
-                  key={trauma}
-                  style={{
-                    width: pct(stats.traumas[trauma] / rolls),
-                    background: bar,
-                  }}
-                />
-              ))}
-            </div>
-            <ul className='grid grid-cols-2 gap-x-3 gap-y-1.5'>
-              {FATES.map(({ trauma, name, odds }) => (
-                <li key={trauma} className='flex items-center gap-2'>
-                  <Marker
-                    trauma={trauma}
-                    healed={false}
-                    turnsLeft={trauma === 'devastated' ? 3 : 0}
-                    kills={0}
-                    className='block h-[30px] w-7 flex-none'
-                  />
-                  <span className='min-w-0 text-[13px] leading-tight'>
-                    <span className='block text-white'>{name}</span>
-                    <span className='text-[#a29e96] tabular-nums'>
-                      {stats.traumas[trauma]} ·{' '}
-                      {pct(stats.traumas[trauma] / rolls)}{' '}
-                      <span className='opacity-70'>(odds {pct(odds)})</span>
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {top && (
-              <p className='text-[13px] text-[#a29e96]'>
-                {rolls} first captures. Your pieces lean{' '}
-                <strong className='text-[#ffd27a]'>
-                  {top.name.toLowerCase()}
-                </strong>
-                .
-              </p>
-            )}
-          </>
-        ) : (
-          <p className='text-[13px] text-[#a29e96]'>
-            No captures yet. Your pieces are still innocent.
-          </p>
-        )}
-      </div>
+      <FatesCard traumas={stats.traumas} whose={you ? 'Your' : 'Their'} />
     </div>
   );
 };

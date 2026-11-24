@@ -14,6 +14,9 @@ import type {
   GameResponse,
   GameSummary,
   MoveAction,
+  NewFollower,
+  PlayerPage,
+  PlayerRef,
   PlayerStats,
 } from '@/types/remorse';
 
@@ -56,6 +59,7 @@ const PROFILE_KEY = ['remorse-chess', 'profile'];
 
 // chosen: they've picked a name, or kept the default when asked
 type Profile = {
+  id: number | null;
   username: string;
   icon: PlayerIcon | null;
   pieceSet: PieceSetId | null;
@@ -127,10 +131,100 @@ export const useStats = () =>
 
 export const useCreateGame = () =>
   useMutation({
-    mutationFn: (body: { mode: 'online' | 'local' } | { rematchOf: number }) =>
+    mutationFn: (
+      body:
+        | { mode: 'online' | 'local' | 'random' }
+        | { rematchOf: number }
+        | { challenge: number },
+    ) =>
       request<{ id: number; color: Color }>(API, {
         method: 'POST',
         body: JSON.stringify(body),
+      }),
+  });
+
+const playerKey = (id: number | undefined) => ['remorse-chess', 'player', id];
+const MUTUALS_KEY = ['remorse-chess', 'mutuals'];
+
+export const usePlayer = (id: number | undefined) =>
+  useQuery({
+    queryKey: playerKey(id),
+    queryFn: id
+      ? () => request<PlayerPage>(`/api/remorse-chess/players/${id}`)
+      : skipToken,
+  });
+
+// Players you can challenge: you follow each other
+export const useMutuals = () =>
+  useQuery({
+    queryKey: MUTUALS_KEY,
+    queryFn: () => request<PlayerRef[]>('/api/remorse-chess/players'),
+  });
+
+export const useFollow = (id: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (following: boolean) =>
+      request<null>(
+        `/api/remorse-chess/players/${id}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ type: following ? 'follow' : 'unfollow' }),
+        },
+        null,
+      ),
+    onSuccess: (_result, following) =>
+      queryClient.setQueryData<PlayerPage>(playerKey(id), (player) =>
+        player ? { ...player, following } : player,
+      ),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: MUTUALS_KEY }),
+  });
+};
+
+const NEW_FOLLOWERS_KEY = ['remorse-chess', 'new-followers'];
+
+export const useNewFollowers = () =>
+  useQuery({
+    queryKey: NEW_FOLLOWERS_KEY,
+    queryFn: () => request<NewFollower[]>('/api/remorse-chess/followers'),
+    refetchOnMount: 'always',
+  });
+
+// Answers a new follower: follow them back, or just dismiss them
+export const useAnswerFollower = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, followBack }: { id: number; followBack: boolean }) =>
+      followBack
+        ? request<null>(
+            `/api/remorse-chess/players/${id}`,
+            { method: 'POST', body: JSON.stringify({ type: 'follow' }) },
+            null,
+          )
+        : request<null>(
+            '/api/remorse-chess/followers',
+            { method: 'POST', body: JSON.stringify({ playerId: id }) },
+            null,
+          ),
+    onSuccess: (_result, { id }) =>
+      queryClient.setQueryData<NewFollower[]>(
+        NEW_FOLLOWERS_KEY,
+        (followers) => followers?.filter((follower) => follower.id !== id),
+      ),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: NEW_FOLLOWERS_KEY });
+      queryClient.invalidateQueries({ queryKey: MUTUALS_KEY });
+    },
+  });
+};
+
+// Takes the seat a challenge holds for you
+export const useAcceptChallenge = () =>
+  useMutation({
+    mutationFn: (id: number) =>
+      request<GameResponse>(`${API}/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'join' }),
       }),
   });
 
@@ -171,7 +265,7 @@ export type GameCommand =
   | { type: 'selfHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'resign' }
-  | { type: 'join' };
+  | { type: 'join'; inviteToken?: string };
 
 const fetchGame = (id: number, current: GameResponse | undefined) =>
   request(

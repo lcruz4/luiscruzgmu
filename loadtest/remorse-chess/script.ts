@@ -275,14 +275,25 @@ const openTable = (): Table | null => {
     get(account, PAGE, 'lobby page');
     get(account, API, 'list games');
   }
-  const created = parse<{ id: number; color: Color }>(
+  const created = parse<{
+    id: number;
+    color: Color;
+    inviteToken: string | null;
+  }>(
     post(players[0], API, { mode: online ? 'online' : 'local' }, 'create game'),
   );
   if (!created) return null;
   const path = `${API}/${created.id}`;
   if (
     online &&
-    !parse<GameResponse>(post(players[1], path, { type: 'join' }, 'join'))
+    !parse<GameResponse>(
+      post(
+        players[1],
+        path,
+        { type: 'join', inviteToken: created.inviteToken },
+        'join',
+      ),
+    )
   ) {
     return null;
   }
