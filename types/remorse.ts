@@ -146,8 +146,15 @@ export interface PlayerPage extends PlayerRef {
   following: boolean;
   followsYou: boolean;
   stats: PlayerStats;
-  // the viewer's finished games against them; null on your own page
-  headToHead: { wins: number; losses: number; draws: number } | null;
+  // the viewer's games against them; null on your own page
+  headToHead: {
+    wins: number;
+    losses: number;
+    draws: number;
+    // first-capture rolls in those games, yours and theirs
+    yourTraumas: Record<Trauma, number>;
+    theirTraumas: Record<Trauma, number>;
+  } | null;
   games: PlayerGame[];
 }
 

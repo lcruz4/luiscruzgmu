@@ -324,7 +324,7 @@ export const playerStats = async (email: string): Promise<PlayerStats> => {
      GROUP BY 1`,
     [email],
   );
-  const traumas = { devastated: 0, guilt: 0, unaffected: 0, psychopath: 0 };
+  const traumas = noTraumas();
   for (const { trauma, count } of rolls.rows) traumas[trauma] = count;
   return { ...record.rows[0], traumas };
 };
@@ -764,7 +764,8 @@ const emailOfPlayer = async (client: PoolClient | Pool, id: number) => {
   return rows[0].email;
 };
 
-// An online game with one seat held for `playerId`, who must follow you. A
+// An online game with one seat held for `playerId`, who must follow you;
+// you follow them if you didn't already. A
 // challenge still waiting between the same two players is reused; one they
 // sent you is accepted.
 export const createChallenge = async (email: string, playerId: number) =>
@@ -774,6 +775,13 @@ export const createChallenge = async (email: string, playerId: number) =>
       throw new HttpError(400, 'You can’t challenge yourself');
     }
     await ensurePlayer(client, email);
+    // Challenging someone follows them
+    await client.query(
+      `INSERT INTO follows (follower_email, followee_email)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [email, opponentEmail],
+    );
     const theirs = await client.query<{
       id: number;
       white_email: string | null;
@@ -857,8 +865,37 @@ export const createChallenge = async (email: string, playerId: number) =>
     };
   });
 
-// Your finished online games against them, from your side
+const noTraumas = (): Record<Trauma, number> => ({
+  devastated: 0,
+  guilt: 0,
+  unaffected: 0,
+  psychopath: 0,
+});
+
+// Your online games against them, from your side: the finished ones' results
+// and how each side's pieces took their first captures
 const headToHead = async (email: string, opponentEmail: string) => {
+  const rolls = await remorsePool.query<{
+    yours: boolean;
+    trauma: Trauma;
+    count: number;
+  }>(
+    `SELECT s.email = $1 AS yours, e->>'trauma' AS trauma, count(*)::int AS count
+     FROM games g
+     JOIN game_steps s ON s.game_id = g.id
+     CROSS JOIN LATERAL jsonb_array_elements(s.events) e
+     WHERE g.mode = 'online'
+       AND ((g.white_email = $1 AND g.black_email = $2)
+         OR (g.white_email = $2 AND g.black_email = $1))
+       AND e->>'type' = 'roll'
+     GROUP BY 1, 2`,
+    [email, opponentEmail],
+  );
+  const yourTraumas = noTraumas();
+  const theirTraumas = noTraumas();
+  for (const { yours, trauma, count } of rolls.rows) {
+    (yours ? yourTraumas : theirTraumas)[trauma] = count;
+  }
   const { rows } = await remorsePool.query<
     Record<'wins' | 'losses' | 'draws', number>
   >(
@@ -874,7 +911,7 @@ const headToHead = async (email: string, opponentEmail: string) => {
          OR (white_email = $2 AND black_email = $1))`,
     [email, opponentEmail],
   );
-  return rows[0];
+  return { ...rows[0], yourTraumas, theirTraumas };
 };
 
 // A player's public page: who they are, their record and their online games

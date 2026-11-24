@@ -6,7 +6,11 @@ import {
   PlayerLink,
   stretchedLink,
 } from '@/components/remorse-chess/PlayerLink';
-import { RecordCard, Tally } from '@/components/remorse-chess/RecordCard';
+import {
+  FatesCard,
+  RecordCard,
+  Tally,
+} from '@/components/remorse-chess/RecordCard';
 import {
   DefaultActions,
   RemorseLayout,
@@ -72,25 +76,44 @@ const GameRow = ({
   );
 };
 
-// Your finished games against this player
+// Your games against this player: results, then how each side's pieces
+// took their first captures
 const HeadToHead = ({
   record,
+  name,
 }: {
   record: NonNullable<PlayerPage['headToHead']>;
+  name: string;
 }) => {
   const played = record.wins + record.losses + record.draws;
   return (
-    <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
-      <div className='grid grid-cols-3 gap-2'>
-        <Tally value={record.wins} label='Your wins' gold />
-        <Tally value={record.losses} label='Their wins' />
-        <Tally value={record.draws} label='Draws' />
+    <div className='flex flex-col gap-3.5'>
+      <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
+        <div className='grid grid-cols-3 gap-2'>
+          <Tally value={record.wins} label='Your wins' gold />
+          <Tally value={record.losses} label='Their wins' />
+          <Tally value={record.draws} label='Draws' />
+        </div>
+        <p className={muted}>
+          {played
+            ? `${played} finished ${
+                played === 1 ? 'game' : 'games'
+              } between you.`
+            : 'You haven’t finished a game against each other yet.'}
+        </p>
       </div>
-      <p className={muted}>
-        {played
-          ? `${played} finished ${played === 1 ? 'game' : 'games'} between you.`
-          : 'You haven’t finished a game against each other yet.'}
-      </p>
+      <div className='grid gap-3.5 md:grid-cols-2'>
+        <FatesCard
+          traumas={record.yourTraumas}
+          whose='Your'
+          title={`How your pieces took it vs ${name}`}
+        />
+        <FatesCard
+          traumas={record.theirTraumas}
+          whose='Their'
+          title='How their pieces took it vs you'
+        />
+      </div>
     </div>
   );
 };
@@ -136,11 +159,6 @@ const Actions = ({ player }: { player: PlayerPage }) => {
           {player.following ? '✓ Following' : '+ Follow'}
         </button>
       </div>
-      {!player.followsYou && (
-        <p className='text-xs text-[#a29e96]'>
-          You can challenge them once they follow you.
-        </p>
-      )}
       {(challenge.error ?? follow.error) && (
         <p className='text-sm text-red-300'>
           {(challenge.error ?? follow.error)?.message}
@@ -195,7 +213,7 @@ const PlayerPageView = () => {
             {data.headToHead && (
               <section>
                 <h2 className={h2}>You vs {data.name}</h2>
-                <HeadToHead record={data.headToHead} />
+                <HeadToHead record={data.headToHead} name={data.name} />
               </section>
             )}
 
