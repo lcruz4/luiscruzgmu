@@ -621,12 +621,11 @@ const AboutCard = () => {
   const { copied, copy } = useCopyLink();
   return (
     <div className={cn(card, 'flex max-w-[480px] items-start gap-3.5')}>
-      <div
-        className='grid size-14 flex-none place-items-center rounded-full border-2 border-[#514d47] bg-[#302d29] text-center text-[11px] leading-tight text-[#a29e96]'
-        aria-hidden
-      >
-        LC
-      </div>
+      <img
+        src='/images/remorse/luis.jpg'
+        alt='Luis Cruz'
+        className='size-14 flex-none rounded-full border-2 border-[#514d47] object-cover'
+      />
       <div className='min-w-0'>
         <p className='font-semibold text-white'>
           Hi, I’m Luis Cruz{' '}
@@ -640,7 +639,7 @@ const AboutCard = () => {
           </a>
         </p>
         <p className='mt-1 text-[14px] text-[#a29e96]'>
-          I build Remorse Chess on my own, in my evenings. Thank you for giving
+          I built Remorse Chess on my own, in my evenings. Thank you for giving
           it a try. It genuinely means a lot that people are playing something I
           made. If you’re enjoying it, the best way to help is to share it with
           a friend.
