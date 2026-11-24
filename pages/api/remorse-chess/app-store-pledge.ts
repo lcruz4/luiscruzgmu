@@ -1,9 +1,10 @@
+import { bodyOf, intField } from '@/services/api';
 import { remorseRoute } from '@/services/remorseApi';
-import { setAppStorePledge } from '@/services/remorseDb';
+import { addAppStoreClicks } from '@/services/remorseDb';
 
-// POST adds the player to the App Store interest list, DELETE takes them off;
-// both answer with the new { count, pledged }
+// Body { clicks }: taps on "I'd download it" since the last send. Adds the
+// player to the App Store interest list; answers { count, clicks }
 export default remorseRoute({
-  POST: (_req, email) => setAppStorePledge(email, true),
-  DELETE: (_req, email) => setAppStorePledge(email, false),
+  POST: (req, email) =>
+    addAppStoreClicks(email, intField(bodyOf(req).clicks, 'clicks', 1, 100)),
 });

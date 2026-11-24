@@ -16,7 +16,7 @@ export default emailRoute(({ topic, message, email }) => {
     return 'that email address looks wrong';
   }
   return {
-    to: 'contactform@lcruz.dev',
+    to: 'remorsechess@lcruz.dev',
     replyTo,
     template: {
       id: 'remorse-feedback',

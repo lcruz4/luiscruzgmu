@@ -6,7 +6,10 @@ import type { MarkerProps } from '@/components/remorse-chess/markerSvg';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
 import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RecordCard } from '@/components/remorse-chess/RecordCard';
-import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
+import {
+  DefaultActions,
+  RemorseLayout,
+} from '@/components/remorse-chess/RemorseLayout';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
   useArchive,
@@ -325,7 +328,7 @@ const LobbyPage = ({ email }: { email: string }) => {
   );
 
   return (
-    <RemorseLayout>
+    <RemorseLayout actions={<DefaultActions getApp />}>
       <UsernamePrompt />
       <div className='mx-auto flex max-w-[760px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
         <section>

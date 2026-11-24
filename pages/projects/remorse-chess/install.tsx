@@ -1,32 +1,37 @@
 import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import {
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   buttonMd,
   buttonSm,
   ghostButton,
   goldButton,
 } from '@/components/remorse-chess/buttons';
-import { GoogleIcon } from '@/components/GoogleIcon';
 import { HeroScene } from '@/components/remorse-chess/HeroScene';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
-import { authLoginUrl, REMORSE_HOME, REMORSE_LANDING_PATH } from '@/lib/auth';
+import { REMORSE_HOME, REMORSE_LANDING_PATH } from '@/lib/auth';
 import { FEEDBACK_TOPICS, type FeedbackTopic } from '@/lib/remorse/feedback';
 import { pieceSrc } from '@/lib/remorse/pieceSets';
 import { cn } from '@/lib/utils';
-import { getAuthenticatedEmail } from '@/services/auth';
+import { requireLogin } from '@/services/auth';
 import type { Color, PieceType } from '@/types/remorse';
 import { appStorePledges } from '@/services/remorseDb';
 
-const INSTALL_PATH = '/projects/remorse-chess/install';
 const PLEDGE_GOAL = 100;
 const ICON = '/images/pwa/remorse-chess-192.png';
 
 type Props = {
-  email: string | null;
+  email: string;
   pledgeCount: number;
-  pledged: boolean;
+  clicks: number;
 };
 
 type Platform = 'ios' | 'android';
@@ -312,35 +317,54 @@ const LockScreen = () => (
   </div>
 );
 
-const AppStorePledge = ({ email, pledgeCount, pledged }: Props) => {
-  const [state, setState] = useState({ count: pledgeCount, pledged });
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState('');
+const PLEDGE_DEBOUNCE_MS = 600;
 
-  const update = async (method: 'POST' | 'DELETE') => {
-    setPending(true);
-    setError('');
+// Every tap counts; taps are batched and sent after a short pause
+const AppStorePledge = ({ pledgeCount, clicks }: Props) => {
+  const [count, setCount] = useState(pledgeCount);
+  const [myClicks, setMyClicks] = useState(clicks);
+  const [error, setError] = useState('');
+  const unsent = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const send = useCallback(async (keepalive = false) => {
+    const batch = unsent.current;
+    if (!batch) return;
+    unsent.current = 0;
     try {
       const response = await fetch('/api/remorse-chess/app-store-pledge', {
-        method,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clicks: batch }),
+        keepalive,
       });
       if (!response.ok) throw new Error();
-      setState(await response.json());
+      const saved: { count: number; clicks: number } = await response.json();
+      setCount(saved.count);
+      setMyClicks(saved.clicks + unsent.current);
     } catch {
       setError('Couldn’t save that. Try again.');
-    } finally {
-      setPending(false);
     }
+  }, []);
+
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      void send(true);
+    },
+    [send],
+  );
+
+  const click = () => {
+    setError('');
+    if (myClicks === 0) setCount((n) => n + 1);
+    setMyClicks((n) => n + 1);
+    unsent.current += 1;
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => void send(), PLEDGE_DEBOUNCE_MS);
   };
 
-  const signIn = () => {
-    window.location.href = authLoginUrl(
-      `${window.location.origin}${INSTALL_PATH}#app-store`,
-      window.location.hostname,
-    );
-  };
-
-  const percent = Math.min(100, (state.count / PLEDGE_GOAL) * 100);
+  const percent = Math.min(100, (count / PLEDGE_GOAL) * 100);
 
   return (
     <div
@@ -357,7 +381,7 @@ const AppStorePledge = ({ email, pledgeCount, pledged }: Props) => {
       </p>
       <div className='mb-1.5 flex justify-between text-[13px]'>
         <b className='text-white'>
-          {state.count} {state.count === 1 ? 'player' : 'players'}
+          {count} {count === 1 ? 'player' : 'players'}
         </b>
         <span className='text-[#a29e96]'>Goal: {PLEDGE_GOAL}</span>
       </div>
@@ -365,7 +389,7 @@ const AppStorePledge = ({ email, pledgeCount, pledged }: Props) => {
         className='mb-4 h-3 overflow-hidden rounded-full border border-[#3a3733] bg-[#161512]'
         role='progressbar'
         aria-label='Players who want an App Store version'
-        aria-valuenow={state.count}
+        aria-valuenow={count}
         aria-valuemin={0}
         aria-valuemax={PLEDGE_GOAL}
       >
@@ -374,43 +398,23 @@ const AppStorePledge = ({ email, pledgeCount, pledged }: Props) => {
           style={{ width: `${percent}%` }}
         />
       </div>
-      {!email && (
+      <div className='flex flex-wrap items-center gap-3'>
         <button
           type='button'
-          onClick={signIn}
-          className={cn(goldButton, buttonMd)}
-        >
-          <span className='grid size-[22px] flex-none place-items-center rounded-full bg-white'>
-            <GoogleIcon className='size-[15px]' />
-          </span>
-          Sign in to add your name
-        </button>
-      )}
-      {email && !state.pledged && (
-        <button
-          type='button'
-          onClick={() => update('POST')}
-          disabled={pending}
-          className={cn(goldButton, buttonMd)}
+          onClick={click}
+          className={cn(goldButton, buttonMd, 'active:scale-[.97]')}
         >
           I’d download it
         </button>
-      )}
-      {email && state.pledged && (
-        <div className='flex flex-wrap items-center gap-3'>
-          <span className='inline-flex min-h-[46px] items-center rounded-[10px] border border-[#3f9a5a]/60 bg-[#3f9a5a]/15 px-4 font-semibold text-[#b9f0c4]'>
+        {myClicks > 0 && (
+          <span className='text-[13.5px] text-[#b9f0c4]' aria-live='polite'>
             You’re on the list. Thank you.
+            {myClicks > 1 && (
+              <span className='text-[#a29e96]'> Asked {myClicks} times.</span>
+            )}
           </span>
-          <button
-            type='button'
-            onClick={() => update('DELETE')}
-            disabled={pending}
-            className='cursor-pointer text-[13px] text-[#a29e96] underline hover:text-white'
-          >
-            Take my name off
-          </button>
-        </div>
-      )}
+        )}
+      </div>
       {error && <p className='mt-2 text-sm text-red-300'>{error}</p>}
     </div>
   );
@@ -493,10 +497,10 @@ const ShareCard = () => {
   );
 };
 
-const FeedbackForm = ({ email }: { email: string | null }) => {
+const FeedbackForm = ({ email }: { email: string }) => {
   const [topic, setTopic] = useState<FeedbackTopic>('Feature');
   const [message, setMessage] = useState('');
-  const [replyTo, setReplyTo] = useState(email ?? '');
+  const [replyTo, setReplyTo] = useState(email);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>(
     'idle',
   );
@@ -668,10 +672,10 @@ const InstallPage = (props: Props) => (
           Contact
         </a>
         <Link
-          href={props.email ? REMORSE_HOME : REMORSE_LANDING_PATH}
+          href={REMORSE_HOME}
           className={cn(goldButton, 'px-3 py-1.5 text-[13px]')}
         >
-          {props.email ? 'Your games' : 'Play'}
+          Your games
         </Link>
       </nav>
     }
@@ -774,12 +778,15 @@ const InstallPage = (props: Props) => (
   </RemorseLayout>
 );
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({
-  req,
-}) => {
-  const email = await getAuthenticatedEmail(req, 'remorse-chess');
-  const { count, pledged } = await appStorePledges(email);
-  return { props: { email, pledgeCount: count, pledged } };
+// nginx keeps this page behind the Remorse login, like the lobby
+export const getServerSideProps: GetServerSideProps<Props> = async (
+  context,
+) => {
+  const login = await requireLogin('remorse-chess')(context);
+  if (!('props' in login)) return login;
+  const { email } = await login.props;
+  const { count, clicks } = await appStorePledges(email);
+  return { props: { email, pledgeCount: count, clicks } };
 };
 
 export default InstallPage;

@@ -1,15 +1,25 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { type ReactNode, useState } from 'react';
-import { authLogoutUrl, REMORSE_LANDING_PATH } from '@/lib/auth';
+import {
+  authLogoutUrl,
+  REMORSE_INSTALL_PATH,
+  REMORSE_LANDING_PATH,
+} from '@/lib/auth';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
 import { RulesDialog } from './RulesDialog';
 import { Wordmark } from './Wordmark';
 
-const DefaultActions = () => {
+// getApp: a link to the install page, for the lobby
+export const DefaultActions = ({ getApp = false }: { getApp?: boolean }) => {
   const [rulesSlide, setRulesSlide] = useState<TutorialKey | null>(null);
   return (
     <nav className='flex items-center gap-4 text-sm text-[#a29e96]'>
+      {getApp && (
+        <Link href={REMORSE_INSTALL_PATH} className='hover:text-white'>
+          Get the app
+        </Link>
+      )}
       <button
         type='button'
         className='cursor-pointer hover:text-white'

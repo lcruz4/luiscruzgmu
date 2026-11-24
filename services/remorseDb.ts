@@ -612,30 +612,24 @@ export const joinGame = async (id: number, email: string) =>
     );
   });
 
-export const appStorePledges = async (email: string | null) => {
-  const { rows } = await remorsePool.query<{ count: number; pledged: boolean }>(
+export const appStorePledges = async (email: string) => {
+  const { rows } = await remorsePool.query<{ count: number; clicks: number }>(
     `SELECT count(*)::int AS count,
-            coalesce(bool_or(email = $1), false) AS pledged
+            coalesce(sum(clicks) FILTER (WHERE email = $1), 0)::int AS clicks
      FROM app_store_pledges`,
     [email],
   );
-  return { count: rows[0]?.count ?? 0, pledged: rows[0]?.pledged ?? false };
+  return { count: rows[0]?.count ?? 0, clicks: rows[0]?.clicks ?? 0 };
 };
 
-export const setAppStorePledge = async (email: string, pledged: boolean) => {
-  if (pledged) {
-    await remorsePool.query(
-      `INSERT INTO app_store_pledges (email)
-       VALUES ($1)
-       ON CONFLICT (email) DO NOTHING`,
-      [email],
-    );
-  } else {
-    await remorsePool.query(
-      `DELETE FROM app_store_pledges
-       WHERE email = $1`,
-      [email],
-    );
-  }
+export const addAppStoreClicks = async (email: string, clicks: number) => {
+  await remorsePool.query(
+    `INSERT INTO app_store_pledges (email, clicks)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE
+     SET clicks = app_store_pledges.clicks + EXCLUDED.clicks,
+         last_clicked_at = now()`,
+    [email, clicks],
+  );
   return appStorePledges(email);
 };
