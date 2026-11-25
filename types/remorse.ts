@@ -111,6 +111,8 @@ export interface GameSummary {
   // a random game: its open seat goes to the next player looking for one
   matchmaking: boolean;
   challenge: Challenge | null;
+  // balance mode: the die leans toward the lower-rated player; unrated
+  balanced: boolean;
   updatedAt: string;
 }
 
@@ -211,4 +213,20 @@ export interface GameResponse {
   inviteToken: string | null;
   matchmaking: boolean;
   challenge: Challenge | null;
+  // balance mode: the die leans toward the lower-rated player; unrated
+  balanced: boolean;
+  // each side's first-capture odds, once both seats are taken
+  balance: Record<Color, Record<Trauma, number>> | null;
+  // shown once the game is over, while the viewer hasn't answered it
+  balanceSuggestion: BalanceSuggestion | null;
+}
+
+// One player has won most standard games between the two: suggest playing
+// balanced. wins/losses: the viewer's.
+export interface BalanceSuggestion {
+  playerId: number;
+  name: string;
+  games: number;
+  wins: number;
+  losses: number;
 }

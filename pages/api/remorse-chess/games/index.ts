@@ -31,10 +31,15 @@ const playRandom = async (email: string) => {
 
 // Holds the other seat for the player; they get a push the first time.
 // Challenging someone who already challenged you accepts theirs.
-const challenge = async (email: string, playerId: number) => {
+const challenge = async (
+  email: string,
+  playerId: number,
+  balanced: boolean,
+) => {
   const { id, color, opponentEmail, created, accepted } = await createChallenge(
     email,
     playerId,
+    balanced,
   );
   if (created || accepted) {
     const game = await getGame(id, email);
@@ -47,24 +52,36 @@ const challenge = async (email: string, playerId: number) => {
   return { id, color };
 };
 
+const balancedField = (value: unknown) => {
+  if (value === undefined || typeof value === 'boolean') return value;
+  throw new HttpError(400, 'balanced must be true or false');
+};
+
 // Body: { mode: 'online' | 'local' | 'random' }, { rematchOf: <finished game id> }
-// or { challenge: <player id> }.
+// or { challenge: <player id> }. `balanced: true` makes an online or
+// challenge game balanced; a rematch is balanced like its game unless
+// `balanced` says otherwise. Random and local games never are.
 // Online, the creator's seat is random (swapped for a rematch) and returned
 // as `color`, with the invite link's `inviteToken`.
 const postGame = async (req: NextApiRequest, email: string) => {
   const body = bodyOf(req);
+  const balanced = balancedField(body.balanced);
   if (body.rematchOf !== undefined) {
-    return createRematch(idField(body.rematchOf, 'rematchOf'), email);
+    return createRematch(idField(body.rematchOf, 'rematchOf'), email, balanced);
   }
   if (body.challenge !== undefined) {
-    return challenge(email, idField(body.challenge, 'challenge'));
+    return challenge(
+      email,
+      idField(body.challenge, 'challenge'),
+      balanced ?? false,
+    );
   }
   if (body.mode === 'random') return playRandom(email);
   if (body.mode !== 'online' && body.mode !== 'local') {
     throw new HttpError(400, "mode must be 'online', 'local' or 'random'");
   }
   const color: Color = randomInt(2) ? 'b' : 'w';
-  return createGame(email, body.mode, color);
+  return createGame(email, body.mode, color, balanced ?? false);
 };
 
 export default remorseRoute({

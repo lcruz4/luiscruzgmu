@@ -134,9 +134,9 @@ export const useCreateGame = () =>
   useMutation({
     mutationFn: (
       body:
-        | { mode: 'online' | 'local' | 'random' }
-        | { rematchOf: number }
-        | { challenge: number },
+        | { mode: 'online' | 'local' | 'random'; balanced?: boolean }
+        | { rematchOf: number; balanced?: boolean }
+        | { challenge: number; balanced?: boolean },
     ) =>
       request<{ id: number; color: Color }>(API, {
         method: 'POST',
@@ -218,6 +218,26 @@ export const useAnswerFollower = () => {
     },
   });
 };
+
+// Answers the suggestion to play someone balanced, so it isn't shown again
+export const useAnswerBalanceSuggestion = () =>
+  useMutation({
+    mutationFn: ({
+      playerId,
+      accepted,
+    }: {
+      playerId: number;
+      accepted: boolean;
+    }) =>
+      request<null>(
+        `/api/remorse-chess/players/${playerId}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ type: 'balanceSuggestion', accepted }),
+        },
+        null,
+      ),
+  });
 
 // Takes the seat a challenge holds for you
 export const useAcceptChallenge = () =>

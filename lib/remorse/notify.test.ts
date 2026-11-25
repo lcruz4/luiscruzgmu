@@ -62,6 +62,9 @@ const game = (
     inviteToken: null,
     matchmaking: false,
     challenge: null,
+    balanced: false,
+    balance: null,
+    balanceSuggestion: null,
   };
 };
 

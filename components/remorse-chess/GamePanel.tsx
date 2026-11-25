@@ -10,6 +10,8 @@ import { useBoardLook } from './useBoardLook';
 import { RuleIcon, ruleMentioned, ruleWords } from './RuleIcon';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
 import { buttonSm, ghostButton, goldButton, redButton } from './buttons';
+import { BalanceOdds } from './Balance';
+import { ScalesIcon } from './ModeIcons';
 
 const primary = cn(goldButton, buttonSm);
 const ghost = cn(ghostButton, buttonSm);
@@ -137,7 +139,8 @@ interface GamePanelProps {
   onFlip: () => void;
   // opens the rules dialog on a slide
   onRules: (slide: TutorialKey) => void;
-  onRematch: () => void;
+  // balanced: switch modes from this game's; undefined keeps it
+  onRematch: (balanced?: boolean) => void;
   rematchPending: boolean;
   onCancel: () => void;
   cancelPending: boolean;
@@ -231,14 +234,33 @@ export const GamePanel = ({
           }
         >
           {game.you.length > 0 && (
-            <button
-              type='button'
-              className={primary}
-              disabled={rematchPending}
-              onClick={onRematch}
-            >
-              {game.rematchId ? 'Go to rematch' : 'Rematch, colors swapped'}
-            </button>
+            <div className='flex flex-wrap gap-2'>
+              <button
+                type='button'
+                className={primary}
+                disabled={rematchPending}
+                onClick={() => onRematch()}
+              >
+                {game.rematchId ? 'Go to rematch' : 'Rematch, colors swapped'}
+              </button>
+              {online && !game.rematchId && (
+                <button
+                  type='button'
+                  className={ghost}
+                  disabled={rematchPending}
+                  onClick={() => onRematch(!game.balanced)}
+                >
+                  {game.balanced ? (
+                    'Standard rematch'
+                  ) : (
+                    <>
+                      <ScalesIcon className='-my-1 block size-6' />
+                      Balanced rematch
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           )}
         </StatusCard>
       );
@@ -304,7 +326,9 @@ export const GamePanel = ({
         <StatusCard
           tone='gold'
           title={`${game.whiteName ?? game.blackName} challenged you`}
-          text={`You’d play ${game.whiteEmail ? 'black' : 'white'}.`}
+          text={`You’d play ${game.whiteEmail ? 'black' : 'white'}${
+            game.balanced ? ' in a balanced game' : ''
+          }.`}
         >
           <div className='flex flex-wrap gap-2'>
             <button
@@ -424,6 +448,8 @@ export const GamePanel = ({
       {status()}
 
       {error && <p className='text-sm text-red-300'>{error}</p>}
+
+      <BalanceOdds game={game} />
 
       {seatOpen && game.you.length > 0 && confirmCancel && (
         <StatusCard
