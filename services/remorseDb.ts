@@ -1116,8 +1116,8 @@ const noTraumas = (): Record<Trauma, number> => ({
   psychopath: 0,
 });
 
-// Your online games against them, from your side: the finished ones' results
-// and how each side's pieces took their first captures
+// Your standard online games against them, from your side: the finished
+// ones' results and how each side's pieces took their first captures
 const headToHead = async (email: string, opponentEmail: string) => {
   const rolls = await remorsePool.query<{
     yours: boolean;
@@ -1129,6 +1129,7 @@ const headToHead = async (email: string, opponentEmail: string) => {
      JOIN game_steps s ON s.game_id = g.id
      CROSS JOIN LATERAL jsonb_array_elements(s.events) e
      WHERE g.mode = 'online'
+       AND NOT g.balanced
        AND ((g.white_email = $1 AND g.black_email = $2)
          OR (g.white_email = $2 AND g.black_email = $1))
        AND e->>'type' = 'roll'
@@ -1151,6 +1152,7 @@ const headToHead = async (email: string, opponentEmail: string) => {
        count(*) FILTER (WHERE state->>'winner' = 'draw')::int AS draws
      FROM games
      WHERE mode = 'online'
+       AND NOT balanced
        AND ((white_email = $1 AND black_email = $2)
          OR (white_email = $2 AND black_email = $1))`,
     [email, opponentEmail],
