@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { BalancedTag, Toggle } from '@/components/remorse-chess/Balance';
 import { Marker } from '@/components/remorse-chess/Marker';
 import {
   Dialog,
@@ -13,6 +14,7 @@ import {
   BoardIcon,
   DieIcon,
   LetterIcon,
+  ScalesIcon,
   SwordsIcon,
 } from '@/components/remorse-chess/ModeIcons';
 import {
@@ -22,6 +24,7 @@ import {
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
 import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RecordCard } from '@/components/remorse-chess/RecordCard';
+import { Rating } from '@/components/remorse-chess/Rating';
 import {
   DefaultActions,
   RemorseLayout,
@@ -72,10 +75,15 @@ const seatOf = (game: GameSummary, email: string): Color => {
 const opponent = (
   game: GameSummary,
   email: string,
-): { id: number | null; name: string; icon: PlayerIcon | null } | null => {
+): {
+  id: number | null;
+  name: string;
+  icon: PlayerIcon | null;
+  rating: number | null;
+} | null => {
   if (game.challenge && !game.challenge.you) {
-    const { playerId, name, icon } = game.challenge;
-    return { id: playerId, name, icon };
+    const { playerId, name, icon, rating } = game.challenge;
+    return { id: playerId, name, icon, rating };
   }
   const white = seatOf(game, email) === 'b';
   const name = white ? game.whiteName : game.blackName;
@@ -84,6 +92,7 @@ const opponent = (
     id: white ? game.whiteId : game.blackId,
     name,
     icon: white ? game.whiteIcon : game.blackIcon,
+    rating: white ? game.whiteRating : game.blackRating,
   };
 };
 
@@ -113,6 +122,7 @@ const OpponentLabel = ({
       <PlayerLink id={other.id} className='truncate'>
         {other.name}
       </PlayerLink>
+      <Rating rating={other.rating} />
     </>
   );
   return (
@@ -303,7 +313,7 @@ const GameRow = ({
 }: {
   game: GameSummary;
   email: string;
-  onRematch: (id: number) => void;
+  onRematch: (id: number, balanced?: boolean) => void;
   rematchBusy: boolean;
 }) => {
   const archive = useArchive();
@@ -335,12 +345,15 @@ const GameRow = ({
           <strong className='flex min-w-0 items-center gap-1.5 font-semibold text-white'>
             <OpponentLabel game={game} email={email} />
           </strong>
-          <Link
-            href={gamePath(game.id)}
-            className={cn(muted, 'block truncate', stretchedLink)}
-          >
-            {detail}
-          </Link>
+          <div className='flex min-w-0 items-center gap-2'>
+            {game.balanced && <BalancedTag />}
+            <Link
+              href={gamePath(game.id)}
+              className={cn(muted, 'block truncate', stretchedLink)}
+            >
+              {detail}
+            </Link>
+          </div>
         </div>
         {!waiting && <Chip {...status} />}
       </div>
@@ -370,14 +383,38 @@ const GameRow = ({
                 Go to rematch
               </Link>
             ) : (
-              <button
-                type='button'
-                className={small}
-                disabled={rematchBusy}
-                onClick={() => onRematch(game.id)}
-              >
-                Rematch
-              </button>
+              <>
+                <button
+                  type='button'
+                  className={small}
+                  disabled={rematchBusy}
+                  onClick={() => onRematch(game.id)}
+                >
+                  Rematch
+                </button>
+                {game.mode === 'online' && (
+                  <button
+                    type='button'
+                    className={cn(small, 'inline-flex items-center gap-1')}
+                    disabled={rematchBusy}
+                    title={
+                      game.balanced
+                        ? 'Rematch as a standard, rated game'
+                        : 'Rematch as a balanced, unrated game'
+                    }
+                    onClick={() => onRematch(game.id, !game.balanced)}
+                  >
+                    {game.balanced ? (
+                      'Standard'
+                    ) : (
+                      <>
+                        <ScalesIcon className='-my-1 block size-5' />
+                        Balanced
+                      </>
+                    )}
+                  </button>
+                )}
+              </>
             ))}
           {game.winner && (
             <button
@@ -401,18 +438,23 @@ const ModeCard = ({
   icon,
   title,
   text,
+  tag,
   children,
 }: {
   icon: ReactNode;
   title: string;
   text: string;
+  tag?: ReactNode;
   children: ReactNode;
 }) => (
   <div className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'>
     <div className='flex items-start gap-3'>
       {icon}
       <div>
-        <h3 className='font-semibold text-white'>{title}</h3>
+        <h3 className='flex flex-wrap items-center gap-x-2 font-semibold text-white'>
+          {title}
+          {tag}
+        </h3>
         <p className={muted}>{text}</p>
       </div>
     </div>
@@ -624,6 +666,29 @@ const NewFollowers = () => {
   );
 };
 
+const BALANCED_KEY = 'remorse-chess:balanced';
+
+// The lobby's balance switch, remembered on this device
+const useBalancedSetting = () => {
+  const [balanced, setBalanced] = useState(false);
+  useEffect(() => {
+    try {
+      setBalanced(localStorage.getItem(BALANCED_KEY) === 'true');
+    } catch {
+      // storage blocked: the switch starts off
+    }
+  }, []);
+  const set = (value: boolean) => {
+    setBalanced(value);
+    try {
+      localStorage.setItem(BALANCED_KEY, String(value));
+    } catch {
+      // storage blocked: remembered for this visit only
+    }
+  };
+  return [balanced, set] as const;
+};
+
 const LobbyPage = ({ email }: { email: string }) => {
   const router = useRouter();
   const games = useGames();
@@ -631,14 +696,22 @@ const LobbyPage = ({ email }: { email: string }) => {
   const profile = useProfile();
   const create = useCreateGame();
   const [showArchived, setShowArchived] = useState(false);
+  const [balanced, setBalanced] = useBalancedSetting();
+  const balancedTag = balanced ? <BalancedTag /> : undefined;
 
   const open = ({ id }: { id: number }) => router.push(gamePath(id));
   const challenge = (playerId: number) =>
-    create.mutate({ challenge: playerId }, { onSuccess: open });
+    create.mutate({ challenge: playerId, balanced }, { onSuccess: open });
   const start = (mode: 'online' | 'local' | 'random') =>
-    create.mutate({ mode }, { onSuccess: open });
-  const rematch = (id: number) =>
-    create.mutate({ rematchOf: id }, { onSuccess: open });
+    create.mutate(
+      { mode, balanced: mode === 'online' && balanced },
+      { onSuccess: open },
+    );
+  const rematch = (id: number, rematchBalanced?: boolean) =>
+    create.mutate(
+      { rematchOf: id, balanced: rematchBalanced },
+      { onSuccess: open },
+    );
 
   const list = useMemo(() => games.data ?? [], [games.data]);
   const visible = list.filter((game) => !game.archived);
@@ -736,6 +809,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               icon={<SwordsIcon />}
               title='Challenge a friend'
               text='Anyone you follow who follows you back. The game starts when they accept.'
+              tag={balancedTag}
             >
               <ChallengePicker onPick={challenge} busy={create.isPending} />
             </ModeCard>
@@ -743,6 +817,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               icon={<LetterIcon />}
               title='Invite by link'
               text='Get an invite link to send. They join from any device.'
+              tag={balancedTag}
             >
               <button
                 type='button'
@@ -767,6 +842,21 @@ const LobbyPage = ({ email }: { email: string }) => {
                 Start local game
               </button>
             </ModeCard>
+          </div>
+          <div className='mt-3 flex items-center gap-3 rounded-xl px-1 py-1'>
+            <ScalesIcon className='block size-9 flex-none' />
+            <div className='min-w-0 flex-1 leading-tight'>
+              <span className='text-[#e8e4dc]'>Balance the dice by rating</span>
+              <span className='block text-[13px] text-[#a29e96]'>
+                For challenges and invite links. Unrated: the higher-rated
+                player rolls worse trauma odds.
+              </span>
+            </div>
+            <Toggle
+              checked={balanced}
+              onChange={setBalanced}
+              label='Balance the dice by rating'
+            />
           </div>
           <Link
             href='/projects/remorse-chess/tutorial'

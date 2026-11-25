@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
+import { BalanceSuggestionDialog } from '@/components/remorse-chess/Balance';
 import { Board } from '@/components/remorse-chess/Board';
 import { GamePanel } from '@/components/remorse-chess/GamePanel';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
@@ -120,6 +121,9 @@ const GamePage = () => {
   return (
     <RemorseLayout title={yourMove ? 'Your move · Remorse Chess' : undefined}>
       <UsernamePrompt />
+      {hiddenFrom === null && (
+        <BalanceSuggestionDialog suggestion={game.balanceSuggestion} />
+      )}
       <RulesDialog
         slide={rulesSlide}
         onSlide={setRulesSlide}
@@ -197,9 +201,9 @@ const GamePage = () => {
                 onSuccess: () => router.push('/projects/remorse-chess'),
               })
             }
-            onRematch={() =>
+            onRematch={(balanced) =>
               rematch.mutate(
-                { rematchOf: game.id },
+                { rematchOf: game.id, balanced },
                 {
                   // A full load so the board doesn't animate between games
                   onSuccess: ({ id: next }) =>

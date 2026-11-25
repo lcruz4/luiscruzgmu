@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
 import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
+import { Rating } from '@/components/remorse-chess/Rating';
 import {
   PlayerLink,
   stretchedLink,
@@ -54,11 +55,13 @@ const GameRow = ({
           <PlayerLink id={game.whiteId} className='truncate'>
             {game.whiteName}
           </PlayerLink>
+          <Rating rating={game.whiteRating} />
           <span className='text-[#a29e96]'>vs</span>
           <PlayerAvatar icon={game.blackIcon} className='size-6' />
           <PlayerLink id={game.blackId} className='truncate'>
             {game.blackName}
           </PlayerLink>
+          <Rating rating={game.blackRating} />
         </strong>
         <Link
           href={gamePath(game.id)}
@@ -200,6 +203,10 @@ const PlayerPageView = () => {
               <div className='min-w-0 flex-1'>
                 <h1 className='truncate text-[clamp(26px,4.5vw,34px)] leading-tight font-bold tracking-tight text-white'>
                   {data.name}
+                  <Rating
+                    rating={data.stats.rating}
+                    className='ml-2 text-[0.6em]'
+                  />
                   {data.you && (
                     <span className='ml-2 text-base font-normal text-[#a29e96]'>
                       (you)

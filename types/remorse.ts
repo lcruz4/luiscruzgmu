@@ -94,6 +94,10 @@ export interface GameSummary {
   // null: the default icon
   whiteIcon: PlayerIcon | null;
   blackIcon: PlayerIcon | null;
+  // as of the game's end once it's over, current until then; null for a
+  // local game or an empty seat
+  whiteRating: number | null;
+  blackRating: number | null;
   turn: Color;
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
@@ -107,6 +111,8 @@ export interface GameSummary {
   // a random game: its open seat goes to the next player looking for one
   matchmaking: boolean;
   challenge: Challenge | null;
+  // balance mode: the die leans toward the lower-rated player; unrated
+  balanced: boolean;
   updatedAt: string;
 }
 
@@ -115,6 +121,7 @@ export interface Challenge {
   playerId: number;
   name: string;
   icon: PlayerIcon | null;
+  rating: number;
   you: boolean;
 }
 
@@ -139,6 +146,9 @@ export interface PlayerGame {
   blackName: string | null;
   whiteIcon: PlayerIcon | null;
   blackIcon: PlayerIcon | null;
+  // as of the game's end once it's over, current until then
+  whiteRating: number;
+  blackRating: number;
   turn: Color;
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
@@ -165,6 +175,7 @@ export interface PlayerPage extends PlayerRef {
 }
 
 export interface PlayerStats {
+  rating: number;
   // finished online games against someone else
   wins: number;
   losses: number;
@@ -186,15 +197,36 @@ export interface GameResponse {
   // null: the default icon
   whiteIcon: PlayerIcon | null;
   blackIcon: PlayerIcon | null;
+  // online only: as of the game's end once it's over, current until then
+  whiteRating: number | null;
+  blackRating: number | null;
+  // what the finished game gained or lost them
+  whiteRatingChange: number | null;
+  blackRatingChange: number | null;
   state: GameState;
   version: number;
   steps: GameStep[];
   // colors the viewer plays (both in a local game, none for a spectator)
   you: Color[];
-  canUndo: boolean;
   rematchId: number | null;
   // the invite link's secret; only sent to the player waiting on it
   inviteToken: string | null;
   matchmaking: boolean;
   challenge: Challenge | null;
+  // balance mode: the die leans toward the lower-rated player; unrated
+  balanced: boolean;
+  // each side's first-capture odds, once both seats are taken
+  balance: Record<Color, Record<Trauma, number>> | null;
+  // shown once the game is over, while the viewer hasn't answered it
+  balanceSuggestion: BalanceSuggestion | null;
+}
+
+// One player has won most standard games between the two: suggest playing
+// balanced. wins/losses: the viewer's.
+export interface BalanceSuggestion {
+  playerId: number;
+  name: string;
+  games: number;
+  wins: number;
+  losses: number;
 }

@@ -120,8 +120,8 @@ export const Board = ({
   } | null>(null);
   const squares = squaresFor(flipped);
 
-  // Animate steps that arrive after the board first rendered; undo and the
-  // first load just show the board
+  // Animate steps that arrive after the board first rendered; the first load
+  // just shows the board
   const fxRef = useRef<HTMLDivElement>(null);
   const seen = useRef<{ state: GameState; count: number } | null>(null);
   const stopAnimation = useRef<(() => void) | null>(null);
