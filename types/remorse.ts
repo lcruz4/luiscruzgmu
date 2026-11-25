@@ -94,7 +94,8 @@ export interface GameSummary {
   // null: the default icon
   whiteIcon: PlayerIcon | null;
   blackIcon: PlayerIcon | null;
-  // current ratings; null for a local game or an empty seat
+  // as of the game's end once it's over, current until then; null for a
+  // local game or an empty seat
   whiteRating: number | null;
   blackRating: number | null;
   turn: Color;
@@ -143,6 +144,9 @@ export interface PlayerGame {
   blackName: string | null;
   whiteIcon: PlayerIcon | null;
   blackIcon: PlayerIcon | null;
+  // as of the game's end once it's over, current until then
+  whiteRating: number;
+  blackRating: number;
   turn: Color;
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];

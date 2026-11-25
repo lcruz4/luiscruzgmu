@@ -55,11 +55,13 @@ const GameRow = ({
           <PlayerLink id={game.whiteId} className='truncate'>
             {game.whiteName}
           </PlayerLink>
+          <Rating rating={game.whiteRating} />
           <span className='text-[#a29e96]'>vs</span>
           <PlayerAvatar icon={game.blackIcon} className='size-6' />
           <PlayerLink id={game.blackId} className='truncate'>
             {game.blackName}
           </PlayerLink>
+          <Rating rating={game.blackRating} />
         </strong>
         <Link
           href={gamePath(game.id)}

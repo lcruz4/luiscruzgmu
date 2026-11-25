@@ -209,13 +209,16 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
             g.challenged_email, pc.id AS challenged_id, pc.icon AS challenged_icon,
             COALESCE(pc.username, split_part(g.challenged_email, '@', 1)) AS challenged_name,
             round(pc.rating)::int AS challenged_rating,
-            round(pw.rating)::int AS white_rating, round(pb.rating)::int AS black_rating
+            round(COALESCE(rw.rating_after, pw.rating))::int AS white_rating,
+            round(COALESCE(rb.rating_after, pb.rating))::int AS black_rating
      FROM games g
      LEFT JOIN game_archives a ON a.game_id = g.id AND a.email = $1
      LEFT JOIN games r ON r.rematch_of = g.id
      LEFT JOIN players pw ON pw.email = g.white_email
      LEFT JOIN players pb ON pb.email = g.black_email
      LEFT JOIN players pc ON pc.email = g.challenged_email
+     LEFT JOIN rating_changes rw ON rw.game_id = g.id AND rw.email = g.white_email
+     LEFT JOIN rating_changes rb ON rb.game_id = g.id AND rb.email = g.black_email
      WHERE g.white_email = $1 OR g.black_email = $1 OR g.challenged_email = $1
      ORDER BY g.updated_at DESC
      LIMIT 50`,
@@ -1003,16 +1006,25 @@ export const getPlayer = async (
   const player = rows[0];
   if (!player) throw new HttpError(404, 'Player not found');
   const games = await remorsePool.query<
-    NameColumns & { id: number; state: GameState; updated_at: Date }
+    NameColumns &
+      Record<'white_rating' | 'black_rating', number> & {
+        id: number;
+        state: GameState;
+        updated_at: Date;
+      }
   >(
     `SELECT g.id, g.state, g.updated_at,
             COALESCE(pw.username, split_part(g.white_email, '@', 1)) AS white_name,
             COALESCE(pb.username, split_part(g.black_email, '@', 1)) AS black_name,
             pw.icon AS white_icon, pb.icon AS black_icon,
-            pw.id AS white_id, pb.id AS black_id
+            pw.id AS white_id, pb.id AS black_id,
+            round(COALESCE(rw.rating_after, pw.rating))::int AS white_rating,
+            round(COALESCE(rb.rating_after, pb.rating))::int AS black_rating
      FROM games g
      LEFT JOIN players pw ON pw.email = g.white_email
      LEFT JOIN players pb ON pb.email = g.black_email
+     LEFT JOIN rating_changes rw ON rw.game_id = g.id AND rw.email = g.white_email
+     LEFT JOIN rating_changes rb ON rb.game_id = g.id AND rb.email = g.black_email
      WHERE g.mode = 'online'
        AND (g.white_email = $1 OR g.black_email = $1)
        AND g.white_email IS NOT NULL
@@ -1040,6 +1052,8 @@ export const getPlayer = async (
       blackName: row.black_name,
       whiteIcon: row.white_icon,
       blackIcon: row.black_icon,
+      whiteRating: row.white_rating,
+      blackRating: row.black_rating,
       turn: row.state.turn,
       winner: row.state.winner,
       pieces: row.state.pieces.map(({ color, type, square }) => ({
