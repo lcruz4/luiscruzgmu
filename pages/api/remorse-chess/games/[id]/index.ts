@@ -15,7 +15,6 @@ import {
   playAction,
   resignGame,
   setArchived,
-  undoStep,
 } from '@/services/remorseDb';
 import { logger } from '@/services/logger';
 import { notifyOpponent } from '@/services/remorsePush';
@@ -36,7 +35,7 @@ const promotionField = (value: unknown) => {
 };
 
 // Body: { type, version, ... }
-//   move: { from, to, promotion? } · selfHeal: { pieceId } · skipExtraMove · undo · resign
+//   move: { from, to, promotion? } · selfHeal: { pieceId } · skipExtraMove · resign
 //   join: { inviteToken } from the invite link, or nothing to accept a challenge
 //   archive / unarchive: hide the game from your lobby or bring it back
 const postAction = async (req: NextApiRequest, email: string) => {
@@ -61,8 +60,6 @@ const postAction = async (req: NextApiRequest, email: string) => {
     });
   } else if (body.type === 'skipExtraMove') {
     await playAction(id, email, version(), { type: 'skipExtraMove' });
-  } else if (body.type === 'undo') {
-    await undoStep(id, email, version());
   } else if (body.type === 'resign') {
     await resignGame(id, email, version());
   } else if (body.type === 'join') {
@@ -79,17 +76,15 @@ const postAction = async (req: NextApiRequest, email: string) => {
   } else {
     throw new HttpError(
       400,
-      "type must be 'move', 'selfHeal', 'skipExtraMove', 'undo', 'resign', 'join', 'archive' or 'unarchive'",
+      "type must be 'move', 'selfHeal', 'skipExtraMove', 'resign', 'join', 'archive' or 'unarchive'",
     );
   }
   const game = await getGame(id, email);
   publishGameChange(id, game.version);
   // Not awaited: the mover shouldn't wait on push services
-  notifyOpponent(
-    game,
-    email,
-    body.type === 'undo' || body.type === 'join' ? body.type : 'other',
-  ).catch((error) => logger.error('Remorse notify failed:', error));
+  notifyOpponent(game, email, body.type === 'join' ? 'join' : 'other').catch(
+    (error) => logger.error('Remorse notify failed:', error),
+  );
   return game;
 };
 

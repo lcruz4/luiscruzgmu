@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import type { Color, GameResponse } from '@/types/remorse';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PlayerLink } from './PlayerLink';
+import { Rating } from './Rating';
 
 // One side of the board: who plays it and whether it's their move
 export const PlayerStrip = ({
@@ -31,6 +32,13 @@ export const PlayerStrip = ({
     ? game.whiteIcon
     : game.blackIcon;
   const you = !local && game.you.includes(color);
+  const rating = name
+    ? color === 'w'
+      ? game.whiteRating
+      : game.blackRating
+    : null;
+  const ratingChange =
+    color === 'w' ? game.whiteRatingChange : game.blackRatingChange;
 
   return (
     <div className='flex items-center gap-2.5 px-1 py-2'>
@@ -58,6 +66,25 @@ export const PlayerStrip = ({
               name ?? 'Waiting for a player'
             )}
           </strong>
+          <Rating rating={rating} className='text-sm' />
+          {ratingChange !== null && (
+            <span
+              className={cn(
+                'text-xs font-semibold tabular-nums',
+                ratingChange > 0
+                  ? 'text-[#8fd16a]'
+                  : ratingChange < 0
+                  ? 'text-red-300'
+                  : 'text-[#a29e96]',
+              )}
+            >
+              {ratingChange > 0
+                ? `+${ratingChange}`
+                : ratingChange < 0
+                ? `−${-ratingChange}`
+                : '±0'}
+            </span>
+          )}
           {you && <span className='text-xs text-[#a29e96]'>(you)</span>}
         </div>
         <span className='flex items-center gap-1.5 text-xs text-[#a29e96]'>

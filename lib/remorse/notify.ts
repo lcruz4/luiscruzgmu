@@ -10,8 +10,8 @@ import { RULES } from './moves';
 
 export type PushMessage = { title: string; body: string };
 
-// What the opponent's action did: `undo` and `join` leave no step of theirs
-export type OpponentAction = 'undo' | 'join' | 'other';
+// What the opponent's action did: `join` leaves no step of theirs
+export type OpponentAction = 'join' | 'other';
 
 const AFTERTASTE: Record<Trauma | 'bloodlust', string> = {
   devastated: '... but they feel terrible about it 😢',
@@ -119,8 +119,6 @@ export const pushMessage = (
   const body =
     action === 'join'
       ? `${actorName} joined your game.`
-      : action === 'undo'
-      ? `${actorName} took back your last move.`
       : what ?? `${actorName} made their move.`;
   return { title: `Your move vs ${actorName}`, body };
 };

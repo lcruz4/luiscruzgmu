@@ -22,6 +22,7 @@ import {
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
 import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RecordCard } from '@/components/remorse-chess/RecordCard';
+import { Rating } from '@/components/remorse-chess/Rating';
 import {
   DefaultActions,
   RemorseLayout,
@@ -72,10 +73,15 @@ const seatOf = (game: GameSummary, email: string): Color => {
 const opponent = (
   game: GameSummary,
   email: string,
-): { id: number | null; name: string; icon: PlayerIcon | null } | null => {
+): {
+  id: number | null;
+  name: string;
+  icon: PlayerIcon | null;
+  rating: number | null;
+} | null => {
   if (game.challenge && !game.challenge.you) {
-    const { playerId, name, icon } = game.challenge;
-    return { id: playerId, name, icon };
+    const { playerId, name, icon, rating } = game.challenge;
+    return { id: playerId, name, icon, rating };
   }
   const white = seatOf(game, email) === 'b';
   const name = white ? game.whiteName : game.blackName;
@@ -84,6 +90,7 @@ const opponent = (
     id: white ? game.whiteId : game.blackId,
     name,
     icon: white ? game.whiteIcon : game.blackIcon,
+    rating: white ? game.whiteRating : game.blackRating,
   };
 };
 
@@ -113,6 +120,7 @@ const OpponentLabel = ({
       <PlayerLink id={other.id} className='truncate'>
         {other.name}
       </PlayerLink>
+      <Rating rating={other.rating} />
     </>
   );
   return (

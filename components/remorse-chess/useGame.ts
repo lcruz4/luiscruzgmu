@@ -66,6 +66,7 @@ type Profile = {
   boardTheme: BoardThemeId | null;
   chosen: boolean;
   tutorialSeen: TutorialKey[];
+  rating: number;
 };
 
 export const useProfile = () =>

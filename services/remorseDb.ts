@@ -26,6 +26,7 @@ import type { PlayerIcon } from '@/lib/remorse/icons';
 import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import { isTutorialKey, type TutorialKey } from '@/lib/remorse/tutorial';
+import { INITIAL_RATING, inflatedRd, rate } from '@/lib/remorse/glicko';
 import { HttpError } from './api';
 
 export const remorsePool = new Pool({
@@ -78,6 +79,7 @@ interface ChallengeColumns {
   challenged_email: string | null;
   challenged_id: number | null;
   challenged_name: string | null;
+  challenged_rating: number | null;
   challenged_icon: PlayerIcon | null;
 }
 
@@ -86,6 +88,7 @@ const challengeOf = (row: ChallengeColumns, email: string): Challenge | null =>
     ? {
         playerId: row.challenged_id,
         name: row.challenged_name,
+        rating: row.challenged_rating ?? INITIAL_RATING,
         icon: row.challenged_icon,
         you: row.challenged_email === email,
       }
@@ -104,7 +107,6 @@ const ensurePlayer = async (client: PoolClient | Pool, email: string) => {
 interface StepRow {
   step: number;
   color: Color;
-  resigned: boolean;
   events: GameEvent[];
   created_at: Date;
 }
@@ -117,23 +119,74 @@ const seatsOf = (game: GameRow, email: string): Color[] => {
   return seats;
 };
 
-// Undo is the opponent's call: only the other side can take back a step.
-// A local game's owner sits on both sides, so they always can.
-// A resignation can't be taken back.
-const canUndoStep = (
+// Online games against someone else count toward ratings
+const isRated = (game: GameRow) =>
+  game.mode === 'online' &&
+  game.white_email !== null &&
+  game.black_email !== null &&
+  game.white_email !== game.black_email;
+
+interface RatingRow {
+  email: string;
+  rating: number;
+  rating_rd: number;
+  rated_at: Date | null;
+}
+
+// Rates a game that just ended, for both players at once
+const applyRatings = async (
+  client: PoolClient,
   game: GameRow,
-  email: string,
-  last: { color: Color; resigned: boolean } | undefined,
-) =>
-  last !== undefined &&
-  !last.resigned &&
-  seatsOf(game, email).includes(opponent(last.color));
+  winner: Color | 'draw',
+) => {
+  if (!isRated(game)) return;
+  const { rows } = await client.query<RatingRow>(
+    `SELECT email, rating, rating_rd, rated_at
+     FROM players
+     WHERE email = ANY($1)
+     ORDER BY email
+     FOR UPDATE`,
+    [[game.white_email, game.black_email]],
+  );
+  const white = rows.find((row) => row.email === game.white_email);
+  const black = rows.find((row) => row.email === game.black_email);
+  if (!white || !black) throw new Error(`Game ${game.id} has no player rows`);
+  const now = new Date();
+  const whiteBefore = {
+    rating: white.rating,
+    rd: inflatedRd(white.rating_rd, white.rated_at, now),
+  };
+  const blackBefore = {
+    rating: black.rating,
+    rd: inflatedRd(black.rating_rd, black.rated_at, now),
+  };
+  const whiteScore = winner === 'w' ? 1 : winner === 'b' ? 0 : 0.5;
+  const sides: [RatingRow, ReturnType<typeof rate>][] = [
+    [white, rate(whiteBefore, blackBefore, whiteScore)],
+    [black, rate(blackBefore, whiteBefore, 1 - whiteScore)],
+  ];
+  for (const [before, after] of sides) {
+    await client.query(
+      `INSERT INTO rating_changes
+         (game_id, email, rating_before, rating_after, created_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [game.id, before.email, before.rating, after.rating, now],
+    );
+    await client.query(
+      `UPDATE players
+       SET rating = $2, rating_rd = $3, rated_at = $4
+       WHERE email = $1`,
+      [before.email, after.rating, after.rd, now],
+    );
+  }
+};
 
 export const listGames = async (email: string): Promise<GameSummary[]> => {
   const { rows } = await remorsePool.query<
     GameRow &
       NameColumns &
-      ChallengeColumns & {
+      ChallengeColumns &
+      Record<'white_rating' | 'black_rating', number | null> & {
         updated_at: Date;
         archived: boolean;
         your_move: boolean;
@@ -154,7 +207,9 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
             pw.icon AS white_icon, pb.icon AS black_icon,
             pw.id AS white_id, pb.id AS black_id,
             g.challenged_email, pc.id AS challenged_id, pc.icon AS challenged_icon,
-            COALESCE(pc.username, split_part(g.challenged_email, '@', 1)) AS challenged_name
+            COALESCE(pc.username, split_part(g.challenged_email, '@', 1)) AS challenged_name,
+            round(pc.rating)::int AS challenged_rating,
+            round(pw.rating)::int AS white_rating, round(pb.rating)::int AS black_rating
      FROM games g
      LEFT JOIN game_archives a ON a.game_id = g.id AND a.email = $1
      LEFT JOIN games r ON r.rematch_of = g.id
@@ -177,6 +232,8 @@ export const listGames = async (email: string): Promise<GameSummary[]> => {
     blackName: row.black_name,
     whiteIcon: row.white_icon,
     blackIcon: row.black_icon,
+    whiteRating: row.mode === 'online' ? row.white_rating : null,
+    blackRating: row.mode === 'online' ? row.black_rating : null,
     turn: row.state.turn,
     winner: row.state.winner,
     pieces: row.state.pieces.map(({ color, type, square }) => ({
@@ -205,8 +262,10 @@ export const getProfile = async (email: string) => {
     board_theme: BoardThemeId | null;
     name_chosen: boolean;
     tutorial_seen: string[];
+    rating: number;
   }>(
-    `SELECT id, username, icon, piece_set, board_theme, name_chosen, tutorial_seen
+    `SELECT id, username, icon, piece_set, board_theme, name_chosen, tutorial_seen,
+            round(rating)::int AS rating
      FROM players
      WHERE email = $1`,
     [email],
@@ -219,6 +278,7 @@ export const getProfile = async (email: string) => {
     boardTheme: rows[0]?.board_theme ?? null,
     chosen: rows[0]?.name_chosen ?? false,
     tutorialSeen: (rows[0]?.tutorial_seen ?? []).filter(isTutorialKey),
+    rating: rows[0]?.rating ?? INITIAL_RATING,
   };
 };
 
@@ -327,7 +387,17 @@ export const playerStats = async (email: string): Promise<PlayerStats> => {
   );
   const traumas = noTraumas();
   for (const { trauma, count } of rolls.rows) traumas[trauma] = count;
-  return { ...record.rows[0], traumas };
+  const rating = await remorsePool.query<{ rating: number }>(
+    `SELECT round(rating)::int AS rating
+     FROM players
+     WHERE email = $1`,
+    [email],
+  );
+  return {
+    ...record.rows[0],
+    rating: rating.rows[0]?.rating ?? INITIAL_RATING,
+    traumas,
+  };
 };
 
 export const createGame = async (
@@ -470,10 +540,8 @@ const lockGame = async (client: PoolClient, id: number) => {
 const lastStep = async (client: PoolClient | Pool, id: number) => {
   const { rows } = await client.query<{
     step: number;
-    color: Color;
-    resigned: boolean;
   }>(
-    `SELECT step, color, action->>'type' = 'resign' AS resigned
+    `SELECT step
      FROM game_steps
      WHERE game_id = $1
      ORDER BY step DESC
@@ -499,7 +567,16 @@ export const getGame = async (
   email: string,
 ): Promise<GameResponse> => {
   const { rows } = await remorsePool.query<
-    GameRow & NameColumns & ChallengeColumns
+    GameRow &
+      NameColumns &
+      ChallengeColumns &
+      Record<
+        | 'white_rating'
+        | 'black_rating'
+        | 'white_rating_change'
+        | 'black_rating_change',
+        number | null
+      >
   >(
     `SELECT g.id, g.mode, g.created_by, g.white_email, g.black_email, g.initial_state, g.state, g.version,
             g.invite_token, g.matchmaking,
@@ -508,18 +585,25 @@ export const getGame = async (
             pw.icon AS white_icon, pb.icon AS black_icon,
             pw.id AS white_id, pb.id AS black_id,
             g.challenged_email, pc.id AS challenged_id, pc.icon AS challenged_icon,
-            COALESCE(pc.username, split_part(g.challenged_email, '@', 1)) AS challenged_name
+            COALESCE(pc.username, split_part(g.challenged_email, '@', 1)) AS challenged_name,
+            round(pc.rating)::int AS challenged_rating,
+            round(COALESCE(rw.rating_after, pw.rating))::int AS white_rating,
+            round(COALESCE(rb.rating_after, pb.rating))::int AS black_rating,
+            (round(rw.rating_after) - round(rw.rating_before))::int AS white_rating_change,
+            (round(rb.rating_after) - round(rb.rating_before))::int AS black_rating_change
      FROM games g
      LEFT JOIN players pw ON pw.email = g.white_email
      LEFT JOIN players pb ON pb.email = g.black_email
      LEFT JOIN players pc ON pc.email = g.challenged_email
+     LEFT JOIN rating_changes rw ON rw.game_id = g.id AND rw.email = g.white_email
+     LEFT JOIN rating_changes rb ON rb.game_id = g.id AND rb.email = g.black_email
      WHERE g.id = $1`,
     [id],
   );
   const game = rows[0];
   if (!game) throw new HttpError(404, 'Game not found');
   const steps = await remorsePool.query<StepRow>(
-    `SELECT step, color, events, created_at, action->>'type' = 'resign' AS resigned
+    `SELECT step, color, events, created_at
      FROM game_steps
      WHERE game_id = $1
      ORDER BY step`,
@@ -531,7 +615,6 @@ export const getGame = async (
      WHERE rematch_of = $1`,
     [id],
   );
-  const last = steps.rows.at(-1);
   const you = seatsOf(game, email);
   return {
     id: game.id,
@@ -544,6 +627,10 @@ export const getGame = async (
     blackName: game.black_name,
     whiteIcon: game.white_icon,
     blackIcon: game.black_icon,
+    whiteRating: game.mode === 'online' ? game.white_rating : null,
+    blackRating: game.mode === 'online' ? game.black_rating : null,
+    whiteRatingChange: game.white_rating_change,
+    blackRatingChange: game.black_rating_change,
     state: game.state,
     version: game.version,
     steps: steps.rows.map(
@@ -555,7 +642,6 @@ export const getGame = async (
       }),
     ),
     you,
-    canUndo: canUndoStep(game, email, last),
     rematchId: rematch.rows[0]?.id ?? null,
     // Only the player waiting for an opponent gets the invite link's secret
     inviteToken: you.length ? game.invite_token : null,
@@ -618,6 +704,9 @@ export const playAction = async (
        WHERE id = $1`,
       [id, JSON.stringify(result.state)],
     );
+    if (result.state.winner) {
+      await applyRatings(client, game, result.state.winner);
+    }
   });
 
 // Online, you resign your own seat on either turn; locally the side to move
@@ -658,40 +747,7 @@ export const resignGame = async (id: number, email: string, version: number) =>
        WHERE id = $1`,
       [id, JSON.stringify(state)],
     );
-  });
-
-export const undoStep = async (id: number, email: string, version: number) =>
-  withTransaction(async (client) => {
-    const game = await lockGame(client, id);
-    assertVersion(game, version);
-    const last = await lastStep(client, id);
-    if (!last) throw new HttpError(400, 'Nothing to undo');
-    if (last.resigned)
-      throw new HttpError(400, "A resignation can't be undone");
-    if (!canUndoStep(game, email, last)) {
-      throw new HttpError(403, 'Only your opponent can undo your move');
-    }
-
-    await client.query(
-      `DELETE FROM game_steps
-       WHERE game_id = $1 AND step = $2`,
-      [id, last.step],
-    );
-    const { rows } = await client.query<{ state_after: GameState }>(
-      `SELECT state_after
-       FROM game_steps
-       WHERE game_id = $1
-       ORDER BY step DESC
-       LIMIT 1`,
-      [id],
-    );
-    const state = rows[0]?.state_after ?? game.initial_state;
-    await client.query(
-      `UPDATE games
-       SET state = $2, version = version + 1
-       WHERE id = $1`,
-      [id, JSON.stringify(state)],
-    );
+    await applyRatings(client, game, winner);
   });
 
 // Only while an online game waits for its opponent. The game is deleted, so

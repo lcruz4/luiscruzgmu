@@ -122,7 +122,15 @@ export const RecordCard = ({
   return (
     <div className='grid gap-3.5 md:grid-cols-[1fr_1.4fr]'>
       <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
-        <h3 className='font-semibold text-white'>Online record</h3>
+        <div className='flex items-baseline justify-between gap-2'>
+          <h3 className='font-semibold text-white'>Online record</h3>
+          <span className='text-[13px] text-[#a29e96]'>
+            Rating{' '}
+            <strong className='text-base font-bold text-[#ffd27a] tabular-nums'>
+              {stats.rating}
+            </strong>
+          </span>
+        </div>
         <div className='grid grid-cols-3 gap-2'>
           <Tally value={stats.wins} label='Wins' gold />
           <Tally value={stats.losses} label='Losses' />

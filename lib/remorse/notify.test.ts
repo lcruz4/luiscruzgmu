@@ -47,6 +47,10 @@ const game = (
     blackName: 'luis',
     whiteIcon: null,
     blackIcon: null,
+    whiteRating: 1200,
+    blackRating: 1200,
+    whiteRatingChange: null,
+    blackRatingChange: null,
     state: { ...state, pieces, turn: 'b', winner },
     version: 1,
     steps: [
@@ -54,7 +58,6 @@ const game = (
       ...steps,
     ],
     you: ['b'],
-    canUndo: false,
     rematchId: null,
     inviteToken: null,
     matchmaking: false,
@@ -164,12 +167,9 @@ describe('pushMessage', () => {
     expect(pushMessage(g, 'b', 'kayz', 'other')?.body).toBe(text);
   });
 
-  it('join and undo', () => {
+  it('join', () => {
     expect(pushMessage(game([]), 'b', 'kayz', 'join')?.body).toBe(
       'kayz joined your game.',
-    );
-    expect(pushMessage(game([]), 'b', 'kayz', 'undo')?.body).toBe(
-      'kayz took back your last move.',
     );
   });
 });

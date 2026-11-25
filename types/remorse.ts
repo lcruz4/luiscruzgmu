@@ -94,6 +94,9 @@ export interface GameSummary {
   // null: the default icon
   whiteIcon: PlayerIcon | null;
   blackIcon: PlayerIcon | null;
+  // current ratings; null for a local game or an empty seat
+  whiteRating: number | null;
+  blackRating: number | null;
   turn: Color;
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
@@ -115,6 +118,7 @@ export interface Challenge {
   playerId: number;
   name: string;
   icon: PlayerIcon | null;
+  rating: number;
   you: boolean;
 }
 
@@ -165,6 +169,7 @@ export interface PlayerPage extends PlayerRef {
 }
 
 export interface PlayerStats {
+  rating: number;
   // finished online games against someone else
   wins: number;
   losses: number;
@@ -186,12 +191,17 @@ export interface GameResponse {
   // null: the default icon
   whiteIcon: PlayerIcon | null;
   blackIcon: PlayerIcon | null;
+  // online only: as of the game's end once it's over, current until then
+  whiteRating: number | null;
+  blackRating: number | null;
+  // what the finished game gained or lost them
+  whiteRatingChange: number | null;
+  blackRatingChange: number | null;
   state: GameState;
   version: number;
   steps: GameStep[];
   // colors the viewer plays (both in a local game, none for a spectator)
   you: Color[];
-  canUndo: boolean;
   rematchId: number | null;
   // the invite link's secret; only sent to the player waiting on it
   inviteToken: string | null;
