@@ -27,6 +27,7 @@ import type {
 } from '@/types/remorse';
 import { buttonSm, ghostButton, goldButton } from './buttons';
 import { ScalesIcon } from './ModeIcons';
+import { Rating } from './Rating';
 import { useAnswerBalanceSuggestion, useCreateGame } from './useGame';
 import { VialRack } from './VialRack';
 
@@ -186,22 +187,28 @@ const PresetButton = ({
   label,
   description,
   onClick,
+  alignRight = false,
 }: {
   label: string;
   description: string;
   onClick: () => void;
+  // the last button's description opens leftward so it stays on screen
+  alignRight?: boolean;
 }) => (
   <span className='group relative'>
     <button
       type='button'
-      className={cn(ghostButton, buttonSm)}
+      className={cn(ghostButton, buttonSm, 'w-full')}
       onClick={onClick}
     >
       {label}
     </button>
     <span
       role='tooltip'
-      className='pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-56 rounded-lg border border-[#514d47] bg-[#1b1917] px-3 py-2 text-left text-xs leading-snug text-[#e8e4dc] shadow-lg group-hover:block group-has-[:focus-visible]:block'
+      className={cn(
+        'pointer-events-none absolute bottom-full z-10 mb-2 hidden w-56 rounded-lg border border-[#514d47] bg-[#1b1917] px-3 py-2 text-left text-xs leading-snug text-[#e8e4dc] shadow-lg group-hover:block group-has-[:focus-visible]:block',
+        alignRight ? 'right-0' : 'left-0',
+      )}
     >
       {description}
     </span>
@@ -255,6 +262,7 @@ const OddsDialog = ({
           <>
             <SideDot color={color} />
             <span className='truncate'>{seatOf(game, color).name}</span>
+            <Rating rating={seatOf(game, color).rating} />
           </>
         ),
       }))
@@ -339,30 +347,38 @@ const OddsDialog = ({
             </div>
           ))}
         </div>
-        <div className='flex flex-wrap items-center gap-2'>
-          {formula && (
+        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+          <div
+            className={cn(
+              'grid gap-2 sm:flex',
+              formula ? 'grid-cols-3' : 'grid-cols-2',
+            )}
+          >
+            {formula && (
+              <PresetButton
+                label='Balanced'
+                description='By rating: the die leans toward the lower-rated player, more the further apart you are. Each player gets their own odds.'
+                onClick={() => {
+                  setDraft(formula);
+                  setSeparate(true);
+                }}
+              />
+            )}
             <PresetButton
-              label='Balanced'
-              description='By rating: the die leans toward the lower-rated player, more the further apart you are. Each player gets their own odds.'
-              onClick={() => {
-                setDraft(formula);
-                setSeparate(true);
-              }}
+              label='Default'
+              description='A normal die for both: devastated 1 in 6, guilt 2 in 6, unaffected 2 in 6, psychopath 1 in 6.'
+              onClick={() => both(DEFAULT_PERCENTS)}
             />
-          )}
-          <PresetButton
-            label='Default'
-            description='A normal die for both: devastated 1 in 6, guilt 2 in 6, unaffected 2 in 6, psychopath 1 in 6.'
-            onClick={() => both(DEFAULT_PERCENTS)}
-          />
-          <PresetButton
-            label='Equal'
-            description='Every outcome 25% for both players.'
-            onClick={() => both(EQUAL_PERCENTS)}
-          />
+            <PresetButton
+              label='Equal'
+              description='Every outcome 25% for both players.'
+              alignRight
+              onClick={() => both(EQUAL_PERCENTS)}
+            />
+          </div>
           <button
             type='button'
-            className={cn(goldButton, buttonSm, 'ml-auto')}
+            className={cn(goldButton, buttonSm, 'sm:ml-auto')}
             onClick={() => {
               const w = roundPercents(draft.w);
               onSave({ w, b: separate ? roundPercents(draft.b) : w });
