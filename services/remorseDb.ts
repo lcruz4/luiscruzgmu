@@ -1221,6 +1221,7 @@ export interface FirstMoveAbort {
   emails: string[];
   // the side that didn't move
   name: string;
+  timeControl: string | null;
 }
 
 // Once its deadline passes, the side to move loses on time, or the game is
@@ -1259,6 +1260,7 @@ const endIfTimedOut = async (
         ? [game.white_email, game.black_email]
         : [],
     name: rows[0]?.name ?? email.split('@')[0],
+    timeControl: game.time_control,
   };
 };
 

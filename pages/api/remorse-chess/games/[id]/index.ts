@@ -18,6 +18,7 @@ import {
   setBalanceOdds,
 } from '@/services/remorseDb';
 import { isValidPercents } from '@/lib/remorse/balance';
+import { isLive } from '@/lib/remorse/timeControls';
 import { logger } from '@/services/logger';
 import { announceAbort, expireGames } from '@/services/remorseClock';
 import {
@@ -147,7 +148,7 @@ const deleteGame = async (req: NextApiRequest, email: string) => {
   const game = await getGame(id, email);
   const { abortedFor } = await cancelGame(id, email);
   publishGameChange(id, 'deleted');
-  if (abortedFor) {
+  if (abortedFor && !isLive(game.timeControl)) {
     const name = game.whiteEmail === email ? game.whiteName : game.blackName;
     notifyAborted(abortedFor, name ?? 'Your opponent').catch((error) =>
       logger.error('Remorse notify failed:', error),
