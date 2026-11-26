@@ -1,14 +1,16 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   authLogoutUrl,
   REMORSE_INSTALL_PATH,
   REMORSE_LANDING_PATH,
 } from '@/lib/auth';
+import { cn } from '@/lib/utils';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
+import { PlayerAvatar } from './PlayerAvatar';
 import { RulesDialog } from './RulesDialog';
+import { useProfile } from './useGame';
 import { Wordmark } from './Wordmark';
 
 const navItem = 'cursor-pointer text-left hover:text-white';
@@ -18,6 +20,7 @@ const navItem = 'cursor-pointer text-left hover:text-white';
 export const DefaultActions = () => {
   const [rulesSlide, setRulesSlide] = useState<TutorialKey | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const profile = useProfile();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,12 +83,15 @@ export const DefaultActions = () => {
       <div ref={menuRef} className='relative sm:hidden'>
         <button
           type='button'
-          aria-label='Menu'
+          aria-label='Account menu'
           aria-expanded={menuOpen}
-          className='flex size-9 cursor-pointer items-center justify-center rounded-lg hover:text-white'
+          className={cn(
+            'flex cursor-pointer rounded-full ring-[#e6c48e] ring-offset-2 ring-offset-[#161512]',
+            menuOpen && 'ring-2',
+          )}
           onClick={() => setMenuOpen((open) => !open)}
         >
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          <PlayerAvatar icon={profile.data?.icon ?? null} className='size-9' />
         </button>
         {menuOpen && (
           <div className='absolute top-full right-0 z-50 mt-1 flex min-w-40 flex-col gap-1 rounded-xl border border-[#3a3733] bg-[#262421] p-2 text-[15px] shadow-xl *:rounded-lg *:px-3 *:py-2 *:hover:bg-[#3a3733]'>
