@@ -19,7 +19,7 @@ import {
 } from '@/services/remorseDb';
 import { isValidPercents } from '@/lib/remorse/balance';
 import { logger } from '@/services/logger';
-import { expireGames } from '@/services/remorseClock';
+import { announceAbort, expireGames } from '@/services/remorseClock';
 import {
   notifyAborted,
   notifyOpponent,
@@ -52,7 +52,7 @@ const postAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
   const body = bodyOf(req);
   const version = () => intField(body.version, 'version', 0, 2147483647);
-  let timedOut = false;
+  let timedOut: Awaited<ReturnType<typeof playAction>>['timedOut'] = null;
 
   if (body.type === 'flag') {
     await expireGames({ id });
@@ -113,6 +113,10 @@ const postAction = async (req: NextApiRequest, email: string) => {
       400,
       "type must be 'move', 'bishopHeal', 'skipExtraMove', 'resign', 'join', 'setOdds', 'flag', 'archive' or 'unarchive'",
     );
+  }
+  if (timedOut?.kind === 'aborted') {
+    announceAbort(timedOut);
+    throw new HttpError(404, 'Game not found');
   }
   const game = await getGame(id, email);
   publishGameChange(id, game.version);

@@ -175,3 +175,18 @@ export const notifyAborted = async (recipient: string, actorName: string) => {
     url: '/projects/remorse-chess',
   });
 };
+
+// Both players of a game aborted because one side never made its first move
+export const notifyFirstMoveAbort = async (emails: string[], name: string) => {
+  if (!publicKey || !privateKey) return;
+  await Promise.all(
+    emails.map((email) =>
+      sendToEmail(email, {
+        title: 'Game aborted',
+        body: `${name} didn’t make a first move in time. It doesn’t count.`,
+        tag: 'remorse-aborted',
+        url: '/projects/remorse-chess',
+      }),
+    ),
+  );
+};

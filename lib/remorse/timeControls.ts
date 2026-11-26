@@ -69,6 +69,11 @@ export const TIME_CONTROLS: TimeControl[] = [
 
 export const DEFAULT_TIME_CONTROL = '10+0';
 
+// A live game is aborted, not lost, when a side doesn't make its first move
+// this soon (or before its clock runs out, if sooner). Daily: within the
+// usual time for a move.
+export const FIRST_MOVE_MS = 30_000;
+
 export const timeControlOf = (id: string | null) =>
   TIME_CONTROLS.find((control) => control.id === id) ?? null;
 

@@ -365,6 +365,9 @@ export const useGame = (id: number | undefined) => {
       : skipToken,
     refetchInterval: live ? LIVE_POLL_MS : POLL_MS,
     staleTime: 0,
+    // An aborted or canceled game is gone for good
+    retry: (failures, error) =>
+      error.message !== 'Game not found' && failures < 3,
   });
   useLiveGame(id, query.data?.mode === 'online', setLive);
   const mutation = useMutation({

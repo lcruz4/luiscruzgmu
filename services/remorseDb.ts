@@ -42,6 +42,7 @@ import {
 } from '@/lib/remorse/balance';
 import {
   categoryOf,
+  FIRST_MOVE_MS,
   type TimeCategory,
   type TimeControl,
   timeControlOf,
@@ -499,8 +500,8 @@ export const createGame = async (
     return { id: rows[0].id, color, inviteToken };
   });
 
-// Both seats just filled: white's clock starts now. A player who hasn't
-// moved yet can abort instead of losing on time.
+// Both seats just filled: white's clock starts now, and its first move is due
+// within FIRST_MOVE_MS. A player who hasn't moved yet can abort.
 const startClock = async (client: PoolClient, id: number) => {
   const { rows } = await client.query<{ time_control: string | null }>(
     `SELECT time_control
@@ -512,7 +513,9 @@ const startClock = async (client: PoolClient, id: number) => {
   if (!control) return;
   const now = new Date();
   const allowed =
-    control.category === 'daily' ? control.perMoveMs : control.initialMs;
+    control.category === 'daily'
+      ? control.perMoveMs
+      : Math.min(control.initialMs, FIRST_MOVE_MS);
   await client.query(
     `UPDATE games
      SET turn_started_at = $2, deadline = $3
@@ -825,31 +828,51 @@ export const getGame = async (
       game.balanced && game.created_by === email && !steps.rows.length,
     balanceSuggestion: await balanceSuggestion(game, you),
     timeControl: game.time_control,
-    clock: clockOf(game, new Date()),
+    clock: clockOf(
+      game,
+      steps.rows.some((step) => step.color === game.state.turn),
+      new Date(),
+    ),
   };
 };
 
-const clockOf = (game: GameRow, now: Date): GameClock | null => {
+// toMoveMoved: the side to move has made a move before
+const clockOf = (
+  game: GameRow,
+  toMoveMoved: boolean,
+  now: Date,
+): GameClock | null => {
   const control = timeControlOf(game.time_control);
   if (!control) return null;
   const daily = control.category === 'daily';
+  const whiteMs = daily ? null : game.white_ms ?? control.initialMs;
+  const blackMs = daily ? null : game.black_ms ?? control.initialMs;
+  if (!game.deadline || !game.turn_started_at) {
+    return { whiteMs, blackMs, runningMs: null, firstMoveMs: null };
+  }
+  const untilDeadline = Math.max(0, game.deadline.getTime() - now.getTime());
+  const left = game.state.turn === 'w' ? whiteMs : blackMs;
   return {
-    whiteMs: daily ? null : game.white_ms ?? control.initialMs,
-    blackMs: daily ? null : game.black_ms ?? control.initialMs,
-    runningMs: game.deadline
-      ? Math.max(0, game.deadline.getTime() - now.getTime())
-      : null,
+    whiteMs,
+    blackMs,
+    runningMs:
+      left === null
+        ? untilDeadline
+        : Math.max(0, left - (now.getTime() - game.turn_started_at.getTime())),
+    firstMoveMs: toMoveMoved ? null : untilDeadline,
   };
 };
 
 // A game's clocks after `mover` acted. Daily: each move is due a set time
 // after the last. Live: the mover pays for the time they took and gets the
-// increment once the turn passes.
+// increment once the turn passes; a side yet to make its first move
+// (`nextMoved` false) has FIRST_MOVE_MS at most.
 const clockAfter = (
   game: GameRow,
   control: TimeControl | null,
   mover: Color,
   next: GameState,
+  nextMoved: boolean,
   now: Date,
 ) => {
   const stopped = {
@@ -882,10 +905,13 @@ const clockAfter = (
     deadline: null,
   };
   if (next.winner) return columns;
+  const allowed = nextMoved
+    ? left[next.turn]
+    : Math.min(left[next.turn], FIRST_MOVE_MS);
   return {
     ...columns,
     turn_started_at: now,
-    deadline: new Date(now.getTime() + left[next.turn]),
+    deadline: new Date(now.getTime() + allowed),
   };
 };
 
@@ -1073,7 +1099,8 @@ export const playAction = async (
     if (!seatsOf(game, email).includes(color)) {
       throw new HttpError(403, "It's not your turn");
     }
-    if (await endIfTimedOut(client, game, now)) return { timedOut: true };
+    const timedOut = await endIfTimedOut(client, game, now);
+    if (timedOut) return { timedOut };
 
     const balance = game.balanced ? await fixBalance(client, game) : null;
     const rolls: number[] = [];
@@ -1091,11 +1118,15 @@ export const playAction = async (
       throw error;
     }
 
+    const nextMoved =
+      result.state.turn === color ||
+      (await hasMoved(client, id, result.state.turn));
     const clock = clockAfter(
       game,
       timeControlOf(game.time_control),
       color,
       result.state,
+      nextMoved,
       now,
     );
     const step = ((await lastStep(client, id))?.step ?? 0) + 1;
@@ -1131,8 +1162,19 @@ export const playAction = async (
     if (result.state.winner) {
       await applyRatings(client, game, result.state.winner);
     }
-    return { timedOut: false };
+    return { timedOut: null };
   });
+
+const hasMoved = async (client: PoolClient, id: number, color: Color) => {
+  const { rowCount } = await client.query(
+    `SELECT 1
+     FROM game_steps
+     WHERE game_id = $1 AND color = $2
+     LIMIT 1`,
+    [id, color],
+  );
+  return Boolean(rowCount);
+};
 
 // Ends the game against `loser`, stopping the clocks; a loss on time empties
 // a live game's clock
@@ -1172,18 +1214,56 @@ const endGame = async (
   await applyRatings(client, game, winner);
 };
 
-// The side to move loses once its deadline passes
-const endIfTimedOut = async (client: PoolClient, game: GameRow, now: Date) => {
-  if (!game.deadline || game.deadline > now || game.state.winner) return false;
+// A game deleted because a side never made its first move: who to tell
+export interface FirstMoveAbort {
+  id: number;
+  // the online game's players; empty for a local game
+  emails: string[];
+  // the side that didn't move
+  name: string;
+}
+
+// Once its deadline passes, the side to move loses on time, or the game is
+// aborted (deleted, unrated) if that side never made its first move
+const endIfTimedOut = async (
+  client: PoolClient,
+  game: GameRow,
+  now: Date,
+): Promise<
+  { kind: 'timeout' } | ({ kind: 'aborted' } & FirstMoveAbort) | null
+> => {
+  if (!game.deadline || game.deadline > now || game.state.winner) return null;
   const loser = game.state.turn;
   const email =
     (loser === 'w' ? game.white_email : game.black_email) ?? game.created_by;
-  await endGame(client, game, loser, email, 'timeout');
-  return true;
+  if (await hasMoved(client, game.id, loser)) {
+    await endGame(client, game, loser, email, 'timeout');
+    return { kind: 'timeout' };
+  }
+  const { rows } = await client.query<{ name: string }>(
+    `SELECT COALESCE(username, split_part(email, '@', 1)) AS name
+     FROM players
+     WHERE email = $1`,
+    [email],
+  );
+  await client.query(
+    `DELETE FROM games
+     WHERE id = $1`,
+    [game.id],
+  );
+  return {
+    kind: 'aborted',
+    id: game.id,
+    emails:
+      game.mode === 'online' && game.white_email && game.black_email
+        ? [game.white_email, game.black_email]
+        : [],
+    name: rows[0]?.name ?? email.split('@')[0],
+  };
 };
 
 // Ends every game (or just the one, or one player's) whose side to move ran
-// out of time. Returns the ids it ended.
+// out of time. Returns the ids it ended on time and the games it aborted.
 export const expireOverdueGames = async (
   filter: { id?: number; email?: string } = {},
 ) => {
@@ -1197,13 +1277,15 @@ export const expireOverdueGames = async (
     [now, filter.id ?? null, filter.email ?? null],
   );
   const ended: number[] = [];
+  const aborted: FirstMoveAbort[] = [];
   for (const { id } of rows) {
-    const timedOut = await withTransaction(async (client) =>
+    const result = await withTransaction(async (client) =>
       endIfTimedOut(client, await lockGame(client, id), now),
     );
-    if (timedOut) ended.push(id);
+    if (result?.kind === 'timeout') ended.push(id);
+    if (result?.kind === 'aborted') aborted.push(result);
   }
-  return ended;
+  return { ended, aborted };
 };
 
 // Online, you resign your own seat on either turn; locally the side to move

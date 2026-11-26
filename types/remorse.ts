@@ -234,10 +234,13 @@ export interface GameResponse {
 // A timed game's clocks. whiteMs/blackMs: a live game's time left for each
 // side as of its last turn (null in a daily game). runningMs: the side to
 // move's time left as of this response; null while no clock runs.
+// firstMoveMs: while the side to move hasn't moved yet, how long until the
+// game is aborted.
 export interface GameClock {
   whiteMs: number | null;
   blackMs: number | null;
   runningMs: number | null;
+  firstMoveMs: number | null;
 }
 
 // One player has won most standard games between the two: suggest playing

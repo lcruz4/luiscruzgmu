@@ -2,7 +2,7 @@ import { colorName } from '@/lib/remorse/describe';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import { cn } from '@/lib/utils';
 import type { Color, GameResponse } from '@/types/remorse';
-import { ClockFace, type SideClock } from './Clock';
+import { ClockFace, formatClock, type SideClock } from './Clock';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PlayerLink } from './PlayerLink';
 import { Rating } from './Rating';
@@ -112,6 +112,16 @@ export const PlayerStrip = ({
           )}
         >
           {inCheck ? 'In check' : 'To move'}
+        </span>
+      )}
+      {clock?.firstMoveMs != null && (
+        <span
+          className='flex-none text-right text-xs leading-tight text-[#ffd27a] tabular-nums'
+          title='No first move by then and the game is aborted. It won’t count.'
+        >
+          First move
+          <br />
+          {formatClock(clock.firstMoveMs, clock.daily)}
         </span>
       )}
       {clock && <ClockFace clock={clock} />}

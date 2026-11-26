@@ -7,6 +7,8 @@ export interface SideClock {
   ms: number;
   running: boolean;
   daily: boolean;
+  // the side hasn't moved yet: time until the game is aborted
+  firstMoveMs: number | null;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -28,8 +30,8 @@ export const formatClock = (ms: number, daily: boolean) => {
 };
 
 // Each side's clock, counting down the side to move's from when this copy of
-// the game arrived. onFlag: once per copy, when the running clock hits zero;
-// the server checks and ends the game.
+// the game arrived. onFlag: once per copy, when the running clock or the
+// first-move window hits zero; the server checks and ends or aborts the game.
 export const useClocks = (
   game: GameResponse | undefined,
   onFlag: () => void,
@@ -46,11 +48,15 @@ export const useClocks = (
   }, [ticking, receivedAt]);
 
   const flagged = useRef<GameResponse | null>(null);
-  const running =
-    clock && clock.runningMs !== null
-      ? Math.max(0, clock.runningMs - (now - receivedAt))
-      : null;
-  const out = Boolean(game && !game.state.winner && running === 0);
+  const left = (ms: number | null | undefined) =>
+    ms === null || ms === undefined
+      ? null
+      : Math.max(0, ms - (now - receivedAt));
+  const running = left(clock?.runningMs);
+  const firstMove = left(clock?.firstMoveMs);
+  const out = Boolean(
+    game && !game.state.winner && (running === 0 || firstMove === 0),
+  );
   useEffect(() => {
     if (!out || !game || flagged.current === game) return;
     flagged.current = game;
@@ -61,10 +67,13 @@ export const useClocks = (
   const daily = timeControlOf(game.timeControl)?.category === 'daily';
   const side = (color: Color): SideClock | null => {
     const toMove = !game.state.winner && game.state.turn === color;
-    if (toMove && running !== null)
-      return { ms: running, running: true, daily };
+    if (toMove && running !== null) {
+      return { ms: running, running: true, daily, firstMoveMs: firstMove };
+    }
     const ms = color === 'w' ? clock.whiteMs : clock.blackMs;
-    return ms === null ? null : { ms, running: false, daily };
+    return ms === null
+      ? null
+      : { ms, running: false, daily, firstMoveMs: null };
   };
   return { w: side('w'), b: side('b') };
 };
