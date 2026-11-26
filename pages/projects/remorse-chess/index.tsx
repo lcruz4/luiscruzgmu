@@ -487,7 +487,10 @@ const ModeCard = ({
   </div>
 );
 
-// A short rule with a diamond between modes
+// A short rule with a diamond between modes. On wider screens the card is a
+// 2×2 grid: a row of two of these, and a vertical one between each pair.
+const Diamond = () => <span className='size-1.5 rotate-45 bg-[#8a6d3e]' />;
+
 const ModeDivider = ({ className }: { className?: string }) => (
   <div
     aria-hidden='true'
@@ -496,7 +499,16 @@ const ModeDivider = ({ className }: { className?: string }) => (
       className,
     )}
   >
-    <span className='size-1.5 rotate-45 bg-[#8a6d3e]' />
+    <Diamond />
+  </div>
+);
+
+const ColumnDivider = () => (
+  <div
+    aria-hidden='true'
+    className='my-3.5 hidden flex-col items-center gap-2 before:w-px before:flex-1 before:bg-[#3a3733] after:w-px after:flex-1 after:bg-[#3a3733] sm:flex'
+  >
+    <Diamond />
   </div>
 );
 
@@ -858,7 +870,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               Notify me when it&apos;s my move →
             </button>
           )}
-          <div className='grid rounded-xl bg-[#262421] px-3.5 sm:grid-cols-2 sm:gap-x-7'>
+          <div className='grid rounded-xl bg-[#262421] px-3.5 sm:grid-cols-[1fr_auto_1fr] sm:gap-x-5'>
             <ModeCard
               icon={<DieIcon />}
               title='Play someone random'
@@ -874,6 +886,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
             <ModeDivider className='sm:hidden' />
+            <ColumnDivider />
             <ModeCard
               icon={<SwordsIcon />}
               title='Challenge a friend'
@@ -882,7 +895,9 @@ const LobbyPage = ({ email }: { email: string }) => {
             >
               <ChallengePicker onPick={challenge} busy={create.isPending} />
             </ModeCard>
-            <ModeDivider className='sm:col-span-2' />
+            <ModeDivider />
+            <div className='hidden sm:block' />
+            <ModeDivider className='hidden sm:flex' />
             <ModeCard
               icon={<LetterIcon />}
               title='Invite by link'
@@ -899,6 +914,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
             <ModeDivider className='sm:hidden' />
+            <ColumnDivider />
             <ModeCard
               icon={<BoardIcon />}
               title='Pass and play'
