@@ -764,7 +764,7 @@ const LobbyPage = ({ email }: { email: string }) => {
   );
 
   return (
-    <RemorseLayout actions={<DefaultActions getApp />}>
+    <RemorseLayout actions={<DefaultActions />}>
       <UsernamePrompt />
       <div className='mx-auto flex max-w-[760px] flex-col gap-9 pt-3 text-[15px] leading-relaxed'>
         <section>

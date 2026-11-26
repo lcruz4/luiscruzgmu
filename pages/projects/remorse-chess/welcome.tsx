@@ -137,7 +137,7 @@ const LandingPage = (props: Props) => {
   return (
     <RemorseLayout
       actions={
-        <nav className='flex items-center gap-4 text-sm'>
+        <nav className='flex items-center gap-4 text-sm whitespace-nowrap'>
           <a href='#rules' className='hidden text-[#a29e96] sm:inline'>
             Rules
           </a>
@@ -146,21 +146,27 @@ const LandingPage = (props: Props) => {
           </a>
           <Link
             href={REMORSE_INSTALL_PATH}
-            className='hidden text-[#a29e96] sm:inline'
+            className='whitespace-nowrap text-[#a29e96]'
           >
             Get the app
           </Link>
           {signedIn ? (
             <Link
               href={REMORSE_HOME}
-              className={cn(goldButton, 'gap-2.5 px-3 py-1.5 text-[13px]')}
+              className={cn(
+                goldButton,
+                'hidden gap-2.5 px-3 py-1.5 text-[13px] sm:inline-flex',
+              )}
             >
               Your games
             </Link>
           ) : (
             <button
               type='button'
-              className={cn(goldButton, 'gap-2.5 px-3 py-1.5 text-[13px]')}
+              className={cn(
+                goldButton,
+                'hidden gap-2.5 px-3 py-1.5 text-[13px] sm:inline-flex',
+              )}
               onClick={() => logIn(returnTo)}
             >
               Sign in
