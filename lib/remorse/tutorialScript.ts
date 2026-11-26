@@ -111,7 +111,7 @@ export const TUTORIAL: Beat[] = [
   {
     kind: 'you',
     heal: 'h6',
-    text: 'A bishop can heal itself and the hurt pieces next to it, but it uses your turn. Tap the marker on your bishop.',
+    text: 'A bishop can heal itself and the hurt pieces next to it, but it uses your turn. Tap the heal button on your bishop.',
   },
   { kind: 'them', from: 'a5', to: 'a4' },
   {

@@ -5,12 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  bishopHealTargets,
-  canBeHealed,
-  inCheck,
-  legalMoves,
-} from '@/lib/remorse/engine';
+import { bishopHealTargets, inCheck, legalMoves } from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
 import type {
   GameState,
@@ -52,7 +47,7 @@ interface BoardProps {
   canMove: boolean;
   lastMove: { from: string; to: string } | null;
   onMove: (from: string, to: string, promotion?: PromotionType) => void;
-  // a friendly bishop's marker or heal button: it spends the turn healing
+  // a friendly bishop's heal button: it spends the turn healing
   // itself and the hurt pieces next to it
   onBishopHeal: (piece: Piece) => void;
   // tutorial: the only move allowed, highlighted on the board. Without `to`,
@@ -231,10 +226,6 @@ export const Board = ({
             !!piece &&
             isMine(piece) &&
             bishopHealTargets(state, piece).length > 0;
-          // A hurt bishop heals from its own marker; one that isn't gets a
-          // heal button of its own
-          const markerHeal = canHeal && !!piece && canBeHealed(piece);
-          const healButton = canHeal && !markerHeal;
           const rankLabel = index % 8 === 0;
           const fileLabel = index >= 56;
           return (
@@ -340,34 +331,17 @@ export const Board = ({
                     }
                   />
                   {piece.trauma && (
-                    <button
+                    <span
                       data-marker
-                      type='button'
-                      title={`${traumaLabel({
-                        ...piece,
-                        trauma: piece.trauma,
-                      })}${
-                        markerHeal
-                          ? '. Click to heal itself and hurt pieces next to it (uses your turn)'
-                          : ''
-                      }`}
+                      role='img'
+                      title={traumaLabel({ ...piece, trauma: piece.trauma })}
                       aria-label={traumaLabel({
                         ...piece,
                         trauma: piece.trauma,
                       })}
-                      disabled={!markerHeal}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onBishopHeal(piece);
-                      }}
                       className={cn(
-                        'absolute -right-[10%] -top-[10%] z-10 h-[52%] w-[52%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
-                        markerHeal
-                          ? 'cursor-pointer rounded-full ring-2 ring-emerald-300 ring-offset-0 animate-pulse'
-                          : 'pointer-events-none',
-                        !markerHeal &&
-                          piece.trauma === 'devastated' &&
+                        'pointer-events-none absolute -right-[10%] -top-[10%] z-10 h-[52%] w-[52%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
+                        piece.trauma === 'devastated' &&
                           !piece.healed &&
                           piece.turnsLeft === 1 &&
                           'motion-safe:animate-[remorse-throb_1.2s_ease-in-out_infinite]',
@@ -380,23 +354,21 @@ export const Board = ({
                         turnsLeft={piece.turnsLeft}
                         kills={piece.kills}
                       />
-                    </button>
+                    </span>
                   )}
-                  {healButton && (
+                  {canHeal && (
                     <button
                       data-heal
                       type='button'
-                      title='Click to heal the hurt pieces next to this bishop (uses your turn)'
-                      aria-label='Heal the hurt pieces next to this bishop'
+                      title='Click to heal this bishop and the hurt pieces next to it (uses your turn)'
+                      aria-label='Heal this bishop and the hurt pieces next to it'
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => {
                         event.stopPropagation();
                         onBishopHeal(piece);
                       }}
                       className={cn(
-                        'absolute -top-[10%] z-10 flex h-[52%] w-[52%] animate-pulse cursor-pointer items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
-                        // the marker keeps the top-right corner
-                        piece.trauma ? '-left-[10%]' : '-right-[10%]',
+                        'absolute -left-[10%] -top-[10%] z-10 flex h-[52%] w-[52%] animate-pulse cursor-pointer items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
                       )}
                     >
                       {/* a marker's medallion is 45 of its 68-unit box,
