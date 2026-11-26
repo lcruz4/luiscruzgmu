@@ -67,6 +67,8 @@ const game = (
     balanceCustom: false,
     canSetOdds: false,
     balanceSuggestion: null,
+    timeControl: null,
+    clock: null,
   };
 };
 
@@ -163,6 +165,7 @@ describe('pushMessage', () => {
     ['checkmate', 'Checkmate. Game over.'],
     ['stalemate', 'Stalemate. Game over.'],
     ['resign', 'kayz resigned.'],
+    ['timeout', 'kayz ran out of time.'],
   ] as const)('a %s', (reason, text) => {
     const g = game(
       [step('w', [{ type: 'gameOver', winner: 'w', reason }])],

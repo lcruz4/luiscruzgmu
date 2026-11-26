@@ -252,3 +252,31 @@ export const hasLegalAction = (state: GameState, color: Color) => {
       own.some((piece) => bishopHealTargets(state, piece).length > 0))
   );
 };
+
+// Where a piece could be told to go before the opponent has moved: every
+// square its moves reach on an empty board, since anything in the way may be
+// gone (or a piece to take may arrive) by then. Checked for real once it's
+// your turn.
+export const premoveTargets = (state: GameState, from: string) => {
+  const piece = pieceAt(state, from);
+  if (!piece || state.winner) return [];
+  const targets = new Set(
+    attackedSquares({ ...state, pieces: [piece] }, piece),
+  );
+  const [x, y] = coords(piece.square);
+  if (piece.type === 'p') {
+    const dy = piece.color === 'w' ? 1 : -1;
+    const one = toSquare(x, y + dy);
+    if (one) targets.add(one);
+    const two = toSquare(x, y + 2 * dy);
+    if (two && y === (piece.color === 'w' ? 1 : 6)) targets.add(two);
+  }
+  if (piece.type === 'k' && !piece.moved) {
+    const rank = piece.color === 'w' ? '1' : '8';
+    if (piece.square === `e${rank}`) {
+      targets.add(`g${rank}`);
+      targets.add(`c${rank}`);
+    }
+  }
+  return [...targets];
+};

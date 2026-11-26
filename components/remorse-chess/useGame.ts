@@ -10,6 +10,7 @@ import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
 import type { TraumaPercents } from '@/lib/remorse/balance';
+import type { TimeCategory } from '@/lib/remorse/timeControls';
 import type {
   Color,
   GameResponse,
@@ -67,7 +68,7 @@ type Profile = {
   boardTheme: BoardThemeId | null;
   chosen: boolean;
   tutorialSeen: TutorialKey[];
-  rating: number;
+  ratings: Record<TimeCategory, number>;
 };
 
 export const useProfile = () =>
@@ -135,9 +136,13 @@ export const useCreateGame = () =>
   useMutation({
     mutationFn: (
       body:
-        | { mode: 'online' | 'local' | 'random'; balanced?: boolean }
+        | {
+            mode: 'online' | 'local' | 'random';
+            balanced?: boolean;
+            timeControl: string;
+          }
         | { rematchOf: number; balanced?: boolean }
-        | { challenge: number; balanced?: boolean },
+        | { challenge: number; balanced?: boolean; timeControl: string },
     ) =>
       request<{ id: number; color: Color }>(API, {
         method: 'POST',
@@ -287,6 +292,7 @@ export type GameCommand =
   | { type: 'bishopHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'resign' }
+  | { type: 'flag' }
   | { type: 'join'; inviteToken?: string }
   | { type: 'setOdds'; odds: Record<Color, TraumaPercents> };
 
@@ -359,6 +365,9 @@ export const useGame = (id: number | undefined) => {
       : skipToken,
     refetchInterval: live ? LIVE_POLL_MS : POLL_MS,
     staleTime: 0,
+    // An aborted or canceled game is gone for good
+    retry: (failures, error) =>
+      error.message !== 'Game not found' && failures < 3,
   });
   useLiveGame(id, query.data?.mode === 'online', setLive);
   const mutation = useMutation({

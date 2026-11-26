@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 import { BalanceSuggestionDialog } from '@/components/remorse-chess/Balance';
 import { Board } from '@/components/remorse-chess/Board';
+import { useClocks } from '@/components/remorse-chess/Clock';
 import { GamePanel } from '@/components/remorse-chess/GamePanel';
 import { RemorseLayout } from '@/components/remorse-chess/RemorseLayout';
 import { PlayerStrip } from '@/components/remorse-chess/PlayerStrip';
@@ -22,6 +23,7 @@ import {
 import { useBadgeSync } from '@/components/remorse-chess/useYourMoveAlerts';
 import { inCheck, opponent } from '@/lib/remorse/engine';
 import { gamePath } from '@/lib/remorse/paths';
+import { isLive } from '@/lib/remorse/timeControls';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
 import { requireLogin } from '@/services/auth';
 import type { Color, GameResponse } from '@/types/remorse';
@@ -47,6 +49,9 @@ const GamePage = () => {
   const [hiddenFrom, setHiddenFrom] = useState<number | null>(null);
   const game = query.data;
   useBadgeSync(game?.version);
+  const { mutate } = mutation;
+  const flag = useCallback(() => mutate({ type: 'flag' }), [mutate]);
+  const clocks = useClocks(game, flag);
 
   const profile = useProfile();
   const markSeen = useMarkTutorialSeen();
@@ -80,6 +85,23 @@ const GamePage = () => {
     setRulesSlide('intro');
     markSeen(['intro']);
   }, [needsIntro, markSeen]);
+
+  // Aborted or canceled while open here
+  if (query.isError && query.error.message === 'Game not found') {
+    return (
+      <RemorseLayout>
+        <div className='mx-auto flex max-w-[1060px] flex-col items-start gap-3 pt-9'>
+          <p className='text-white'>This game was aborted.</p>
+          <Link
+            href='/projects/remorse-chess'
+            className='text-[15px] font-semibold text-[#ffd27a] hover:underline'
+          >
+            Back to your games →
+          </Link>
+        </div>
+      </RemorseLayout>
+    );
+  }
 
   if (!game) {
     return (
@@ -143,6 +165,7 @@ const GamePage = () => {
               color={topColor}
               toMove={toMove(topColor)}
               inCheck={check}
+              clock={clocks[topColor]}
             />
             {/* Phones: the board runs edge to edge, past the page padding */}
             <div className='rounded-2xl border border-[#3a3733] bg-[#262421] p-1.5 shadow-[0_10px_30px_rgba(0,0,0,.45)] max-sm:-mx-4 max-sm:rounded-none max-sm:border-0 max-sm:p-0 max-sm:shadow-none'>
@@ -152,6 +175,12 @@ const GamePage = () => {
                 onAnimating={handleAnimating}
                 flipped={flipped}
                 canMove={canMove}
+                premoveColor={
+                  game.mode === 'online' && game.you.length === 1
+                    ? game.you[0]
+                    : null
+                }
+                dice={!isLive(game.timeControl)}
                 lastMove={lastMoveOf(game)}
                 onMove={(from, to, promotion) =>
                   mutation.mutate({ type: 'move', from, to, promotion })
@@ -176,6 +205,7 @@ const GamePage = () => {
               color={opponent(topColor)}
               toMove={toMove(opponent(topColor))}
               inCheck={check}
+              clock={clocks[opponent(topColor)]}
             />
           </div>
           <GamePanel

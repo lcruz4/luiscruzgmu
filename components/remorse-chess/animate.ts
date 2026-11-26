@@ -62,6 +62,8 @@ export const playSteps = (
   next: GameState,
   steps: GameEvent[][],
   reduced: boolean,
+  // false in live games: the trauma just lands, no die rolls for it
+  dice: boolean,
   // called once, when the animations finish or are cut short
   onDone: () => void,
 ) => {
@@ -193,6 +195,8 @@ export const playSteps = (
           ? 'Stalemate · draw'
           : event.reason === 'resign'
           ? `Resigned · ${resultText(event.winner)}`
+          : event.reason === 'timeout'
+          ? `Out of time · ${resultText(event.winner)}`
           : `King captured · ${resultText(event.winner)}`;
       default:
         return null;
@@ -276,9 +280,14 @@ export const playSteps = (
     string,
     { hidden: Animation | null; ghost: HTMLElement | null }
   >();
+  // Without the die, a rolled piece's new marker shows from the start
+  const rolled = new Set(
+    events.flatMap((e) => (e.type === 'roll' ? [e.piece.id] : [])),
+  );
   for (const piece of next.pieces) {
     const before = prevById.get(piece.id);
     if (!before || markerKey(before) === markerKey(piece)) continue;
+    if (!dice && rolled.has(piece.id)) continue;
     const el = pieceEl(piece.id);
     const real = markerOf(el);
     let ghost: HTMLElement | null = null;
@@ -559,7 +568,7 @@ export const playSteps = (
     const square = visual.get(piece.id);
     const el = pieceEl(piece.id);
     const img = imgOf(el);
-    if (!square || !el || !img) return;
+    if (!dice || !square || !el || !img) return;
     await rollDie(square, value);
     if (trauma === 'devastated') {
       ring(square, '#5fb2ff', 0.4, 2.6, 800, 3);

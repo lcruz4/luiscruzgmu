@@ -74,6 +74,10 @@ export const describeEvent = (event: GameEvent): string => {
         ? `${colorName(opponent(event.winner))} resigned. ${resultText(
             event.winner,
           )}`
+        : event.reason === 'timeout' && event.winner !== 'draw'
+        ? `${colorName(opponent(event.winner))} ran out of time. ${resultText(
+            event.winner,
+          )}`
         : resultText(event.winner);
   }
 };

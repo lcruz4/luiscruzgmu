@@ -3,6 +3,7 @@ import {
   applyAction,
   initialState,
   legalMoves,
+  premoveTargets,
   RULES,
   traumaForRoll,
 } from './engine';
@@ -546,5 +547,27 @@ describe('bloodlust', () => {
   it('loses the game by taking its own king', () => {
     const state = game([piece('wn-b', 'd3', lust)]);
     expect(applyAction(state, mv('d3', 'e1'), noRoll).state.winner).toBe('b');
+  });
+});
+
+describe('premoveTargets', () => {
+  it('lets a pawn premove a recapture onto its own piece', () => {
+    const state = game([piece('wp', 'd4'), piece('wn', 'e5')], { turn: 'b' });
+    expect(premoveTargets(state, 'd4').sort()).toEqual(['c5', 'd5', 'e5']);
+  });
+
+  it('ignores pieces in the way of a slide', () => {
+    const state = game([piece('wr', 'a1'), piece('wp', 'a2')], { turn: 'b' });
+    expect(premoveTargets(state, 'a1')).toContain('a8');
+  });
+
+  it('offers a double step from the start rank', () => {
+    const state = game([piece('wp', 'c2')], { turn: 'b' });
+    expect(premoveTargets(state, 'c2').sort()).toEqual([
+      'b3',
+      'c3',
+      'c4',
+      'd3',
+    ]);
   });
 });

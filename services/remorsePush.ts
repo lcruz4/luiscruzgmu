@@ -1,5 +1,9 @@
 import { sendNotification, setVapidDetails, WebPushError } from 'web-push';
-import { type OpponentAction, pushMessage } from '@/lib/remorse/notify';
+import {
+  type OpponentAction,
+  pushMessage,
+  timeoutMessage,
+} from '@/lib/remorse/notify';
 import type { GameResponse } from '@/types/remorse';
 import { logger } from './logger';
 import { listGames, remorsePool } from './remorseDb';
@@ -139,4 +143,50 @@ export const notifyOpponent = async (
     url: `/projects/remorse-chess/${game.id}`,
     badge: games.filter((g) => g.yourMove).length,
   });
+};
+
+// Both players of an online game that just ended on time
+export const notifyTimeout = async (game: GameResponse) => {
+  if (!publicKey || !privateKey || game.mode !== 'online') return;
+  const { winner } = game.state;
+  if (!game.whiteEmail || !game.blackEmail || !winner || winner === 'draw') {
+    return;
+  }
+  const loserEmail = winner === 'w' ? game.blackEmail : game.whiteEmail;
+  const winnerName =
+    (winner === 'w' ? game.whiteName : game.blackName) ?? 'them';
+  await Promise.all([
+    notifyOpponent(game, loserEmail, 'other'),
+    sendToEmail(loserEmail, {
+      ...timeoutMessage(winnerName),
+      tag: `remorse-${game.id}`,
+      url: `/projects/remorse-chess/${game.id}`,
+    }),
+  ]);
+};
+
+// Tells the other player a game was aborted before it got going
+export const notifyAborted = async (recipient: string, actorName: string) => {
+  if (!publicKey || !privateKey) return;
+  await sendToEmail(recipient, {
+    title: `${actorName} aborted your game`,
+    body: 'It doesn’t count. Start another from the lobby.',
+    tag: 'remorse-aborted',
+    url: '/projects/remorse-chess',
+  });
+};
+
+// Both players of a game aborted because one side never made its first move
+export const notifyFirstMoveAbort = async (emails: string[], name: string) => {
+  if (!publicKey || !privateKey) return;
+  await Promise.all(
+    emails.map((email) =>
+      sendToEmail(email, {
+        title: 'Game aborted',
+        body: `${name} didn’t make a first move in time. It doesn’t count.`,
+        tag: 'remorse-aborted',
+        url: '/projects/remorse-chess',
+      }),
+    ),
+  );
 };

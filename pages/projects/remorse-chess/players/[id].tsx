@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
@@ -27,6 +28,10 @@ import {
   goldButton,
 } from '@/components/remorse-chess/buttons';
 import { colorName, resultText } from '@/lib/remorse/describe';
+import {
+  ChallengeDialog,
+  TimeControlTag,
+} from '@/components/remorse-chess/TimeControls';
 import { gamePath } from '@/lib/remorse/paths';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
@@ -63,12 +68,15 @@ const GameRow = ({
           </PlayerLink>
           <Rating rating={game.blackRating} />
         </strong>
-        <Link
-          href={gamePath(game.id)}
-          className={cn(muted, 'block truncate', stretchedLink)}
-        >
-          {game.winner ? status : `In progress · ${status}`}
-        </Link>
+        <div className='flex min-w-0 items-center gap-2'>
+          <TimeControlTag id={game.timeControl} />
+          <Link
+            href={gamePath(game.id)}
+            className={cn(muted, 'block truncate', stretchedLink)}
+          >
+            {game.winner ? status : `In progress · ${status}`}
+          </Link>
+        </div>
       </div>
       {!game.winner && (
         <span className='flex-none rounded-full border border-[#514d47] bg-[#302d29] px-2.5 py-0.5 text-xs font-semibold text-[#e8e4dc]'>
@@ -125,6 +133,7 @@ const Actions = ({ player }: { player: PlayerPage }) => {
   const router = useRouter();
   const follow = useFollow(player.id);
   const challenge = useCreateGame();
+  const [picking, setPicking] = useState(false);
   if (player.you) {
     return (
       <Link
@@ -143,12 +152,7 @@ const Actions = ({ player }: { player: PlayerPage }) => {
             type='button'
             className={cn(goldButton, buttonSm)}
             disabled={challenge.isPending}
-            onClick={() =>
-              challenge.mutate(
-                { challenge: player.id },
-                { onSuccess: ({ id }) => router.push(gamePath(id)) },
-              )
-            }
+            onClick={() => setPicking(true)}
           >
             Challenge
           </button>
@@ -162,6 +166,19 @@ const Actions = ({ player }: { player: PlayerPage }) => {
           {player.following ? '✓ Following' : '+ Follow'}
         </button>
       </div>
+      <ChallengeDialog
+        open={picking}
+        onOpenChange={setPicking}
+        name={player.name}
+        busy={challenge.isPending}
+        error={challenge.error?.message ?? null}
+        onChallenge={(timeControl) =>
+          challenge.mutate(
+            { challenge: player.id, timeControl },
+            { onSuccess: ({ id }) => router.push(gamePath(id)) },
+          )
+        }
+      />
       {(challenge.error ?? follow.error) && (
         <p className='text-sm text-red-300'>
           {(challenge.error ?? follow.error)?.message}
@@ -203,10 +220,6 @@ const PlayerPageView = () => {
               <div className='min-w-0 flex-1'>
                 <h1 className='truncate text-[clamp(26px,4.5vw,34px)] leading-tight font-bold tracking-tight text-white'>
                   {data.name}
-                  <Rating
-                    rating={data.stats.rating}
-                    className='ml-2 text-[0.6em]'
-                  />
                   {data.you && (
                     <span className='ml-2 text-base font-normal text-[#a29e96]'>
                       (you)
