@@ -455,7 +455,7 @@ const ModeCard = ({
   balance?: { checked: boolean; onChange: (checked: boolean) => void };
   children: ReactNode;
 }) => (
-  <div className='flex items-start gap-3 bg-[#262421] p-3.5'>
+  <div className='flex items-start gap-3 py-3.5'>
     <Hint text={text} className='flex-none cursor-help'>
       {icon}
     </Hint>
@@ -845,7 +845,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               Notify me when it&apos;s my move →
             </button>
           )}
-          <div className='grid gap-px rounded-xl bg-[#3a3733] *:first:rounded-t-xl *:last:rounded-b-xl sm:grid-cols-2 sm:*:first:rounded-tr-none sm:*:nth-2:rounded-tr-xl sm:*:last:rounded-bl-none sm:*:nth-3:rounded-bl-xl'>
+          <div className='grid divide-y divide-[#3a3733] rounded-xl bg-[#262421] px-3.5 sm:grid-cols-2 sm:gap-x-7 sm:divide-y-0'>
             <ModeCard
               icon={<DieIcon />}
               title='Play someone random'
