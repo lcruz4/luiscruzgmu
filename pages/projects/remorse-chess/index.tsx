@@ -454,34 +454,35 @@ const ModeCard = ({
   balance?: { checked: boolean; onChange: (checked: boolean) => void };
   children: ReactNode;
 }) => (
-  <div className='flex flex-col gap-3 rounded-xl bg-[#262421] p-3.5'>
-    <div className='flex items-center gap-2'>
-      <Hint
-        text={text}
-        className='flex min-w-0 flex-1 cursor-help items-center gap-2.5 [&_svg]:size-9'
-      >
-        {icon}
-        <h3 className='font-semibold text-white'>{title}</h3>
-      </Hint>
-      {balance && (
-        <div className='flex flex-none items-center gap-1.5 text-xs font-semibold text-[#a29e96]'>
-          <Hint
-            text='Balanced games are unrated: you set each side’s trauma odds before the first move.'
-            align='right'
-            className='flex cursor-help items-center gap-1.5'
-          >
-            <ScalesIcon className='block size-5' />
-            <span className='max-[400px]:sr-only'>Balanced</span>
-          </Hint>
-          <Toggle
-            checked={balance.checked}
-            onChange={balance.onChange}
-            label={`Balance the dice: ${title}`}
-          />
-        </div>
-      )}
+  <div className='flex items-start gap-3 rounded-xl bg-[#262421] p-3.5'>
+    <Hint text={text} className='flex-none cursor-help'>
+      {icon}
+    </Hint>
+    <div className='flex min-w-0 flex-1 flex-col gap-2.5'>
+      <div className='flex items-center gap-2'>
+        <Hint text={text} className='min-w-0 flex-1 cursor-help'>
+          <h3 className='font-semibold text-white'>{title}</h3>
+        </Hint>
+        {balance && (
+          <div className='flex flex-none items-center gap-1.5 text-xs font-semibold text-[#a29e96]'>
+            <Hint
+              text='Balanced games are unrated: you set each side’s trauma odds before the first move.'
+              align='right'
+              className='flex cursor-help items-center gap-1.5'
+            >
+              <ScalesIcon className='block size-5' />
+              <span className='max-[400px]:sr-only'>Balanced</span>
+            </Hint>
+            <Toggle
+              checked={balance.checked}
+              onChange={balance.onChange}
+              label={`Balance the dice: ${title}`}
+            />
+          </div>
+        )}
+      </div>
+      <div className='flex'>{children}</div>
     </div>
-    <div className='mt-auto flex'>{children}</div>
   </div>
 );
 
