@@ -121,6 +121,22 @@ export const Board = ({
     }
   }, [premove, canMove, state, onMove]);
 
+  // A tap off the board also takes back a queued move
+  useEffect(() => {
+    if (!premove) return;
+    const cancel = (event: globalThis.PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        boardRef.current?.contains(event.target)
+      )
+        return;
+      setPremove(null);
+      setSelected(null);
+    };
+    document.addEventListener('pointerdown', cancel);
+    return () => document.removeEventListener('pointerdown', cancel);
+  }, [premove]);
+
   // A pawn reaching the last rank waits for the player to pick its new piece
   const [promotion, setPromotion] = useState<{
     from: string;
@@ -419,19 +435,26 @@ export const Board = ({
                       />
                     </span>
                   )}
+                  {/* Only tappable once the bishop is selected, so a tap or
+                      drag on the bishop's corner doesn't spend the turn */}
                   {canHeal && (
                     <button
                       data-heal
                       type='button'
+                      tabIndex={selected === square ? 0 : -1}
                       title='Click to heal this bishop and the hurt pieces next to it (uses your turn)'
                       aria-label='Heal this bishop and the hurt pieces next to it'
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => {
                         event.stopPropagation();
+                        setSelected(null);
                         onBishopHeal(piece);
                       }}
                       className={cn(
-                        'absolute -left-[10%] -top-[10%] z-10 flex h-[52%] w-[52%] animate-pulse cursor-pointer items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
+                        'absolute -left-[10%] -top-[10%] z-10 flex h-[52%] w-[52%] items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
+                        selected === square
+                          ? 'animate-pulse cursor-pointer'
+                          : 'pointer-events-none',
                       )}
                     >
                       {/* a marker's medallion is 45 of its 68-unit box,
