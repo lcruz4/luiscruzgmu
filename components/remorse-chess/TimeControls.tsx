@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CATEGORY_NAMES,
   DEFAULT_TIME_CONTROL,
@@ -127,8 +127,9 @@ export const useTimeControlSetting = () => {
   return [timeControl, set] as const;
 };
 
-// One row that opens into every time control, each category with your rating
-export const TimeControlPicker = ({
+// Every time control in one row of chips: scrolls sideways on phones, wraps
+// on wider screens. Shows your rating for the picked control's category.
+export const TimeControlChips = ({
   value,
   onChange,
   ratings,
@@ -137,50 +138,59 @@ export const TimeControlPicker = ({
   onChange: (id: string) => void;
   ratings: Record<TimeCategory, number> | undefined;
 }) => {
-  const [open, setOpen] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
   const current = timeControlOf(value);
+
+  // A remembered pick may sit past the edge of the row
+  useEffect(() => {
+    const row = rowRef.current;
+    const chip = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!row || !chip) return;
+    row.scrollLeft = chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2;
+  }, [value]);
+
   return (
-    <div className='mb-3.5 rounded-xl bg-[#262421]'>
-      <button
-        type='button'
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-        className='flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-4 py-3 text-left hover:bg-[#2c2a26]'
-      >
-        {current && <CategoryIcon category={current.category} />}
-        <span className='font-semibold text-white'>
-          {current
-            ? `${CATEGORY_NAMES[current.category]} · ${current.label}`
-            : 'Pick a time control'}
-        </span>
-        {current && ratings && (
-          <span className='text-[#a29e96] tabular-nums'>
-            ({ratings[current.category]})
+    <div className='mb-3.5'>
+      <div className='mb-2 flex items-center gap-1.5 text-sm text-[#a29e96]'>
+        Time control
+        {current && (
+          <span className='ml-auto flex items-center gap-1.5'>
+            <CategoryIcon
+              category={current.category}
+              className='block size-4'
+            />
+            {CATEGORY_NAMES[current.category]}
+            {ratings && (
+              <span className='font-semibold text-[#e8e4dc] tabular-nums'>
+                {ratings[current.category]}
+              </span>
+            )}
           </span>
         )}
-        <svg
-          viewBox='0 0 20 20'
-          aria-hidden='true'
-          className={cn(
-            'ml-auto size-5 flex-none fill-[#a29e96] transition-transform',
-            open && 'rotate-180',
-          )}
-        >
-          <path d='M5.5 7.5L10 12l4.5-4.5z' />
-        </svg>
-      </button>
-      {open && (
-        <div className='px-4 pt-1 pb-4'>
-          <TimeControlGrid
-            value={value}
-            ratings={ratings}
-            onChange={(id) => {
-              onChange(id);
-              setOpen(false);
-            }}
-          />
-        </div>
-      )}
+      </div>
+      <div
+        ref={rowRef}
+        className='relative -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0'
+      >
+        {TIME_CONTROLS.map((control) => (
+          <button
+            key={control.id}
+            type='button'
+            aria-pressed={control.id === value}
+            onClick={() => onChange(control.id)}
+            className={cn(
+              'flex flex-none cursor-pointer items-center gap-1.5 rounded-lg border-2 bg-[#262421] px-3 py-1.5 text-[15px] font-semibold whitespace-nowrap text-[#e8e4dc] hover:bg-[#302d29]',
+              control.id === value ? 'border-[#8fd16a]' : 'border-transparent',
+            )}
+          >
+            <CategoryIcon
+              category={control.category}
+              className='block size-4'
+            />
+            {control.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

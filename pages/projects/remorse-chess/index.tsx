@@ -31,7 +31,7 @@ import {
 } from '@/components/remorse-chess/RemorseLayout';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
-  TimeControlPicker,
+  TimeControlChips,
   TimeControlTag,
   useTimeControlSetting,
 } from '@/components/remorse-chess/TimeControls';
@@ -438,26 +438,37 @@ const GameRow = ({
   );
 };
 
+// A balance switch in the card's corner, for the modes that can be balanced
 const ModeCard = ({
   icon,
   title,
   text,
-  tag,
+  balance,
   children,
 }: {
   icon: ReactNode;
   title: string;
   text: string;
-  tag?: ReactNode;
+  balance?: { checked: boolean; onChange: (checked: boolean) => void };
   children: ReactNode;
 }) => (
   <div className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'>
     <div className='flex items-start gap-3'>
       {icon}
-      <div>
-        <h3 className='flex flex-wrap items-center gap-x-2 font-semibold text-white'>
-          {title}
-          {tag}
+      <div className='min-w-0 flex-1'>
+        <h3 className='flex items-start gap-x-2 font-semibold text-white'>
+          <span className='flex-1'>{title}</span>
+          {balance && (
+            <label className='flex flex-none cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#a29e96]'>
+              <ScalesIcon className='block size-5' />
+              <span className='max-[340px]:sr-only'>Balanced</span>
+              <Toggle
+                checked={balance.checked}
+                onChange={balance.onChange}
+                label={`Balance the dice: ${title}`}
+              />
+            </label>
+          )}
         </h3>
         <p className={muted}>{text}</p>
       </div>
@@ -670,27 +681,45 @@ const NewFollowers = () => {
   );
 };
 
-const BALANCED_KEY = 'remorse-chess:balanced';
+type BalanceMode = 'challenge' | 'online' | 'local';
 
-// The lobby's balance switch, remembered on this device
-const useBalancedSetting = () => {
-  const [balanced, setBalanced] = useState(false);
+// Each card's balance switch, remembered on this device. Before the switches
+// split, one key held them all; it still seeds any card not yet set.
+const balancedKey = (mode: BalanceMode) => `remorse-chess:balanced:${mode}`;
+
+const useBalancedSettings = () => {
+  const [balanced, setBalanced] = useState<Record<BalanceMode, boolean>>({
+    challenge: false,
+    online: false,
+    local: false,
+  });
   useEffect(() => {
     try {
-      setBalanced(localStorage.getItem(BALANCED_KEY) === 'true');
+      const shared = localStorage.getItem('remorse-chess:balanced');
+      const read = (mode: BalanceMode) =>
+        (localStorage.getItem(balancedKey(mode)) ?? shared) === 'true';
+      setBalanced({
+        challenge: read('challenge'),
+        online: read('online'),
+        local: read('local'),
+      });
     } catch {
-      // storage blocked: the switch starts off
+      // storage blocked: the switches start off
     }
   }, []);
-  const set = (value: boolean) => {
-    setBalanced(value);
+  const set = (mode: BalanceMode) => (value: boolean) => {
+    setBalanced((prev) => ({ ...prev, [mode]: value }));
     try {
-      localStorage.setItem(BALANCED_KEY, String(value));
+      localStorage.setItem(balancedKey(mode), String(value));
     } catch {
       // storage blocked: remembered for this visit only
     }
   };
-  return [balanced, set] as const;
+  const toggle = (mode: BalanceMode) => ({
+    checked: balanced[mode],
+    onChange: set(mode),
+  });
+  return { balanced, toggle };
 };
 
 const LobbyPage = ({ email }: { email: string }) => {
@@ -700,19 +729,22 @@ const LobbyPage = ({ email }: { email: string }) => {
   const profile = useProfile();
   const create = useCreateGame();
   const [showArchived, setShowArchived] = useState(false);
-  const [balanced, setBalanced] = useBalancedSetting();
+  const { balanced, toggle } = useBalancedSettings();
   const [timeControl, setTimeControl] = useTimeControlSetting();
-  const balancedTag = balanced ? <BalancedTag /> : undefined;
 
   const open = ({ id }: { id: number }) => router.push(gamePath(id));
   const challenge = (playerId: number) =>
     create.mutate(
-      { challenge: playerId, balanced, timeControl },
+      { challenge: playerId, balanced: balanced.challenge, timeControl },
       { onSuccess: open },
     );
   const start = (mode: 'online' | 'local' | 'random') =>
     create.mutate(
-      { mode, balanced: mode !== 'random' && balanced, timeControl },
+      {
+        mode,
+        balanced: mode !== 'random' && balanced[mode],
+        timeControl,
+      },
       { onSuccess: open },
     );
   const rematch = (id: number, rematchBalanced?: boolean) =>
@@ -789,7 +821,7 @@ const LobbyPage = ({ email }: { email: string }) => {
             </Link>
           </div>
           <h2 className={h2}>New game</h2>
-          <TimeControlPicker
+          <TimeControlChips
             value={timeControl}
             onChange={setTimeControl}
             ratings={profile.data?.ratings}
@@ -822,7 +854,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               icon={<SwordsIcon />}
               title='Challenge a friend'
               text='Anyone you follow who follows you back. The game starts when they accept.'
-              tag={balancedTag}
+              balance={toggle('challenge')}
             >
               <ChallengePicker onPick={challenge} busy={create.isPending} />
             </ModeCard>
@@ -830,7 +862,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               icon={<LetterIcon />}
               title='Invite by link'
               text='Get an invite link to send. They join from any device.'
-              tag={balancedTag}
+              balance={toggle('online')}
             >
               <button
                 type='button'
@@ -845,7 +877,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               icon={<BoardIcon />}
               title='Pass and play'
               text='Both sides on one device. Good for a table and a friend.'
-              tag={balancedTag}
+              balance={toggle('local')}
             >
               <button
                 type='button'
@@ -857,21 +889,10 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
           </div>
-          <div className='mt-3 flex items-center gap-3 rounded-xl px-1 py-1'>
-            <ScalesIcon className='block size-9 flex-none' />
-            <div className='min-w-0 flex-1 leading-tight'>
-              <span className='text-[#e8e4dc]'>Balance the dice</span>
-              <span className='block text-[13px] text-[#a29e96]'>
-                For challenges, invite links and pass and play. Unrated: you set
-                each side&rsquo;s trauma odds before the first move.
-              </span>
-            </div>
-            <Toggle
-              checked={balanced}
-              onChange={setBalanced}
-              label='Balance the dice'
-            />
-          </div>
+          <p className={cn(muted, 'mt-3')}>
+            Balanced games are unrated: you set each side&rsquo;s trauma odds
+            before the first move.
+          </p>
           <Link
             href='/projects/remorse-chess/tutorial'
             className='mt-3 inline-block text-[15px] font-semibold text-[#ffd27a] hover:underline'
