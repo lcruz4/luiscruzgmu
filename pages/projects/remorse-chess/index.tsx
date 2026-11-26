@@ -439,8 +439,9 @@ const GameRow = ({
   );
 };
 
-// Title and actions only; what the mode does shows on hover. A balance
-// switch sits in the corner for the modes that can be balanced.
+// One cell of the new-game card: icon, title and actions; what the mode does
+// shows on hover. A balance switch sits in the corner for the modes that can
+// be balanced.
 const ModeCard = ({
   icon,
   title,
@@ -454,7 +455,7 @@ const ModeCard = ({
   balance?: { checked: boolean; onChange: (checked: boolean) => void };
   children: ReactNode;
 }) => (
-  <div className='flex items-start gap-3 rounded-xl bg-[#262421] p-3.5'>
+  <div className='flex items-start gap-3 bg-[#262421] p-3.5'>
     <Hint text={text} className='flex-none cursor-help'>
       {icon}
     </Hint>
@@ -844,7 +845,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               Notify me when it&apos;s my move →
             </button>
           )}
-          <div className='grid gap-3.5 sm:grid-cols-2'>
+          <div className='grid gap-px rounded-xl bg-[#3a3733] *:first:rounded-t-xl *:last:rounded-b-xl sm:grid-cols-2 sm:*:first:rounded-tr-none sm:*:nth-2:rounded-tr-xl sm:*:last:rounded-bl-none sm:*:nth-3:rounded-bl-xl'>
             <ModeCard
               icon={<DieIcon />}
               title='Play someone random'
