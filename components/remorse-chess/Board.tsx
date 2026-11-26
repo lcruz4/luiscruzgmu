@@ -394,12 +394,14 @@ export const Board = ({
                         onBishopHeal(piece);
                       }}
                       className={cn(
-                        'absolute -top-[10%] z-10 h-[52%] w-[52%] animate-pulse cursor-pointer rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
+                        'absolute -top-[10%] z-10 flex h-[52%] w-[52%] animate-pulse cursor-pointer items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
                         // the marker keeps the top-right corner
                         piece.trauma ? '-left-[10%]' : '-right-[10%]',
                       )}
                     >
-                      <RuleIcon rule='heal' className='block h-full w-full' />
+                      {/* a marker's medallion is 45 of its 68-unit box,
+                          leaving room for the ring and drips */}
+                      <RuleIcon rule='heal' className='block size-[66%]' />
                     </button>
                   )}
                 </div>
