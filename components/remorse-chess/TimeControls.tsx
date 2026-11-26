@@ -19,6 +19,8 @@ import {
 import { buttonMd, goldButton } from './buttons';
 
 const OUT = '#120d0b';
+const SUN_RAYS =
+  'M12 1.8v2.6M12 19.6v2.6M1.8 12h2.6M19.6 12h2.6M4.8 4.8l1.8 1.8M17.4 17.4l1.8 1.8M4.8 19.2l1.8-1.8M17.4 6.6l1.8-1.8';
 
 // Small category marks, drawn like the rest of the Remorse icons
 export const CategoryIcon = ({
@@ -38,54 +40,81 @@ export const CategoryIcon = ({
     {category === 'bullet' && (
       <g transform='rotate(45 12 12)'>
         <path
-          d='M9 20V10c0-4 3-7 3-7s3 3 3 7v10z'
-          fill='#e8a33c'
+          d='M9.3 21v-8.5h5.4V21z'
+          fill='#c98a1c'
           stroke={OUT}
-          strokeWidth='1.6'
+          strokeWidth='1.5'
         />
-        <path d='M9 16h6' stroke={OUT} strokeWidth='1.4' />
+        <path
+          d='M9.3 12.5C9.3 7.5 12 3 12 3s2.7 4.5 2.7 9.5z'
+          fill='#d98a5a'
+          stroke={OUT}
+          strokeWidth='1.5'
+        />
+        <path d='M9.3 18.5h5.4' stroke={OUT} strokeWidth='1.2' />
+        <path
+          d='M11 6.5c-.4 1.2-.6 2.6-.6 4'
+          fill='none'
+          stroke='#f3c19d'
+          strokeWidth='1'
+        />
       </g>
     )}
     {category === 'blitz' && (
-      <path
-        d='M14 2L5 14h6l-2 8 9-12h-6z'
-        fill='#ffd27a'
-        stroke={OUT}
-        strokeWidth='1.6'
-      />
+      <>
+        <path
+          d='M14.5 2 5 14h6.2L9 22l10-12.5h-6.3z'
+          fill='#ffd27a'
+          stroke={OUT}
+          strokeWidth='1.5'
+        />
+        <path d='M13 5.5 8.2 12' stroke='#fff3cc' strokeWidth='1.1' />
+      </>
     )}
     {category === 'rapid' && (
       <>
         <circle
           cx='12'
           cy='13.5'
-          r='8'
+          r='7.8'
           fill='#8fd16a'
           stroke={OUT}
-          strokeWidth='1.6'
+          strokeWidth='1.5'
+        />
+        <circle
+          cx='12'
+          cy='13.5'
+          r='5.3'
+          fill='#f2ecdc'
+          stroke={OUT}
+          strokeWidth='1'
         />
         <path
-          d='M12 13.5V9M10 3h4M12 3v2.5'
+          d='M12 13.5V10M12 13.5l2.2 1.4M10 3h4M12 3v2.7M18.3 6.8l1.4-1.4'
           fill='none'
           stroke={OUT}
-          strokeWidth='1.6'
+          strokeWidth='1.5'
         />
       </>
     )}
     {category === 'daily' && (
       <>
-        <path
-          d='M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1'
-          stroke='#ffd27a'
-          strokeWidth='2'
-        />
+        {/* rays drawn twice: a dark outline under the gold */}
+        <path d={SUN_RAYS} stroke={OUT} strokeWidth='3.2' />
+        <path d={SUN_RAYS} stroke='#ffd27a' strokeWidth='1.7' />
         <circle
           cx='12'
           cy='12'
-          r='5.5'
+          r='5.4'
           fill='#ffd27a'
           stroke={OUT}
-          strokeWidth='1.6'
+          strokeWidth='1.5'
+        />
+        <path
+          d='M9.6 10.5a2.8 2.8 0 0 1 2.4-1.6'
+          fill='none'
+          stroke='#fff3cc'
+          strokeWidth='1.1'
         />
       </>
     )}
