@@ -487,6 +487,19 @@ const ModeCard = ({
   </div>
 );
 
+// A short rule with a diamond between modes
+const ModeDivider = ({ className }: { className?: string }) => (
+  <div
+    aria-hidden='true'
+    className={cn(
+      'flex items-center gap-2 before:h-px before:flex-1 before:bg-[#3a3733] after:h-px after:flex-1 after:bg-[#3a3733]',
+      className,
+    )}
+  >
+    <span className='size-1.5 rotate-45 bg-[#8a6d3e]' />
+  </div>
+);
+
 // How many players show in the card before the search takes over
 const SHOWN_PLAYERS = 4;
 
@@ -845,7 +858,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               Notify me when it&apos;s my move →
             </button>
           )}
-          <div className='grid divide-y divide-[#3a3733] rounded-xl bg-[#262421] px-3.5 sm:grid-cols-2 sm:gap-x-7 sm:divide-y-0'>
+          <div className='grid rounded-xl bg-[#262421] px-3.5 sm:grid-cols-2 sm:gap-x-7'>
             <ModeCard
               icon={<DieIcon />}
               title='Play someone random'
@@ -860,6 +873,7 @@ const LobbyPage = ({ email }: { email: string }) => {
                 Find an opponent
               </button>
             </ModeCard>
+            <ModeDivider className='sm:hidden' />
             <ModeCard
               icon={<SwordsIcon />}
               title='Challenge a friend'
@@ -868,6 +882,7 @@ const LobbyPage = ({ email }: { email: string }) => {
             >
               <ChallengePicker onPick={challenge} busy={create.isPending} />
             </ModeCard>
+            <ModeDivider className='sm:col-span-2' />
             <ModeCard
               icon={<LetterIcon />}
               title='Invite by link'
@@ -883,6 +898,7 @@ const LobbyPage = ({ email }: { email: string }) => {
                 Start online game
               </button>
             </ModeCard>
+            <ModeDivider className='sm:hidden' />
             <ModeCard
               icon={<BoardIcon />}
               title='Pass and play'
