@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 // costs real CPU on the Pi
 const REMORSE_POLL = /^GET \/api\/remorse-chess\/games\/\d+$/;
 
-export const register = () => {
+export const register = async () => {
   Sentry.init({
     dsn: process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN,
     integrations: [
@@ -15,6 +15,10 @@ export const register = () => {
     tracesSampler: ({ name, inheritOrSampleWith }) =>
       REMORSE_POLL.test(name) ? 0 : inheritOrSampleWith(0.1),
   });
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { startClockSweep } = await import('./services/remorseClock');
+    startClockSweep();
+  }
 };
 
 export const onRequestError = Sentry.captureRequestError;

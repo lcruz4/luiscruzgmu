@@ -78,11 +78,7 @@ const ProfilePage = ({ email }: { email: string }) => {
           onSubmit={submit}
           className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'
         >
-          <PlayerPreview
-            icon={icon}
-            username={username}
-            rating={profile.data?.rating}
-          />
+          <PlayerPreview icon={icon} username={username} />
           <label htmlFor='username' className='font-semibold text-white'>
             Username
           </label>

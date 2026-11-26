@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { colorName, describeEvent, resultText } from '@/lib/remorse/describe';
+import { TimeControlTag } from './TimeControls';
 import { inviteUrl } from '@/lib/remorse/paths';
 import { pieceSrc } from '@/lib/remorse/pieceSets';
 import { cn } from '@/lib/utils';
@@ -214,12 +215,21 @@ export const GamePanel = ({
         game.you.length === 1 &&
         state.winner !== 'draw' &&
         state.winner !== game.you[0];
+      const timeout = game.steps
+        .at(-1)
+        ?.events.some((e) => e.type === 'gameOver' && e.reason === 'timeout');
       return (
         <StatusCard
           tone={lost ? 'plain' : 'gold'}
           title={won ? 'You won' : lost ? 'You lost' : resultText(state.winner)}
           text={
-            won || lost
+            timeout
+              ? won
+                ? 'They ran out of time.'
+                : lost
+                ? 'You ran out of time.'
+                : `${colorName(state.turn)} ran out of time.`
+              : won || lost
               ? resultText(state.winner)
               : 'Every capture left a mark.'
           }
@@ -550,7 +560,8 @@ export const GamePanel = ({
       <section className='flex min-h-0 flex-col rounded-xl bg-[#262421] p-3.5'>
         <div className='mb-2 flex items-baseline justify-between'>
           <h2 className='font-semibold text-white'>Moves</h2>
-          <span className='text-xs text-[#a29e96] tabular-nums'>
+          <span className='flex items-center gap-2 text-xs text-[#a29e96] tabular-nums'>
+            <TimeControlTag id={game.timeControl} />
             {steps.length}
           </span>
         </div>

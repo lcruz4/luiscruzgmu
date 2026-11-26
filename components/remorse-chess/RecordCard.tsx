@@ -3,6 +3,8 @@ import type { PlayerStats, Trauma } from '@/types/remorse';
 import { Marker } from './Marker';
 import { FAIR_ODDS, TRAUMAS, traumaOdds } from '@/lib/remorse/balance';
 import { TRAUMA_STYLE } from '@/lib/remorse/traumaStyle';
+import { CATEGORY_NAMES, TIME_CATEGORIES } from '@/lib/remorse/timeControls';
+import { CategoryIcon } from './TimeControls';
 
 const FAIR = traumaOdds(FAIR_ODDS);
 
@@ -126,14 +128,22 @@ export const RecordCard = ({
   return (
     <div className='grid gap-3.5 md:grid-cols-[1fr_1.4fr]'>
       <div className='flex flex-col gap-2.5 rounded-xl bg-[#262421] p-4'>
-        <div className='flex items-baseline justify-between gap-2'>
-          <h3 className='font-semibold text-white'>Online record</h3>
-          <span className='text-[13px] text-[#a29e96]'>
-            Rating{' '}
-            <strong className='text-base font-bold text-[#ffd27a] tabular-nums'>
-              {stats.rating}
-            </strong>
-          </span>
+        <h3 className='font-semibold text-white'>Online record</h3>
+        <div className='grid grid-cols-4 gap-2'>
+          {TIME_CATEGORIES.map((category) => (
+            <div
+              key={category}
+              className='flex flex-col items-center rounded-lg bg-[#302d29] px-1 py-2'
+            >
+              <span className='flex items-center gap-1 text-xs text-[#a29e96]'>
+                <CategoryIcon category={category} className='block size-3.5' />
+                {CATEGORY_NAMES[category]}
+              </span>
+              <span className='text-lg font-bold text-[#ffd27a] tabular-nums'>
+                {stats.ratings[category]}
+              </span>
+            </div>
+          ))}
         </div>
         <div className='grid grid-cols-3 gap-2'>
           <Tally value={stats.wins} label='Wins' gold />

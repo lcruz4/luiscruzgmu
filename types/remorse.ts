@@ -1,4 +1,5 @@
 import type { PlayerIcon } from '@/lib/remorse/icons';
+import type { TimeCategory } from '@/lib/remorse/timeControls';
 
 export type Color = 'w' | 'b';
 export type PieceType = 'k' | 'q' | 'r' | 'b' | 'n' | 'p';
@@ -69,7 +70,7 @@ export type GameEvent =
   | {
       type: 'gameOver';
       winner: Color | 'draw';
-      reason: 'king' | 'checkmate' | 'stalemate' | 'resign';
+      reason: 'king' | 'checkmate' | 'stalemate' | 'resign' | 'timeout';
     };
 
 export type GameMode = 'online' | 'local';
@@ -113,6 +114,8 @@ export interface GameSummary {
   challenge: Challenge | null;
   // balance mode: the die leans toward the lower-rated player; unrated
   balanced: boolean;
+  // an id from TIME_CONTROLS; null for an untimed game from before them
+  timeControl: string | null;
   updatedAt: string;
 }
 
@@ -152,6 +155,7 @@ export interface PlayerGame {
   turn: Color;
   winner: Color | 'draw' | null;
   pieces: Pick<Piece, 'color' | 'type' | 'square'>[];
+  timeControl: string | null;
   updatedAt: string;
 }
 
@@ -175,7 +179,7 @@ export interface PlayerPage extends PlayerRef {
 }
 
 export interface PlayerStats {
-  rating: number;
+  ratings: Record<TimeCategory, number>;
   // finished online games against someone else
   wins: number;
   losses: number;
@@ -223,6 +227,17 @@ export interface GameResponse {
   canSetOdds: boolean;
   // shown once the game is over, while the viewer hasn't answered it
   balanceSuggestion: BalanceSuggestion | null;
+  timeControl: string | null;
+  clock: GameClock | null;
+}
+
+// A timed game's clocks. whiteMs/blackMs: a live game's time left for each
+// side as of its last turn (null in a daily game). runningMs: the side to
+// move's time left as of this response; null while no clock runs.
+export interface GameClock {
+  whiteMs: number | null;
+  blackMs: number | null;
+  runningMs: number | null;
 }
 
 // One player has won most standard games between the two: suggest playing

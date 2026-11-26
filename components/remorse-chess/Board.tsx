@@ -5,9 +5,15 @@ import {
   useRef,
   useState,
 } from 'react';
-import { bishopHealTargets, inCheck, legalMoves } from '@/lib/remorse/engine';
+import {
+  bishopHealTargets,
+  inCheck,
+  legalMoves,
+  premoveTargets,
+} from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
 import type {
+  Color,
   GameState,
   GameStep,
   Piece,
@@ -53,6 +59,11 @@ interface BoardProps {
   // tutorial: the only move allowed, highlighted on the board. Without `to`,
   // the bishop on `from` must heal.
   guide?: { from: string; to?: string } | null;
+  // the viewer's side in an online game: it may queue a move while the
+  // other side is to move, played the moment its turn comes if still legal
+  premoveColor?: Color | null;
+  // false in live games: traumas land without the die rolling
+  dice?: boolean;
 }
 
 export const Board = ({
@@ -65,16 +76,50 @@ export const Board = ({
   onMove,
   onBishopHeal,
   guide,
+  premoveColor = null,
+  dice = true,
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
   const { pieceSet, boardTheme: theme } = useBoardLook();
   const bySquare = new Map(state.pieces.map((piece) => [piece.square, piece]));
+  const premoving =
+    !canMove &&
+    premoveColor !== null &&
+    state.turn !== premoveColor &&
+    !state.winner;
+  const [premove, setPremove] = useState<{
+    from: string;
+    to: string;
+    promotion?: PromotionType;
+  } | null>(null);
   // During a psychopath's extra move only that piece may move
   const isMine = (piece?: Piece) =>
-    canMove &&
-    piece?.color === state.turn &&
-    (!state.extraMovePieceId || piece.id === state.extraMovePieceId) &&
-    (!guide || piece.square === guide.from);
+    premoving
+      ? piece?.color === premoveColor
+      : canMove &&
+        piece?.color === state.turn &&
+        (!state.extraMovePieceId || piece.id === state.extraMovePieceId) &&
+        (!guide || piece.square === guide.from);
+
+  // The queued move goes the moment it's your turn, if it's still legal;
+  // otherwise it's dropped. A pawn reaching the last rank becomes a queen.
+  useEffect(() => {
+    if (!premove) return;
+    if (state.winner) {
+      setPremove(null);
+      return;
+    }
+    if (!canMove) return;
+    setPremove(null);
+    const piece = state.pieces.find((p) => p.square === premove.from);
+    if (
+      piece?.color === state.turn &&
+      (!state.extraMovePieceId || piece.id === state.extraMovePieceId) &&
+      legalMoves(state, premove.from).includes(premove.to)
+    ) {
+      onMove(premove.from, premove.to, premove.promotion);
+    }
+  }, [premove, canMove, state, onMove]);
 
   // A pawn reaching the last rank waits for the player to pick its new piece
   const [promotion, setPromotion] = useState<{
@@ -82,6 +127,17 @@ export const Board = ({
     to: string;
   } | null>(null);
   const requestMove = (from: string, to: string) => {
+    if (premoving) {
+      if (!premoveTargets(state, from).includes(to)) return;
+      const piece = bySquare.get(from);
+      const lastRank = piece?.color === 'w' ? '8' : '1';
+      setPremove({
+        from,
+        to,
+        promotion: piece?.type === 'p' && to[1] === lastRank ? 'q' : undefined,
+      });
+      return;
+    }
     if (!legalMoves(state, from).includes(to)) return;
     if (guide && (from !== guide.from || to !== guide.to)) return;
     const piece = bySquare.get(from);
@@ -99,6 +155,11 @@ export const Board = ({
       return;
     }
     const piece = bySquare.get(square);
+    // A click anywhere takes back a queued move
+    if (premove && !selected) {
+      setPremove(null);
+      if (!isMine(piece)) return;
+    }
     // A bloodlust piece may take its own side, so a target wins over reselecting
     if (isMine(piece) && !(selected && targets.has(square))) {
       setSelected(selected === square ? null : square);
@@ -150,9 +211,10 @@ export const Board = ({
       state,
       steps.slice(last.count).map((step) => step.events),
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      dice,
       () => onAnimating(null),
     );
-  }, [state, steps, flipped, onAnimating, pieceSet]);
+  }, [state, steps, flipped, onAnimating, pieceSet, dice]);
   useEffect(() => () => stopAnimation.current?.(), []);
 
   const mate = steps
@@ -164,9 +226,11 @@ export const Board = ({
       : undefined;
   const moveFrom = drag?.from ?? selected;
   const targets = new Set(
-    moveFrom
-      ? legalMoves(state, moveFrom).filter((to) => !guide || to === guide.to)
-      : [],
+    !moveFrom
+      ? []
+      : premoving
+      ? premoveTargets(state, moveFrom)
+      : legalMoves(state, moveFrom).filter((to) => !guide || to === guide.to),
   );
   const checkedKing =
     !state.winner && inCheck(state, state.turn)
@@ -222,6 +286,7 @@ export const Board = ({
         {squares.map((square, index) => {
           const piece = bySquare.get(square);
           const canHeal =
+            canMove &&
             (!guide || (guide.from === square && !guide.to)) &&
             !!piece &&
             isMine(piece) &&
@@ -235,6 +300,8 @@ export const Board = ({
                 'relative',
                 (lastMove?.from === square || lastMove?.to === square) &&
                   'bg-yellow-300/40',
+                (premove?.from === square || premove?.to === square) &&
+                  'bg-[#b04a3c]/55',
                 selected === square && 'bg-sky-400/50',
               )}
               onClick={() => handleClick(square)}

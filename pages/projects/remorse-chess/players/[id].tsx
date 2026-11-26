@@ -27,6 +27,11 @@ import {
   goldButton,
 } from '@/components/remorse-chess/buttons';
 import { colorName, resultText } from '@/lib/remorse/describe';
+import {
+  TimeControlTag,
+  useTimeControlSetting,
+} from '@/components/remorse-chess/TimeControls';
+import { timeControlOf } from '@/lib/remorse/timeControls';
 import { gamePath } from '@/lib/remorse/paths';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
@@ -63,12 +68,15 @@ const GameRow = ({
           </PlayerLink>
           <Rating rating={game.blackRating} />
         </strong>
-        <Link
-          href={gamePath(game.id)}
-          className={cn(muted, 'block truncate', stretchedLink)}
-        >
-          {game.winner ? status : `In progress · ${status}`}
-        </Link>
+        <div className='flex min-w-0 items-center gap-2'>
+          <TimeControlTag id={game.timeControl} />
+          <Link
+            href={gamePath(game.id)}
+            className={cn(muted, 'block truncate', stretchedLink)}
+          >
+            {game.winner ? status : `In progress · ${status}`}
+          </Link>
+        </div>
       </div>
       {!game.winner && (
         <span className='flex-none rounded-full border border-[#514d47] bg-[#302d29] px-2.5 py-0.5 text-xs font-semibold text-[#e8e4dc]'>
@@ -125,6 +133,7 @@ const Actions = ({ player }: { player: PlayerPage }) => {
   const router = useRouter();
   const follow = useFollow(player.id);
   const challenge = useCreateGame();
+  const [timeControl] = useTimeControlSetting();
   if (player.you) {
     return (
       <Link
@@ -145,12 +154,12 @@ const Actions = ({ player }: { player: PlayerPage }) => {
             disabled={challenge.isPending}
             onClick={() =>
               challenge.mutate(
-                { challenge: player.id },
+                { challenge: player.id, timeControl },
                 { onSuccess: ({ id }) => router.push(gamePath(id)) },
               )
             }
           >
-            Challenge
+            Challenge · {timeControlOf(timeControl)?.label}
           </button>
         )}
         <button
@@ -203,10 +212,6 @@ const PlayerPageView = () => {
               <div className='min-w-0 flex-1'>
                 <h1 className='truncate text-[clamp(26px,4.5vw,34px)] leading-tight font-bold tracking-tight text-white'>
                   {data.name}
-                  <Rating
-                    rating={data.stats.rating}
-                    className='ml-2 text-[0.6em]'
-                  />
                   {data.you && (
                     <span className='ml-2 text-base font-normal text-[#a29e96]'>
                       (you)

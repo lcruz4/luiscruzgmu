@@ -19,7 +19,8 @@ import {
 } from '@/services/remorseDb';
 import { isValidPercents } from '@/lib/remorse/balance';
 import { logger } from '@/services/logger';
-import { notifyOpponent } from '@/services/remorsePush';
+import { expireGames } from '@/services/remorseClock';
+import { notifyOpponent, notifyTimeout } from '@/services/remorsePush';
 import { publishGameChange } from '@/services/remorseLive';
 
 const squareField = (value: unknown, name: string) => {
@@ -39,6 +40,7 @@ const promotionField = (value: unknown) => {
 // Body: { type, version, ... }
 //   move: { from, to, promotion? } · bishopHeal: { pieceId } · skipExtraMove · resign
 //   join: { inviteToken } from the invite link, or nothing to accept a challenge
+//   flag: the side to move's clock ran out; anyone watching may claim it
 //   archive / unarchive: hide the game from your lobby or bring it back
 //   setOdds: { odds: { w, b } }, each { devastated, guilt, unaffected,
 //     psychopath } in whole percents adding up to 100
@@ -46,24 +48,30 @@ const postAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
   const body = bodyOf(req);
   const version = () => intField(body.version, 'version', 0, 2147483647);
+  let timedOut = false;
 
-  if (body.type === 'move') {
-    await playAction(id, email, version(), {
+  if (body.type === 'flag') {
+    await expireGames({ id });
+    return getGame(id, email);
+  } else if (body.type === 'move') {
+    ({ timedOut } = await playAction(id, email, version(), {
       type: 'move',
       from: squareField(body.from, 'from'),
       to: squareField(body.to, 'to'),
       promotion: promotionField(body.promotion),
-    });
+    }));
   } else if (body.type === 'bishopHeal') {
     if (typeof body.pieceId !== 'string') {
       throw new HttpError(400, 'pieceId must be text');
     }
-    await playAction(id, email, version(), {
+    ({ timedOut } = await playAction(id, email, version(), {
       type: 'bishopHeal',
       pieceId: body.pieceId,
-    });
+    }));
   } else if (body.type === 'skipExtraMove') {
-    await playAction(id, email, version(), { type: 'skipExtraMove' });
+    ({ timedOut } = await playAction(id, email, version(), {
+      type: 'skipExtraMove',
+    }));
   } else if (body.type === 'resign') {
     await resignGame(id, email, version());
   } else if (body.type === 'join') {
@@ -99,15 +107,16 @@ const postAction = async (req: NextApiRequest, email: string) => {
   } else {
     throw new HttpError(
       400,
-      "type must be 'move', 'bishopHeal', 'skipExtraMove', 'resign', 'join', 'setOdds', 'archive' or 'unarchive'",
+      "type must be 'move', 'bishopHeal', 'skipExtraMove', 'resign', 'join', 'setOdds', 'flag', 'archive' or 'unarchive'",
     );
   }
   const game = await getGame(id, email);
   publishGameChange(id, game.version);
   // Not awaited: the mover shouldn't wait on push services
-  notifyOpponent(game, email, body.type === 'join' ? 'join' : 'other').catch(
-    (error) => logger.error('Remorse notify failed:', error),
-  );
+  const push = timedOut
+    ? notifyTimeout(game)
+    : notifyOpponent(game, email, body.type === 'join' ? 'join' : 'other');
+  push.catch((error) => logger.error('Remorse notify failed:', error));
   return game;
 };
 
@@ -115,6 +124,7 @@ const postAction = async (req: NextApiRequest, email: string) => {
 // that finds nothing new skips loading and sending the whole game
 const getAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
+  await expireGames({ id });
   if (req.query.since !== undefined) {
     const since = intField(req.query.since, 'since', 0, 2147483647);
     if ((await gameVersion(id)) === since) return NO_CONTENT;

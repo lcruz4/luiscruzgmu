@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { gamePath } from '@/lib/remorse/paths';
+import { useTimeControlSetting } from './TimeControls';
 import { TRAUMA_STYLE } from '@/lib/remorse/traumaStyle';
 import { cn } from '@/lib/utils';
 import type {
@@ -424,6 +425,7 @@ export const BalanceSuggestionDialog = ({
   const router = useRouter();
   const answer = useAnswerBalanceSuggestion();
   const create = useCreateGame();
+  const [timeControl] = useTimeControlSetting();
   const [closed, setClosed] = useState(false);
   if (!suggestion) return null;
   const { playerId, name, games, wins, losses } = suggestion;
@@ -438,7 +440,7 @@ export const BalanceSuggestionDialog = ({
       {
         onSuccess: () =>
           create.mutate(
-            { challenge: playerId, balanced: true },
+            { challenge: playerId, balanced: true, timeControl },
             { onSuccess: ({ id }) => router.push(gamePath(id)) },
           ),
       },

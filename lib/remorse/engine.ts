@@ -27,6 +27,7 @@ export {
   bishopHealTargets,
   isAdjacent,
   legalMoves,
+  premoveTargets,
   inCheck,
   opponent,
   RULES,

@@ -11,14 +11,20 @@ import {
   getGame,
   listGames,
 } from '@/services/remorseDb';
+import { expireGames } from '@/services/remorseClock';
 import { publishGameChange } from '@/services/remorseLive';
 import { notifyChallenge, notifyOpponent } from '@/services/remorsePush';
+import {
+  DEFAULT_TIME_CONTROL,
+  isTimeControl,
+} from '@/lib/remorse/timeControls';
 import type { Color } from '@/types/remorse';
 
 // Seats the player against the next one looking, or leaves them waiting.
 // A match tells the waiting player right away.
-const playRandom = async (email: string) => {
-  const { id, color, matched } = await findMatch(email);
+const playRandom = async (email: string, timeControl: string) => {
+  const { id, color, matched, canceled } = await findMatch(email, timeControl);
+  for (const other of canceled) publishGameChange(other, 'deleted');
   if (matched) {
     const game = await getGame(id, email);
     publishGameChange(id, game.version);
@@ -35,11 +41,13 @@ const challenge = async (
   email: string,
   playerId: number,
   balanced: boolean,
+  timeControl: string,
 ) => {
   const { id, color, opponentEmail, created, accepted } = await createChallenge(
     email,
     playerId,
     balanced,
+    timeControl,
   );
   if (created || accepted) {
     const game = await getGame(id, email);
@@ -57,8 +65,16 @@ const balancedField = (value: unknown) => {
   throw new HttpError(400, 'balanced must be true or false');
 };
 
+// Older clients send no time control
+const timeControlField = (value: unknown) => {
+  if (value === undefined) return DEFAULT_TIME_CONTROL;
+  if (isTimeControl(value)) return value;
+  throw new HttpError(400, 'timeControl must be one of TIME_CONTROLS');
+};
+
 // Body: { mode: 'online' | 'local' | 'random' }, { rematchOf: <finished game id> }
-// or { challenge: <player id> }. `balanced: true` makes an online, local or
+// or { challenge: <player id> }, with a `timeControl` id except for a rematch,
+// which keeps its game's. `balanced: true` makes an online, local or
 // challenge game balanced; a rematch is balanced like its game unless
 // `balanced` says otherwise. Random games never are.
 // Online, the creator's seat is random (swapped for a rematch) and returned
@@ -74,17 +90,22 @@ const postGame = async (req: NextApiRequest, email: string) => {
       email,
       idField(body.challenge, 'challenge'),
       balanced ?? false,
+      timeControlField(body.timeControl),
     );
   }
-  if (body.mode === 'random') return playRandom(email);
+  const timeControl = timeControlField(body.timeControl);
+  if (body.mode === 'random') return playRandom(email, timeControl);
   if (body.mode !== 'online' && body.mode !== 'local') {
     throw new HttpError(400, "mode must be 'online', 'local' or 'random'");
   }
   const color: Color = randomInt(2) ? 'b' : 'w';
-  return createGame(email, body.mode, color, balanced ?? false);
+  return createGame(email, body.mode, color, balanced ?? false, timeControl);
 };
 
 export default remorseRoute({
-  GET: (_req, email) => listGames(email),
+  GET: async (_req, email) => {
+    await expireGames({ email });
+    return listGames(email);
+  },
   POST: postGame,
 });

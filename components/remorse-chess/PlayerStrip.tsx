@@ -2,6 +2,7 @@ import { colorName } from '@/lib/remorse/describe';
 import type { PlayerIcon } from '@/lib/remorse/icons';
 import { cn } from '@/lib/utils';
 import type { Color, GameResponse } from '@/types/remorse';
+import { ClockFace, type SideClock } from './Clock';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PlayerLink } from './PlayerLink';
 import { Rating } from './Rating';
@@ -12,11 +13,13 @@ export const PlayerStrip = ({
   color,
   toMove,
   inCheck,
+  clock,
 }: {
   game: GameResponse;
   color: Color;
   toMove: boolean;
   inCheck: boolean;
+  clock: SideClock | null;
 }) => {
   const local = game.mode === 'local';
   const name = local
@@ -111,6 +114,7 @@ export const PlayerStrip = ({
           {inCheck ? 'In check' : 'To move'}
         </span>
       )}
+      {clock && <ClockFace clock={clock} />}
     </div>
   );
 };

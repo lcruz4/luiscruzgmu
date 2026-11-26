@@ -62,6 +62,8 @@ export const playSteps = (
   next: GameState,
   steps: GameEvent[][],
   reduced: boolean,
+  // false in live games: the trauma just lands, no die rolls for it
+  dice: boolean,
   // called once, when the animations finish or are cut short
   onDone: () => void,
 ) => {
@@ -193,6 +195,8 @@ export const playSteps = (
           ? 'Stalemate · draw'
           : event.reason === 'resign'
           ? `Resigned · ${resultText(event.winner)}`
+          : event.reason === 'timeout'
+          ? `Out of time · ${resultText(event.winner)}`
           : `King captured · ${resultText(event.winner)}`;
       default:
         return null;
@@ -560,7 +564,7 @@ export const playSteps = (
     const el = pieceEl(piece.id);
     const img = imgOf(el);
     if (!square || !el || !img) return;
-    await rollDie(square, value);
+    if (dice) await rollDie(square, value);
     if (trauma === 'devastated') {
       ring(square, '#5fb2ff', 0.4, 2.6, 800, 3);
       reveal(

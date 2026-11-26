@@ -84,6 +84,7 @@ const gameOverText = (turn: GameStep[], actorName: string) => {
   const over = events.find((e) => e.type === 'gameOver');
   if (over?.type !== 'gameOver') return 'Game over.';
   if (over.reason === 'resign') return `${actorName} resigned.`;
+  if (over.reason === 'timeout') return `${actorName} ran out of time.`;
   if (over.reason === 'checkmate') return 'Checkmate. Game over.';
   if (over.reason === 'stalemate') return 'Stalemate. Game over.';
   const captures = events.flatMap((e) => (e.type === 'capture' ? [e] : []));
@@ -93,6 +94,12 @@ const gameOverText = (turn: GameStep[], actorName: string) => {
     captures[0].piece.type,
   )} took your ${taken}. Game over.`;
 };
+
+// The push for the player whose time ran out; the winner gets pushMessage
+export const timeoutMessage = (winnerName: string): PushMessage => ({
+  title: `You lost vs ${winnerName}`,
+  body: 'You ran out of time.',
+});
 
 // The push for the player in `seat` after the other player acted, or null
 // when it's still the actor's move

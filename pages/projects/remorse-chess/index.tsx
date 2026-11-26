@@ -31,6 +31,11 @@ import {
 } from '@/components/remorse-chess/RemorseLayout';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
+  TimeControlPicker,
+  TimeControlTag,
+  useTimeControlSetting,
+} from '@/components/remorse-chess/TimeControls';
+import {
   useAcceptChallenge,
   useArchive,
   useCancelGame,
@@ -346,6 +351,7 @@ const GameRow = ({
             <OpponentLabel game={game} email={email} />
           </strong>
           <div className='flex min-w-0 items-center gap-2'>
+            <TimeControlTag id={game.timeControl} />
             {game.balanced && <BalancedTag />}
             <Link
               href={gamePath(game.id)}
@@ -695,14 +701,18 @@ const LobbyPage = ({ email }: { email: string }) => {
   const create = useCreateGame();
   const [showArchived, setShowArchived] = useState(false);
   const [balanced, setBalanced] = useBalancedSetting();
+  const [timeControl, setTimeControl] = useTimeControlSetting();
   const balancedTag = balanced ? <BalancedTag /> : undefined;
 
   const open = ({ id }: { id: number }) => router.push(gamePath(id));
   const challenge = (playerId: number) =>
-    create.mutate({ challenge: playerId, balanced }, { onSuccess: open });
+    create.mutate(
+      { challenge: playerId, balanced, timeControl },
+      { onSuccess: open },
+    );
   const start = (mode: 'online' | 'local' | 'random') =>
     create.mutate(
-      { mode, balanced: mode !== 'random' && balanced },
+      { mode, balanced: mode !== 'random' && balanced, timeControl },
       { onSuccess: open },
     );
   const rematch = (id: number, rematchBalanced?: boolean) =>
@@ -779,6 +789,11 @@ const LobbyPage = ({ email }: { email: string }) => {
             </Link>
           </div>
           <h2 className={h2}>New game</h2>
+          <TimeControlPicker
+            value={timeControl}
+            onChange={setTimeControl}
+            ratings={profile.data?.ratings}
+          />
           {notify.permission === 'default' && (
             <button
               type='button'
@@ -792,7 +807,7 @@ const LobbyPage = ({ email }: { email: string }) => {
             <ModeCard
               icon={<DieIcon />}
               title='Play someone random'
-              text='Get paired with the next player looking for a game.'
+              text='Get paired with the next player looking for the same time control.'
             >
               <button
                 type='button'
