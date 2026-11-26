@@ -86,6 +86,23 @@ const GamePage = () => {
     markSeen(['intro']);
   }, [needsIntro, markSeen]);
 
+  // Aborted or canceled while open here
+  if (query.isError && query.error.message === 'Game not found') {
+    return (
+      <RemorseLayout>
+        <div className='mx-auto flex max-w-[1060px] flex-col items-start gap-3 pt-9'>
+          <p className='text-white'>This game was aborted.</p>
+          <Link
+            href='/projects/remorse-chess'
+            className='text-[15px] font-semibold text-[#ffd27a] hover:underline'
+          >
+            Back to your games →
+          </Link>
+        </div>
+      </RemorseLayout>
+    );
+  }
+
   if (!game) {
     return (
       <RemorseLayout>

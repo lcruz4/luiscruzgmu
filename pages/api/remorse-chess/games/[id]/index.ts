@@ -20,7 +20,11 @@ import {
 import { isValidPercents } from '@/lib/remorse/balance';
 import { logger } from '@/services/logger';
 import { expireGames } from '@/services/remorseClock';
-import { notifyOpponent, notifyTimeout } from '@/services/remorsePush';
+import {
+  notifyAborted,
+  notifyOpponent,
+  notifyTimeout,
+} from '@/services/remorsePush';
 import { publishGameChange } from '@/services/remorseLive';
 
 const squareField = (value: unknown, name: string) => {
@@ -132,11 +136,19 @@ const getAction = async (req: NextApiRequest, email: string) => {
   return getGame(id, email);
 };
 
-// Cancels an online game nobody has joined yet
+// Cancels an online game nobody has joined yet, or aborts one you haven't
+// moved in
 const deleteGame = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
-  await cancelGame(id, email);
+  const game = await getGame(id, email);
+  const { abortedFor } = await cancelGame(id, email);
   publishGameChange(id, 'deleted');
+  if (abortedFor) {
+    const name = game.whiteEmail === email ? game.whiteName : game.blackName;
+    notifyAborted(abortedFor, name ?? 'Your opponent').catch((error) =>
+      logger.error('Remorse notify failed:', error),
+    );
+  }
   return NO_CONTENT;
 };
 

@@ -164,3 +164,14 @@ export const notifyTimeout = async (game: GameResponse) => {
     }),
   ]);
 };
+
+// Tells the other player a game was aborted before it got going
+export const notifyAborted = async (recipient: string, actorName: string) => {
+  if (!publicKey || !privateKey) return;
+  await sendToEmail(recipient, {
+    title: `${actorName} aborted your game`,
+    body: 'It doesn’t count. Start another from the lobby.',
+    tag: 'remorse-aborted',
+    url: '/projects/remorse-chess',
+  });
+};

@@ -9,6 +9,13 @@ import {
   timeControlOf,
 } from '@/lib/remorse/timeControls';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { buttonMd, goldButton } from './buttons';
 
 const OUT = '#120d0b';
 
@@ -163,45 +170,108 @@ export const TimeControlPicker = ({
         </svg>
       </button>
       {open && (
-        <div className='flex flex-col gap-3 px-4 pt-1 pb-4'>
-          {TIME_CATEGORIES.map((category) => (
-            <div key={category}>
-              <div className='mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-[#e8e4dc]'>
-                <CategoryIcon category={category} className='block size-4' />
-                {CATEGORY_NAMES[category]}
-                {ratings && (
-                  <span className='font-normal text-[#a29e96] tabular-nums'>
-                    {ratings[category]}
-                  </span>
-                )}
-              </div>
-              <div className='grid grid-cols-3 gap-2'>
-                {TIME_CONTROLS.filter(
-                  (control) => control.category === category,
-                ).map((control) => (
-                  <button
-                    key={control.id}
-                    type='button'
-                    aria-pressed={control.id === value}
-                    onClick={() => {
-                      onChange(control.id);
-                      setOpen(false);
-                    }}
-                    className={cn(
-                      'cursor-pointer rounded-lg border-2 bg-[#302d29] py-2 text-[15px] font-semibold text-[#e8e4dc] hover:bg-[#3a3733]',
-                      control.id === value
-                        ? 'border-[#8fd16a]'
-                        : 'border-transparent',
-                    )}
-                  >
-                    {control.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className='px-4 pt-1 pb-4'>
+          <TimeControlGrid
+            value={value}
+            ratings={ratings}
+            onChange={(id) => {
+              onChange(id);
+              setOpen(false);
+            }}
+          />
         </div>
       )}
     </div>
+  );
+};
+
+// Every time control by category, each with your rating when given
+export const TimeControlGrid = ({
+  value,
+  onChange,
+  ratings,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  ratings?: Record<TimeCategory, number>;
+}) => (
+  <div className='flex flex-col gap-3 text-left'>
+    {TIME_CATEGORIES.map((category) => (
+      <div key={category}>
+        <div className='mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-[#e8e4dc]'>
+          <CategoryIcon category={category} className='block size-4' />
+          {CATEGORY_NAMES[category]}
+          {ratings && (
+            <span className='font-normal text-[#a29e96] tabular-nums'>
+              {ratings[category]}
+            </span>
+          )}
+        </div>
+        <div className='grid grid-cols-3 gap-2'>
+          {TIME_CONTROLS.filter((control) => control.category === category).map(
+            (control) => (
+              <button
+                key={control.id}
+                type='button'
+                aria-pressed={control.id === value}
+                onClick={() => onChange(control.id)}
+                className={cn(
+                  'cursor-pointer rounded-lg border-2 bg-[#302d29] py-2 text-[15px] font-semibold text-[#e8e4dc] hover:bg-[#3a3733]',
+                  control.id === value
+                    ? 'border-[#8fd16a]'
+                    : 'border-transparent',
+                )}
+              >
+                {control.label}
+              </button>
+            ),
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// Asks for the time control before challenging someone; starts from the
+// lobby's and remembers the pick
+export const ChallengeDialog = ({
+  open,
+  onOpenChange,
+  name,
+  busy,
+  error,
+  onChallenge,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  name: string;
+  busy: boolean;
+  error: string | null;
+  onChallenge: (timeControl: string) => void;
+}) => {
+  const [timeControl, setTimeControl] = useTimeControlSetting();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className='max-w-[calc(100%-32px)] gap-4 rounded-2xl border-[#3a3733] bg-[#262421] p-5 font-sans text-[#e8e6e1] sm:max-w-md sm:rounded-2xl [&>button]:text-[#a29e96]'>
+        <DialogTitle className='text-lg font-bold text-white'>
+          Challenge {name}
+        </DialogTitle>
+        <DialogDescription className='sr-only'>
+          Pick a time control for the game.
+        </DialogDescription>
+        <TimeControlGrid value={timeControl} onChange={setTimeControl} />
+        {error && <p className='text-sm text-red-300'>{error}</p>}
+        <div className='flex'>
+          <button
+            type='button'
+            className={cn(goldButton, buttonMd, 'flex-1')}
+            disabled={busy}
+            onClick={() => onChallenge(timeControl)}
+          >
+            Challenge · {timeControlOf(timeControl)?.label}
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

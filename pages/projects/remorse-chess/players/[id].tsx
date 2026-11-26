@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
@@ -28,10 +29,9 @@ import {
 } from '@/components/remorse-chess/buttons';
 import { colorName, resultText } from '@/lib/remorse/describe';
 import {
+  ChallengeDialog,
   TimeControlTag,
-  useTimeControlSetting,
 } from '@/components/remorse-chess/TimeControls';
-import { timeControlOf } from '@/lib/remorse/timeControls';
 import { gamePath } from '@/lib/remorse/paths';
 import { cn } from '@/lib/utils';
 import { requireLogin } from '@/services/auth';
@@ -133,7 +133,7 @@ const Actions = ({ player }: { player: PlayerPage }) => {
   const router = useRouter();
   const follow = useFollow(player.id);
   const challenge = useCreateGame();
-  const [timeControl] = useTimeControlSetting();
+  const [picking, setPicking] = useState(false);
   if (player.you) {
     return (
       <Link
@@ -152,14 +152,9 @@ const Actions = ({ player }: { player: PlayerPage }) => {
             type='button'
             className={cn(goldButton, buttonSm)}
             disabled={challenge.isPending}
-            onClick={() =>
-              challenge.mutate(
-                { challenge: player.id, timeControl },
-                { onSuccess: ({ id }) => router.push(gamePath(id)) },
-              )
-            }
+            onClick={() => setPicking(true)}
           >
-            Challenge · {timeControlOf(timeControl)?.label}
+            Challenge
           </button>
         )}
         <button
@@ -171,6 +166,19 @@ const Actions = ({ player }: { player: PlayerPage }) => {
           {player.following ? '✓ Following' : '+ Follow'}
         </button>
       </div>
+      <ChallengeDialog
+        open={picking}
+        onOpenChange={setPicking}
+        name={player.name}
+        busy={challenge.isPending}
+        error={challenge.error?.message ?? null}
+        onChallenge={(timeControl) =>
+          challenge.mutate(
+            { challenge: player.id, timeControl },
+            { onSuccess: ({ id }) => router.push(gamePath(id)) },
+          )
+        }
+      />
       {(challenge.error ?? follow.error) && (
         <p className='text-sm text-red-300'>
           {(challenge.error ?? follow.error)?.message}

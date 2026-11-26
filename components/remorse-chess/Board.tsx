@@ -102,7 +102,7 @@ export const Board = ({
         (!guide || piece.square === guide.from);
 
   // The queued move goes the moment it's your turn, if it's still legal;
-  // otherwise it's dropped. A pawn reaching the last rank becomes a queen.
+  // otherwise it's dropped
   useEffect(() => {
     if (!premove) return;
     if (state.winner) {
@@ -127,23 +127,19 @@ export const Board = ({
     to: string;
   } | null>(null);
   const requestMove = (from: string, to: string) => {
-    if (premoving) {
-      if (!premoveTargets(state, from).includes(to)) return;
-      const piece = bySquare.get(from);
-      const lastRank = piece?.color === 'w' ? '8' : '1';
-      setPremove({
-        from,
-        to,
-        promotion: piece?.type === 'p' && to[1] === lastRank ? 'q' : undefined,
-      });
+    if (
+      premoving
+        ? !premoveTargets(state, from).includes(to)
+        : !legalMoves(state, from).includes(to)
+    )
       return;
-    }
-    if (!legalMoves(state, from).includes(to)) return;
     if (guide && (from !== guide.from || to !== guide.to)) return;
     const piece = bySquare.get(from);
     const lastRank = piece?.color === 'w' ? '8' : '1';
     if (piece?.type === 'p' && to[1] === lastRank) {
       setPromotion({ from, to });
+    } else if (premoving) {
+      setPremove({ from, to });
     } else {
       onMove(from, to);
     }
@@ -452,13 +448,17 @@ export const Board = ({
       <div ref={fxRef} className='pointer-events-none absolute inset-0 z-20' />
       {promotion && (
         <PromotionPicker
-          color={state.turn}
+          color={bySquare.get(promotion.from)?.color ?? state.turn}
           pieceSet={pieceSet}
           light={boardTheme(theme).light}
           column={squares.indexOf(promotion.to) % 8}
           fromTop={squares.indexOf(promotion.to) < 8}
           onPick={(type) => {
-            onMove(promotion.from, promotion.to, type);
+            if (premoving) {
+              setPremove({ ...promotion, promotion: type });
+            } else {
+              onMove(promotion.from, promotion.to, type);
+            }
             setPromotion(null);
           }}
           onCancel={() => setPromotion(null)}

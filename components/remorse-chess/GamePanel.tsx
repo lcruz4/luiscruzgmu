@@ -172,11 +172,14 @@ export const GamePanel = ({
   const seatOpen = online && (!game.whiteEmail || !game.blackEmail);
   const revealing = hiddenFrom !== null;
   const yourTurn = game.you.includes(state.turn) && !state.winner;
-  const canResign =
-    !revealing &&
+  const started =
     !state.winner &&
     game.you.length > 0 &&
     Boolean(game.whiteEmail && game.blackEmail);
+  // Before your first move you can call the game off instead
+  const canAbort =
+    started && !game.steps.some((step) => game.you.includes(step.color));
+  const canResign = !revealing && started && !canAbort;
   const steps = revealing ? game.steps.slice(0, hiddenFrom) : game.steps;
   const psychopath = revealing
     ? undefined
@@ -545,6 +548,17 @@ export const GamePanel = ({
         >
           ? Rules
         </button>
+        {canAbort && (
+          <button
+            type='button'
+            className={ghost}
+            disabled={cancelPending}
+            onClick={onCancel}
+            title='Call the game off before your first move. It won’t count.'
+          >
+            ✕ Abort
+          </button>
+        )}
         {canResign && !confirmResign && (
           <button
             type='button'

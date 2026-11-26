@@ -499,8 +499,8 @@ export const createGame = async (
     return { id: rows[0].id, color, inviteToken };
   });
 
-// Both seats just filled: a daily game's first move is due from now. A live
-// game's clocks wait for each side's first move.
+// Both seats just filled: white's clock starts now. A player who hasn't
+// moved yet can abort instead of losing on time.
 const startClock = async (client: PoolClient, id: number) => {
   const { rows } = await client.query<{ time_control: string | null }>(
     `SELECT time_control
@@ -509,13 +509,15 @@ const startClock = async (client: PoolClient, id: number) => {
     [id],
   );
   const control = timeControlOf(rows[0]?.time_control ?? null);
-  if (control?.category !== 'daily') return;
+  if (!control) return;
   const now = new Date();
+  const allowed =
+    control.category === 'daily' ? control.perMoveMs : control.initialMs;
   await client.query(
     `UPDATE games
      SET turn_started_at = $2, deadline = $3
      WHERE id = $1`,
-    [id, now, new Date(now.getTime() + control.perMoveMs)],
+    [id, now, new Date(now.getTime() + allowed)],
   );
 };
 
@@ -842,14 +844,12 @@ const clockOf = (game: GameRow, now: Date): GameClock | null => {
 
 // A game's clocks after `mover` acted. Daily: each move is due a set time
 // after the last. Live: the mover pays for the time they took and gets the
-// increment once the turn passes; the clocks only run once each side has made
-// its first move (`bothMoved`).
+// increment once the turn passes.
 const clockAfter = (
   game: GameRow,
   control: TimeControl | null,
   mover: Color,
   next: GameState,
-  bothMoved: boolean,
   now: Date,
 ) => {
   const stopped = {
@@ -881,7 +881,7 @@ const clockAfter = (
     turn_started_at: null,
     deadline: null,
   };
-  if (next.winner || !bothMoved) return columns;
+  if (next.winner) return columns;
   return {
     ...columns,
     turn_started_at: now,
@@ -1091,19 +1091,11 @@ export const playAction = async (
       throw error;
     }
 
-    const moved = await client.query<{ color: Color }>(
-      `SELECT DISTINCT color
-       FROM game_steps
-       WHERE game_id = $1`,
-      [id],
-    );
-    const bothMoved = moved.rows.some((row) => row.color !== color);
     const clock = clockAfter(
       game,
       timeControlOf(game.time_control),
       color,
       result.state,
-      bothMoved,
       now,
     );
     const step = ((await lastStep(client, id))?.step ?? 0) + 1;
@@ -1230,25 +1222,46 @@ export const resignGame = async (id: number, email: string, version: number) =>
     await endGame(client, game, color, email, 'resign');
   });
 
-// Only while an online game waits for its opponent. The game is deleted, so
-// its invite link stops working. The challenged player cancels to decline.
+// Deletes an online game still waiting for its opponent (its invite link
+// stops working; the challenged player cancels to decline), or aborts a
+// started game before you've moved: no result, no rating. abortedFor: the
+// opponent to tell about an abort.
 export const cancelGame = async (id: number, email: string) =>
   withTransaction(async (client) => {
     const game = await lockGame(client, id);
-    if (!seatsOf(game, email).length && game.challenged_email !== email) {
+    const seats = seatsOf(game, email);
+    if (!seats.length && game.challenged_email !== email) {
       throw new HttpError(403, "You're not playing this game");
     }
-    if (game.mode !== 'online' || (game.white_email && game.black_email)) {
-      throw new HttpError(
-        400,
-        'Only a game still waiting for an opponent can be canceled',
+    const waiting =
+      game.mode === 'online' && (!game.white_email || !game.black_email);
+    if (!waiting) {
+      if (game.state.winner) {
+        throw new HttpError(400, 'The game is already over');
+      }
+      const moved = await client.query(
+        `SELECT 1
+         FROM game_steps
+         WHERE game_id = $1 AND color = ANY($2)
+         LIMIT 1`,
+        [id, seats],
       );
+      if (moved.rowCount) {
+        throw new HttpError(400, 'You can only abort before your first move');
+      }
     }
     await client.query(
       `DELETE FROM games
        WHERE id = $1`,
       [id],
     );
+    const abortedFor =
+      waiting || game.mode === 'local'
+        ? null
+        : seats[0] === 'w'
+        ? game.black_email
+        : game.white_email;
+    return { abortedFor };
   });
 
 // Takes the open seat: the challenged player accepting, or anyone with the
