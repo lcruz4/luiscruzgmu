@@ -280,9 +280,14 @@ export const playSteps = (
     string,
     { hidden: Animation | null; ghost: HTMLElement | null }
   >();
+  // Without the die, a rolled piece's new marker shows from the start
+  const rolled = new Set(
+    events.flatMap((e) => (e.type === 'roll' ? [e.piece.id] : [])),
+  );
   for (const piece of next.pieces) {
     const before = prevById.get(piece.id);
     if (!before || markerKey(before) === markerKey(piece)) continue;
+    if (!dice && rolled.has(piece.id)) continue;
     const el = pieceEl(piece.id);
     const real = markerOf(el);
     let ghost: HTMLElement | null = null;
@@ -563,8 +568,8 @@ export const playSteps = (
     const square = visual.get(piece.id);
     const el = pieceEl(piece.id);
     const img = imgOf(el);
-    if (!square || !el || !img) return;
-    if (dice) await rollDie(square, value);
+    if (!dice || !square || !el || !img) return;
+    await rollDie(square, value);
     if (trauma === 'devastated') {
       ring(square, '#5fb2ff', 0.4, 2.6, 800, 3);
       reveal(
