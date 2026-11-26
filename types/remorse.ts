@@ -217,6 +217,10 @@ export interface GameResponse {
   balanced: boolean;
   // each side's first-capture odds, once both seats are taken
   balance: Record<Color, Record<Trauma, number>> | null;
+  // the creator set the odds by hand
+  balanceCustom: boolean;
+  // the viewer created this balanced game and nobody has moved yet
+  canSetOdds: boolean;
   // shown once the game is over, while the viewer hasn't answered it
   balanceSuggestion: BalanceSuggestion | null;
 }

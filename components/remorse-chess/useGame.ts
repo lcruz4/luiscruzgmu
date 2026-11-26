@@ -9,6 +9,7 @@ import type { PlayerIcon } from '@/lib/remorse/icons';
 import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
+import type { TraumaPercents } from '@/lib/remorse/balance';
 import type {
   Color,
   GameResponse,
@@ -286,7 +287,8 @@ export type GameCommand =
   | { type: 'selfHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'resign' }
-  | { type: 'join'; inviteToken?: string };
+  | { type: 'join'; inviteToken?: string }
+  | { type: 'setOdds'; odds: Record<Color, TraumaPercents> };
 
 const fetchGame = (id: number, current: GameResponse | undefined) =>
   request(

@@ -1,6 +1,15 @@
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import {
+  balancedOdds,
+  FAIR_ODDS,
+  adjustPercents,
+  roundPercents,
+  toPercents,
+  traumaOdds,
+  type TraumaPercents,
+} from '@/lib/remorse/balance';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -17,6 +26,7 @@ import type {
 import { buttonSm, ghostButton, goldButton } from './buttons';
 import { ScalesIcon } from './ModeIcons';
 import { useAnswerBalanceSuggestion, useCreateGame } from './useGame';
+import { VialRack } from './VialRack';
 
 export const BalancedTag = ({ className }: { className?: string }) => (
   <span
@@ -69,8 +79,21 @@ const ODDS: [Trauma, string][] = [
 
 const percent = (chance: number) => `${Math.round(chance * 100)}%`;
 
-// Each side's first-capture odds in a balanced game
-export const BalanceOdds = ({ game }: { game: GameResponse }) => {
+// Each side's first-capture odds in a balanced game. Its creator can set
+// them by hand until the first move; the dialog opens on its own until they
+// have.
+export const BalanceOdds = ({
+  game,
+  busy,
+  onSetOdds,
+}: {
+  game: GameResponse;
+  busy: boolean;
+  onSetOdds: (odds: Record<Color, TraumaPercents>) => void;
+}) => {
+  const [editing, setEditing] = useState(
+    game.canSetOdds && !game.balanceCustom,
+  );
   if (!game.balanced) return null;
   const side = (color: Color) =>
     (color === 'w' ? game.whiteName : game.blackName) ??
@@ -82,7 +105,9 @@ export const BalanceOdds = ({ game }: { game: GameResponse }) => {
         <div className='leading-tight'>
           <h2 className='font-semibold text-white'>Balanced game</h2>
           <span className='text-[13px] text-[#a29e96]'>
-            Unrated. The die leans toward the lower-rated player.
+            {game.balanceCustom
+              ? 'Unrated. The odds were set by hand.'
+              : 'Unrated. The die leans toward the lower-rated player.'}
           </span>
         </div>
       </div>
@@ -114,7 +139,145 @@ export const BalanceOdds = ({ game }: { game: GameResponse }) => {
           </tbody>
         </table>
       )}
+      {game.canSetOdds && (
+        <button
+          type='button'
+          className={cn(goldButton, buttonSm, 'mt-3 w-full')}
+          disabled={busy}
+          onClick={() => setEditing(true)}
+        >
+          {game.balanceCustom ? 'Change the odds' : 'Set the odds'}
+        </button>
+      )}
+      {editing && game.canSetOdds && (
+        <OddsDialog
+          game={game}
+          side={side}
+          onClose={() => setEditing(false)}
+          onSave={(odds) => {
+            onSetOdds(odds);
+            setEditing(false);
+          }}
+        />
+      )}
     </section>
+  );
+};
+
+// The rating formula's odds; a fair die while a seat is empty
+const formulaPercents = (game: GameResponse): Record<Color, TraumaPercents> => {
+  const { whiteRating, blackRating } = game;
+  if (whiteRating === null || blackRating === null) {
+    const fair = toPercents(traumaOdds(FAIR_ODDS));
+    return { w: fair, b: fair };
+  }
+  return {
+    w: toPercents(traumaOdds(balancedOdds(whiteRating, blackRating))),
+    b: toPercents(traumaOdds(balancedOdds(blackRating, whiteRating))),
+  };
+};
+
+const OddsDialog = ({
+  game,
+  side,
+  onClose,
+  onSave,
+}: {
+  game: GameResponse;
+  side: (color: Color) => string;
+  onClose: () => void;
+  onSave: (odds: Record<Color, TraumaPercents>) => void;
+}) => {
+  const [draft, setDraft] = useState<Record<Color, TraumaPercents>>(() =>
+    game.balance
+      ? { w: toPercents(game.balance.w), b: toPercents(game.balance.b) }
+      : formulaPercents(game),
+  );
+  const [locked, setLocked] = useState<Record<Color, Trauma[]>>({
+    w: [],
+    b: [],
+  });
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className='max-h-[calc(100dvh-24px)] max-w-[calc(100%-24px)] gap-3 overflow-y-auto rounded-2xl border-[#3a3733] bg-[#262421] p-4 font-sans text-[#e8e6e1] sm:max-w-[680px] sm:rounded-2xl sm:p-5 [&>button]:text-[#a29e96]'>
+        <div className='flex items-center gap-3'>
+          <ScalesIcon className='block size-12 flex-none' />
+          <div>
+            <DialogTitle className='text-lg font-bold text-white'>
+              Set the odds
+            </DialogTitle>
+            <DialogDescription className='text-[13px] text-[#a29e96]'>
+              What each side&rsquo;s piece suffers after its first capture.
+              Raise or lower a vial and the unlocked ones make room. Fixed once
+              the first move is played.
+            </DialogDescription>
+          </div>
+        </div>
+        <div className='grid gap-3 sm:grid-cols-2'>
+          {(['w', 'b'] as const).map((color) => (
+            <div key={color} className='flex flex-col gap-1.5'>
+              <h3 className='flex items-center gap-2 text-sm font-semibold text-white'>
+                <span
+                  className={cn(
+                    'size-3 rounded-full border-2 border-[#120d0b]',
+                    color === 'w' ? 'bg-[#f7f3ea]' : 'bg-[#2a2622]',
+                  )}
+                />
+                <span className='truncate'>{side(color)}</span>
+              </h3>
+              <VialRack
+                percents={draft[color]}
+                locked={locked[color]}
+                onAdjust={(trauma, to) =>
+                  setDraft((current) => ({
+                    ...current,
+                    [color]: adjustPercents(
+                      current[color],
+                      locked[color],
+                      trauma,
+                      to(current[color][trauma]),
+                    ),
+                  }))
+                }
+                onToggleLock={(trauma) =>
+                  setLocked((current) => ({
+                    ...current,
+                    [color]: current[color].includes(trauma)
+                      ? current[color].filter((t) => t !== trauma)
+                      : [...current[color], trauma],
+                  }))
+                }
+              />
+            </div>
+          ))}
+        </div>
+        <div className='flex flex-wrap justify-end gap-2'>
+          <button
+            type='button'
+            className={cn(ghostButton, buttonSm, 'mr-auto')}
+            onClick={() => setDraft(formulaPercents(game))}
+          >
+            Reset to rating odds
+          </button>
+          <button
+            type='button'
+            className={cn(ghostButton, buttonSm)}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            type='button'
+            className={cn(goldButton, buttonSm)}
+            onClick={() =>
+              onSave({ w: roundPercents(draft.w), b: roundPercents(draft.b) })
+            }
+          >
+            Save odds
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
