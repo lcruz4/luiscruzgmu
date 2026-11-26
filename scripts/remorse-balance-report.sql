@@ -3,7 +3,7 @@
 --   psql "<remorse prod url>" -f scripts/remorse-balance-report.sql
 -- and paste the output back. The favorite is the higher-rated side when the
 -- game's odds were fixed (its first roll); a game with no capture has no
--- odds and is left out.
+-- odds and is left out, and so is one whose creator set the odds by hand.
 
 \echo '== Results: the favorite should score near 0.5 in balanced games =='
 WITH finished AS (
@@ -15,6 +15,7 @@ WITH finished AS (
   FROM games g
   WHERE g.balanced
     AND g.balance IS NOT NULL
+    AND g.balance->'custom' IS NULL
     AND g.state->>'winner' IS NOT NULL
 ),
 sided AS (
@@ -106,6 +107,7 @@ ORDER BY 1, 2;
 \echo '== Each balanced game =='
 SELECT g.id,
        (g.balance->>'version')::int AS version,
+       g.balance->'custom' IS NOT NULL AS custom_odds,
        round((g.balance->'w'->>'rating')::numeric) AS white_rating,
        round((g.balance->'b'->>'rating')::numeric) AS black_rating,
        COALESCE(g.state->>'winner', 'in progress') AS winner,

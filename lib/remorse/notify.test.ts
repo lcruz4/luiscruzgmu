@@ -64,6 +64,8 @@ const game = (
     challenge: null,
     balanced: false,
     balance: null,
+    balanceCustom: false,
+    canSetOdds: false,
     balanceSuggestion: null,
   };
 };

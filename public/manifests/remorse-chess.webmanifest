@@ -1,7 +1,7 @@
 {
   "id": "/projects/remorse-chess",
   "name": "Remorse Chess",
-  "short_name": "Remorse",
+  "short_name": "Remorse Chess",
   "start_url": "/projects/remorse-chess",
   "scope": "/projects/remorse-chess",
   "display": "fullscreen",

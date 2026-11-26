@@ -392,28 +392,26 @@ const GameRow = ({
                 >
                   Rematch
                 </button>
-                {game.mode === 'online' && (
-                  <button
-                    type='button'
-                    className={cn(small, 'inline-flex items-center gap-1')}
-                    disabled={rematchBusy}
-                    title={
-                      game.balanced
-                        ? 'Rematch as a standard, rated game'
-                        : 'Rematch as a balanced, unrated game'
-                    }
-                    onClick={() => onRematch(game.id, !game.balanced)}
-                  >
-                    {game.balanced ? (
-                      'Standard'
-                    ) : (
-                      <>
-                        <ScalesIcon className='-my-1 block size-5' />
-                        Balanced
-                      </>
-                    )}
-                  </button>
-                )}
+                <button
+                  type='button'
+                  className={cn(small, 'inline-flex items-center gap-1')}
+                  disabled={rematchBusy}
+                  title={
+                    game.balanced
+                      ? 'Rematch with a normal die'
+                      : 'Rematch as a balanced, unrated game'
+                  }
+                  onClick={() => onRematch(game.id, !game.balanced)}
+                >
+                  {game.balanced ? (
+                    'Standard'
+                  ) : (
+                    <>
+                      <ScalesIcon className='-my-1 block size-5' />
+                      Balanced
+                    </>
+                  )}
+                </button>
               </>
             ))}
           {game.winner && (
@@ -704,7 +702,7 @@ const LobbyPage = ({ email }: { email: string }) => {
     create.mutate({ challenge: playerId, balanced }, { onSuccess: open });
   const start = (mode: 'online' | 'local' | 'random') =>
     create.mutate(
-      { mode, balanced: mode === 'online' && balanced },
+      { mode, balanced: mode !== 'random' && balanced },
       { onSuccess: open },
     );
   const rematch = (id: number, rematchBalanced?: boolean) =>
@@ -832,6 +830,7 @@ const LobbyPage = ({ email }: { email: string }) => {
               icon={<BoardIcon />}
               title='Pass and play'
               text='Both sides on one device. Good for a table and a friend.'
+              tag={balancedTag}
             >
               <button
                 type='button'
@@ -846,16 +845,16 @@ const LobbyPage = ({ email }: { email: string }) => {
           <div className='mt-3 flex items-center gap-3 rounded-xl px-1 py-1'>
             <ScalesIcon className='block size-9 flex-none' />
             <div className='min-w-0 flex-1 leading-tight'>
-              <span className='text-[#e8e4dc]'>Balance the dice by rating</span>
+              <span className='text-[#e8e4dc]'>Balance the dice</span>
               <span className='block text-[13px] text-[#a29e96]'>
-                For challenges and invite links. Unrated: the higher-rated
-                player rolls worse trauma odds.
+                For challenges, invite links and pass and play. Unrated: you set
+                each side&rsquo;s trauma odds before the first move.
               </span>
             </div>
             <Toggle
               checked={balanced}
               onChange={setBalanced}
-              label='Balance the dice by rating'
+              label='Balance the dice'
             />
           </div>
           <Link

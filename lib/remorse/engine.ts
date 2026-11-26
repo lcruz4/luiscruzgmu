@@ -10,6 +10,7 @@ import type {
   Trauma,
 } from '@/types/remorse';
 import {
+  bishopHealTargets,
   enPassantVictim,
   hasLegalAction,
   inCheck,
@@ -22,7 +23,14 @@ import {
   RULES,
 } from './moves';
 
-export { isAdjacent, legalMoves, inCheck, opponent, RULES } from './moves';
+export {
+  bishopHealTargets,
+  isAdjacent,
+  legalMoves,
+  inCheck,
+  opponent,
+  RULES,
+} from './moves';
 
 export class RuleError extends Error {}
 
@@ -343,13 +351,14 @@ const mateAfterMove = (state: GameState) => {
   return inCheck(state, enemy) && !hasLegalAction(state, enemy);
 };
 
-// A bishop spends its turn healing itself
-const selfHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
+// A bishop spends its turn healing itself and the hurt pieces next to it
+const bishopHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
   const piece = state.pieces.find((p) => p.id === pieceId);
   if (!piece || piece.color !== state.turn || piece.type !== 'b') {
-    throw new RuleError('Only your own bishop can heal itself');
+    throw new RuleError('Only your own bishop can heal');
   }
-  if (!canBeHealed(piece)) {
+  const targets = bishopHealTargets(state, piece);
+  if (targets.length === 0) {
     throw new RuleError('That bishop has nothing to heal');
   }
   if (state.extraMovePieceId) {
@@ -358,7 +367,7 @@ const selfHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
   if (inCheck(state, piece.color)) {
     throw new RuleError("You can't heal while in check");
   }
-  heal(piece, piece, events);
+  for (const target of targets) heal(target, piece, events);
   state.enPassant = null;
   endTurn(state, events);
 };
@@ -384,8 +393,8 @@ export const applyAction = (
   const events: GameEvent[] = [];
   if (action.type === 'move') {
     move(next, action, rollDie, events);
-  } else if (action.type === 'selfHeal') {
-    selfHeal(next, action.pieceId, events);
+  } else if (action.type === 'bishopHeal') {
+    bishopHeal(next, action.pieceId, events);
   } else {
     skipExtraMove(next, events);
   }

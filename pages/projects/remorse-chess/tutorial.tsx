@@ -167,10 +167,13 @@ const Tutorial = ({ onRestart }: { onRestart: () => void }) => {
                 setGame(played(game.state, game.steps, 'w', action, beat.roll));
                 setIndex(index + 1);
               }}
-              onSelfHeal={(piece) => {
+              onBishopHeal={(piece) => {
                 if (beat?.kind !== 'you' || !('heal' in beat)) return;
                 if (piece.square !== beat.heal) return;
-                const action: Action = { type: 'selfHeal', pieceId: piece.id };
+                const action: Action = {
+                  type: 'bishopHeal',
+                  pieceId: piece.id,
+                };
                 setGame(played(game.state, game.steps, 'w', action));
                 setIndex(index + 1);
               }}

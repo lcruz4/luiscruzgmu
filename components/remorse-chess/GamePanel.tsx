@@ -243,7 +243,7 @@ export const GamePanel = ({
               >
                 {game.rematchId ? 'Go to rematch' : 'Rematch, colors swapped'}
               </button>
-              {online && !game.rematchId && (
+              {!game.rematchId && (
                 <button
                   type='button'
                   className={ghost}
@@ -449,7 +449,11 @@ export const GamePanel = ({
 
       {error && <p className='text-sm text-red-300'>{error}</p>}
 
-      <BalanceOdds game={game} />
+      <BalanceOdds
+        game={game}
+        busy={busy}
+        onSetOdds={(odds) => onCommand({ type: 'setOdds', odds })}
+      />
 
       {seatOpen && game.you.length > 0 && confirmCancel && (
         <StatusCard

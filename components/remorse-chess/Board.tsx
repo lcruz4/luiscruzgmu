@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { canBeHealed, inCheck, legalMoves } from '@/lib/remorse/engine';
+import { bishopHealTargets, inCheck, legalMoves } from '@/lib/remorse/engine';
 import { cn } from '@/lib/utils';
 import type {
   GameState,
@@ -16,6 +16,7 @@ import type {
 import { playSteps } from './animate';
 import { Marker } from './Marker';
 import { traumaLabel } from './markerSvg';
+import { RuleIcon } from './RuleIcon';
 import { boardSrc, boardTheme } from '@/lib/remorse/boardThemes';
 import { type PieceSetId, pieceSrc } from '@/lib/remorse/pieceSets';
 import { useBoardLook } from './useBoardLook';
@@ -46,10 +47,11 @@ interface BoardProps {
   canMove: boolean;
   lastMove: { from: string; to: string } | null;
   onMove: (from: string, to: string, promotion?: PromotionType) => void;
-  // a friendly bishop's own marker: it can spend the turn healing itself
-  onSelfHeal: (piece: Piece) => void;
+  // a friendly bishop's heal button: it spends the turn healing
+  // itself and the hurt pieces next to it
+  onBishopHeal: (piece: Piece) => void;
   // tutorial: the only move allowed, highlighted on the board. Without `to`,
-  // the bishop on `from` must heal itself.
+  // the bishop on `from` must heal.
   guide?: { from: string; to?: string } | null;
 }
 
@@ -61,7 +63,7 @@ export const Board = ({
   canMove,
   lastMove,
   onMove,
-  onSelfHeal,
+  onBishopHeal,
   guide,
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
@@ -219,12 +221,11 @@ export const Board = ({
       <div className='absolute inset-0 grid grid-cols-8 grid-rows-8'>
         {squares.map((square, index) => {
           const piece = bySquare.get(square);
-          const selfHeal =
+          const canHeal =
             (!guide || (guide.from === square && !guide.to)) &&
-            piece &&
+            !!piece &&
             isMine(piece) &&
-            piece.type === 'b' &&
-            canBeHealed(piece);
+            bishopHealTargets(state, piece).length > 0;
           const rankLabel = index % 8 === 0;
           const fileLabel = index >= 56;
           return (
@@ -330,34 +331,17 @@ export const Board = ({
                     }
                   />
                   {piece.trauma && (
-                    <button
+                    <span
                       data-marker
-                      type='button'
-                      title={`${traumaLabel({
-                        ...piece,
-                        trauma: piece.trauma,
-                      })}${
-                        selfHeal
-                          ? '. Click to heal itself (uses your turn)'
-                          : ''
-                      }`}
+                      role='img'
+                      title={traumaLabel({ ...piece, trauma: piece.trauma })}
                       aria-label={traumaLabel({
                         ...piece,
                         trauma: piece.trauma,
                       })}
-                      disabled={!selfHeal}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onSelfHeal(piece);
-                      }}
                       className={cn(
-                        'absolute -right-[10%] -top-[10%] z-10 h-[52%] w-[52%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
-                        selfHeal
-                          ? 'cursor-pointer rounded-full ring-2 ring-emerald-300 ring-offset-0 animate-pulse'
-                          : 'pointer-events-none',
-                        !selfHeal &&
-                          piece.trauma === 'devastated' &&
+                        'pointer-events-none absolute -right-[10%] -top-[10%] z-10 h-[52%] w-[52%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
+                        piece.trauma === 'devastated' &&
                           !piece.healed &&
                           piece.turnsLeft === 1 &&
                           'motion-safe:animate-[remorse-throb_1.2s_ease-in-out_infinite]',
@@ -370,6 +354,26 @@ export const Board = ({
                         turnsLeft={piece.turnsLeft}
                         kills={piece.kills}
                       />
+                    </span>
+                  )}
+                  {canHeal && (
+                    <button
+                      data-heal
+                      type='button'
+                      title='Click to heal this bishop and the hurt pieces next to it (uses your turn)'
+                      aria-label='Heal this bishop and the hurt pieces next to it'
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onBishopHeal(piece);
+                      }}
+                      className={cn(
+                        'absolute -left-[10%] -top-[10%] z-10 flex h-[52%] w-[52%] animate-pulse cursor-pointer items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
+                      )}
+                    >
+                      {/* a marker's medallion is 45 of its 68-unit box,
+                          leaving room for the ring and drips */}
+                      <RuleIcon rule='heal' className='block size-[66%]' />
                     </button>
                   )}
                 </div>

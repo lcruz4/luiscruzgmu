@@ -9,6 +9,7 @@ import type { PlayerIcon } from '@/lib/remorse/icons';
 import type { BoardThemeId } from '@/lib/remorse/boardThemes';
 import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
+import type { TraumaPercents } from '@/lib/remorse/balance';
 import type {
   Color,
   GameResponse,
@@ -33,10 +34,10 @@ const request = async <T>(
     headers: { 'Content-Type': 'application/json' },
   });
   if (response.status === 204 && current !== undefined) return current;
+  // A body cut short (e.g. iOS suspending the tab) must throw, not become {}
+  if (response.ok) return response.json();
   const body = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(body.error ?? `Request failed (${response.status})`);
-  return body;
+  throw new Error(body.error ?? `Request failed (${response.status})`);
 };
 
 export const GAMES_KEY = ['remorse-chess', 'games'];
@@ -283,10 +284,11 @@ export const useCancelGame = () => {
 
 export type GameCommand =
   | MoveAction
-  | { type: 'selfHeal'; pieceId: string }
+  | { type: 'bishopHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'resign' }
-  | { type: 'join'; inviteToken?: string };
+  | { type: 'join'; inviteToken?: string }
+  | { type: 'setOdds'; odds: Record<Color, TraumaPercents> };
 
 const fetchGame = (id: number, current: GameResponse | undefined) =>
   request(

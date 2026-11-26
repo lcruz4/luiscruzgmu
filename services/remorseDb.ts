@@ -32,10 +32,12 @@ import {
   BALANCE_VERSION,
   balancedOdds,
   type DieOdds,
+  facesFromPercents,
   rollWithOdds,
   SUGGEST_MIN_GAMES,
   SUGGEST_WIN_RATE,
   traumaOdds,
+  type TraumaPercents,
 } from '@/lib/remorse/balance';
 import { HttpError } from './api';
 
@@ -76,9 +78,11 @@ interface GameRow {
   balance: BalanceOdds | null;
 }
 
-// The odds a balanced game rolls with, fixed at its first roll
+// The odds a balanced game rolls with, fixed at its first move; custom: set
+// by hand by its creator
 interface BalanceOdds {
   version: number;
+  custom?: boolean;
   w: { rating: number; odds: DieOdds };
   b: { rating: number; odds: DieOdds };
 }
@@ -447,15 +451,7 @@ export const createGame = async (
     `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state, invite_token, balanced)
      VALUES ($1, $2, $3, $4, $5, $5, $6, $7)
      RETURNING id`,
-    [
-      mode,
-      email,
-      white,
-      black,
-      JSON.stringify(state),
-      inviteToken,
-      mode === 'online' && balanced,
-    ],
+    [mode, email, white, black, JSON.stringify(state), inviteToken, balanced],
   );
   return { id: rows[0].id, color, inviteToken };
 };
@@ -549,7 +545,7 @@ export const createRematch = async (
         game.white_email,
         state,
         id,
-        game.mode === 'online' && (balanced ?? game.balanced),
+        balanced ?? game.balanced,
       ],
     );
     return { id: rows[0].id, color };
@@ -670,10 +666,15 @@ export const getGame = async (
     [id],
   );
   const you = seatsOf(game, email);
+  // A challenge's empty seat can only go to the challenged player
+  const seatRating = (seat: string | null, rating: number | null) =>
+    rating ?? (seat === null ? game.challenged_rating : null);
+  const whiteRating = seatRating(game.white_email, game.white_rating);
+  const blackRating = seatRating(game.black_email, game.black_rating);
   const balance =
     game.balance ??
-    (game.balanced && game.white_rating !== null && game.black_rating !== null
-      ? balanceFor(game.white_rating, game.black_rating)
+    (game.balanced && whiteRating !== null && blackRating !== null
+      ? balanceFor(whiteRating, blackRating)
       : null);
   return {
     id: game.id,
@@ -711,9 +712,61 @@ export const getGame = async (
       w: traumaOdds(balance.w.odds),
       b: traumaOdds(balance.b.odds),
     },
+    balanceCustom: game.balance?.custom === true,
+    canSetOdds:
+      game.balanced && game.created_by === email && !steps.rows.length,
     balanceSuggestion: await balanceSuggestion(game, you),
   };
 };
+
+// A balanced game's creator sets both sides' odds by hand, until the first move
+export const setBalanceOdds = async (
+  id: number,
+  email: string,
+  version: number,
+  percents: Record<Color, TraumaPercents>,
+) =>
+  withTransaction(async (client) => {
+    const game = await lockGame(client, id);
+    assertVersion(game, version);
+    if (game.created_by !== email) {
+      throw new HttpError(403, 'Only whoever started the game sets the odds');
+    }
+    if (!game.balanced) {
+      throw new HttpError(400, 'Only balanced games have odds to set');
+    }
+    if (await lastStep(client, id)) {
+      throw new HttpError(400, 'The odds are fixed once the game starts');
+    }
+    const { rows } = await client.query<{ email: string; rating: number }>(
+      `SELECT email, rating
+       FROM players
+       WHERE email = ANY($1)`,
+      [[game.white_email, game.black_email, game.challenged_email]],
+    );
+    // A challenge's empty seat can only go to the challenged player
+    const ratingOf = (seat: string | null) =>
+      rows.find((row) => row.email === (seat ?? game.challenged_email))
+        ?.rating ?? INITIAL_RATING;
+    const balance: BalanceOdds = {
+      version: BALANCE_VERSION,
+      custom: true,
+      w: {
+        rating: ratingOf(game.white_email),
+        odds: facesFromPercents(percents.w),
+      },
+      b: {
+        rating: ratingOf(game.black_email),
+        odds: facesFromPercents(percents.b),
+      },
+    };
+    await client.query(
+      `UPDATE games
+       SET balance = $2, version = version + 1
+       WHERE id = $1`,
+      [id, JSON.stringify(balance)],
+    );
+  });
 
 // The odds a balanced game rolls with: its players' ratings as of the first
 // move that needs them

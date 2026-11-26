@@ -15,7 +15,9 @@ import {
   playAction,
   resignGame,
   setArchived,
+  setBalanceOdds,
 } from '@/services/remorseDb';
+import { isValidPercents } from '@/lib/remorse/balance';
 import { logger } from '@/services/logger';
 import { notifyOpponent } from '@/services/remorsePush';
 import { publishGameChange } from '@/services/remorseLive';
@@ -35,9 +37,11 @@ const promotionField = (value: unknown) => {
 };
 
 // Body: { type, version, ... }
-//   move: { from, to, promotion? } · selfHeal: { pieceId } · skipExtraMove · resign
+//   move: { from, to, promotion? } · bishopHeal: { pieceId } · skipExtraMove · resign
 //   join: { inviteToken } from the invite link, or nothing to accept a challenge
 //   archive / unarchive: hide the game from your lobby or bring it back
+//   setOdds: { odds: { w, b } }, each { devastated, guilt, unaffected,
+//     psychopath } in whole percents adding up to 100
 const postAction = async (req: NextApiRequest, email: string) => {
   const id = idField(req.query.id, 'id');
   const body = bodyOf(req);
@@ -50,12 +54,12 @@ const postAction = async (req: NextApiRequest, email: string) => {
       to: squareField(body.to, 'to'),
       promotion: promotionField(body.promotion),
     });
-  } else if (body.type === 'selfHeal') {
+  } else if (body.type === 'bishopHeal') {
     if (typeof body.pieceId !== 'string') {
       throw new HttpError(400, 'pieceId must be text');
     }
     await playAction(id, email, version(), {
-      type: 'selfHeal',
+      type: 'bishopHeal',
       pieceId: body.pieceId,
     });
   } else if (body.type === 'skipExtraMove') {
@@ -70,13 +74,32 @@ const postAction = async (req: NextApiRequest, email: string) => {
       throw new HttpError(400, 'inviteToken must be text');
     }
     await joinGame(id, email, body.inviteToken);
+  } else if (body.type === 'setOdds') {
+    const odds: unknown = body.odds;
+    const side = (color: 'w' | 'b') => {
+      const percents =
+        typeof odds === 'object' && odds !== null
+          ? Reflect.get(odds, color)
+          : undefined;
+      if (!isValidPercents(percents)) {
+        throw new HttpError(
+          400,
+          `odds.${color} must be whole percents adding up to 100`,
+        );
+      }
+      return percents;
+    };
+    await setBalanceOdds(id, email, version(), { w: side('w'), b: side('b') });
+    const game = await getGame(id, email);
+    publishGameChange(id, game.version);
+    return game;
   } else if (body.type === 'archive' || body.type === 'unarchive') {
     await setArchived(id, email, body.type === 'archive');
     return getGame(id, email);
   } else {
     throw new HttpError(
       400,
-      "type must be 'move', 'selfHeal', 'skipExtraMove', 'resign', 'join', 'archive' or 'unarchive'",
+      "type must be 'move', 'bishopHeal', 'skipExtraMove', 'resign', 'join', 'setOdds', 'archive' or 'unarchive'",
     );
   }
   const game = await getGame(id, email);

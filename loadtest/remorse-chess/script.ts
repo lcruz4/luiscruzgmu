@@ -196,7 +196,7 @@ const parse = <T>(res: Response): T | null => {
 
 type Command =
   | { type: 'move'; from: string; to: string; promotion?: PromotionType }
-  | { type: 'selfHeal'; pieceId: string }
+  | { type: 'bishopHeal'; pieceId: string }
   | { type: 'skipExtraMove' };
 
 const pick = <T>(items: T[]) => items[Math.floor(Math.random() * items.length)];
@@ -225,7 +225,7 @@ const chooseAction = (state: GameState): Command | null => {
     ? []
     : own.filter((piece) => piece.type === 'b' && isHurt(piece));
   if (heals.length && (!choices.length || Math.random() < 0.2)) {
-    return { type: 'selfHeal', pieceId: pick(heals).id };
+    return { type: 'bishopHeal', pieceId: pick(heals).id };
   }
   if (!choices.length) return null;
   const { piece, to } = pick(choices);

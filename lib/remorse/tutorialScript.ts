@@ -52,7 +52,7 @@ export interface ScriptMove {
 }
 
 // note: text to read, then Continue. you: the one move the player may make,
-// or `heal`: the square of the bishop that must heal itself. them: Black's
+// or `heal`: the square of the bishop that must heal. them: Black's
 // reply, played on its own.
 export type Beat =
   | { kind: 'note'; title: string; text: string }
@@ -111,7 +111,7 @@ export const TUTORIAL: Beat[] = [
   {
     kind: 'you',
     heal: 'h6',
-    text: 'A hurt bishop can heal itself, but it uses your turn. Tap the marker on your bishop.',
+    text: 'A bishop can heal itself and the hurt pieces next to it, but it uses your turn. Tap the heal button on your bishop.',
   },
   { kind: 'them', from: 'a5', to: 'a4' },
   {
