@@ -201,7 +201,7 @@ const PresetButton = ({
     </button>
     <span
       role='tooltip'
-      className='pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-56 rounded-lg border border-[#514d47] bg-[#1b1917] px-3 py-2 text-left text-xs leading-snug text-[#e8e4dc] shadow-lg group-focus-within:block group-hover:block'
+      className='pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-56 rounded-lg border border-[#514d47] bg-[#1b1917] px-3 py-2 text-left text-xs leading-snug text-[#e8e4dc] shadow-lg group-hover:block group-has-[:focus-visible]:block'
     >
       {description}
     </span>
