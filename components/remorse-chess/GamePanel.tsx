@@ -243,7 +243,7 @@ export const GamePanel = ({
               >
                 {game.rematchId ? 'Go to rematch' : 'Rematch, colors swapped'}
               </button>
-              {online && !game.rematchId && (
+              {!game.rematchId && (
                 <button
                   type='button'
                   className={ghost}

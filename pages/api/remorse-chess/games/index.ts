@@ -58,9 +58,9 @@ const balancedField = (value: unknown) => {
 };
 
 // Body: { mode: 'online' | 'local' | 'random' }, { rematchOf: <finished game id> }
-// or { challenge: <player id> }. `balanced: true` makes an online or
+// or { challenge: <player id> }. `balanced: true` makes an online, local or
 // challenge game balanced; a rematch is balanced like its game unless
-// `balanced` says otherwise. Random and local games never are.
+// `balanced` says otherwise. Random games never are.
 // Online, the creator's seat is random (swapped for a rematch) and returned
 // as `color`, with the invite link's `inviteToken`.
 const postGame = async (req: NextApiRequest, email: string) => {

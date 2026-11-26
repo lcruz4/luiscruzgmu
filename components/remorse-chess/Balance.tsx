@@ -77,8 +77,12 @@ const percent = (chance: number) => `${Math.round(chance * 100)}%`;
 
 // A side's player. A challenge's empty seat can only go to the challenged
 // player, so it's theirs already.
+// Locally one player plays both sides, so they go by color.
 const seatOf = (game: GameResponse, color: Color) => {
   const white = color === 'w';
+  if (game.mode === 'local') {
+    return { name: white ? 'White' : 'Black', rating: null };
+  }
   const email = white ? game.whiteEmail : game.blackEmail;
   if (email === null && game.challenge) {
     return { name: game.challenge.name, rating: game.challenge.rating };
@@ -115,6 +119,8 @@ export const BalanceOdds = ({
           <span className='text-[13px] text-[#a29e96]'>
             {game.balanceCustom
               ? 'Unrated. The odds were set by hand.'
+              : game.mode === 'local'
+              ? 'Unrated. A fair die until the odds are set.'
               : 'Unrated. The die leans toward the lower-rated player.'}
           </span>
         </div>

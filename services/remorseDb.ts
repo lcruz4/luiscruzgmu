@@ -451,15 +451,7 @@ export const createGame = async (
     `INSERT INTO games (mode, created_by, white_email, black_email, initial_state, state, invite_token, balanced)
      VALUES ($1, $2, $3, $4, $5, $5, $6, $7)
      RETURNING id`,
-    [
-      mode,
-      email,
-      white,
-      black,
-      JSON.stringify(state),
-      inviteToken,
-      mode === 'online' && balanced,
-    ],
+    [mode, email, white, black, JSON.stringify(state), inviteToken, balanced],
   );
   return { id: rows[0].id, color, inviteToken };
 };
@@ -553,7 +545,7 @@ export const createRematch = async (
         game.white_email,
         state,
         id,
-        game.mode === 'online' && (balanced ?? game.balanced),
+        balanced ?? game.balanced,
       ],
     );
     return { id: rows[0].id, color };
@@ -722,10 +714,7 @@ export const getGame = async (
     },
     balanceCustom: game.balance?.custom === true,
     canSetOdds:
-      game.balanced &&
-      game.mode === 'online' &&
-      game.created_by === email &&
-      !steps.rows.length,
+      game.balanced && game.created_by === email && !steps.rows.length,
     balanceSuggestion: await balanceSuggestion(game, you),
   };
 };
@@ -743,7 +732,7 @@ export const setBalanceOdds = async (
     if (game.created_by !== email) {
       throw new HttpError(403, 'Only whoever started the game sets the odds');
     }
-    if (!game.balanced || game.mode !== 'online') {
+    if (!game.balanced) {
       throw new HttpError(400, 'Only balanced games have odds to set');
     }
     if (await lastStep(client, id)) {
