@@ -37,7 +37,7 @@ const promotionField = (value: unknown) => {
 };
 
 // Body: { type, version, ... }
-//   move: { from, to, promotion? } · selfHeal: { pieceId } · skipExtraMove · resign
+//   move: { from, to, promotion? } · bishopHeal: { pieceId } · skipExtraMove · resign
 //   join: { inviteToken } from the invite link, or nothing to accept a challenge
 //   archive / unarchive: hide the game from your lobby or bring it back
 //   setOdds: { odds: { w, b } }, each { devastated, guilt, unaffected,
@@ -54,12 +54,12 @@ const postAction = async (req: NextApiRequest, email: string) => {
       to: squareField(body.to, 'to'),
       promotion: promotionField(body.promotion),
     });
-  } else if (body.type === 'selfHeal') {
+  } else if (body.type === 'bishopHeal') {
     if (typeof body.pieceId !== 'string') {
       throw new HttpError(400, 'pieceId must be text');
     }
     await playAction(id, email, version(), {
-      type: 'selfHeal',
+      type: 'bishopHeal',
       pieceId: body.pieceId,
     });
   } else if (body.type === 'skipExtraMove') {
@@ -99,7 +99,7 @@ const postAction = async (req: NextApiRequest, email: string) => {
   } else {
     throw new HttpError(
       400,
-      "type must be 'move', 'selfHeal', 'skipExtraMove', 'resign', 'join', 'setOdds', 'archive' or 'unarchive'",
+      "type must be 'move', 'bishopHeal', 'skipExtraMove', 'resign', 'join', 'setOdds', 'archive' or 'unarchive'",
     );
   }
   const game = await getGame(id, email);

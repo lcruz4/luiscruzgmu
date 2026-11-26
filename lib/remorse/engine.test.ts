@@ -344,7 +344,7 @@ describe('healing', () => {
     const state = game([piece('wb-c', 'c1', { trauma: 'guilt' })]);
     const next = applyAction(
       state,
-      { type: 'selfHeal', pieceId: 'wb-c' },
+      { type: 'bishopHeal', pieceId: 'wb-c' },
       noRoll,
     ).state;
     expect(find(next, 'wb-c')?.healed).toBe(true);
@@ -365,7 +365,7 @@ describe('healing', () => {
     ]);
     const { state: next, events } = applyAction(
       state,
-      { type: 'selfHeal', pieceId: 'wb-c' },
+      { type: 'bishopHeal', pieceId: 'wb-c' },
       noRoll,
     );
     expect(events.filter((e) => e.type === 'heal')).toHaveLength(2);
@@ -384,7 +384,7 @@ describe('healing', () => {
     ]);
     const { state: next, events } = applyAction(
       state,
-      { type: 'selfHeal', pieceId: 'wb-c' },
+      { type: 'bishopHeal', pieceId: 'wb-c' },
       noRoll,
     );
     expect(events.filter((e) => e.type === 'heal')).toMatchObject([
@@ -402,7 +402,7 @@ describe('healing', () => {
     ]);
     for (const pieceId of ['wb-c', 'wn-b', 'bb-c']) {
       expect(() =>
-        applyAction(state, { type: 'selfHeal', pieceId }, noRoll),
+        applyAction(state, { type: 'bishopHeal', pieceId }, noRoll),
       ).toThrow();
     }
   });
@@ -526,7 +526,7 @@ describe('checkmate', () => {
       piece('br-e', 'e5'),
     ]);
     expect(() =>
-      applyAction(state, { type: 'selfHeal', pieceId: 'wb-c' }, noRoll),
+      applyAction(state, { type: 'bishopHeal', pieceId: 'wb-c' }, noRoll),
     ).toThrow('check');
   });
 });

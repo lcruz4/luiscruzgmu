@@ -54,7 +54,7 @@ interface BoardProps {
   onMove: (from: string, to: string, promotion?: PromotionType) => void;
   // a friendly bishop's marker or heal button: it spends the turn healing
   // itself and the hurt pieces next to it
-  onSelfHeal: (piece: Piece) => void;
+  onBishopHeal: (piece: Piece) => void;
   // tutorial: the only move allowed, highlighted on the board. Without `to`,
   // the bishop on `from` must heal.
   guide?: { from: string; to?: string } | null;
@@ -68,7 +68,7 @@ export const Board = ({
   canMove,
   lastMove,
   onMove,
-  onSelfHeal,
+  onBishopHeal,
   guide,
 }: BoardProps) => {
   const [selected, setSelected] = useState<string | null>(null);
@@ -233,8 +233,8 @@ export const Board = ({
             bishopHealTargets(state, piece).length > 0;
           // A hurt bishop heals from its own marker; one that isn't gets a
           // heal button of its own
-          const selfHeal = canHeal && !!piece && canBeHealed(piece);
-          const healButton = canHeal && !selfHeal;
+          const markerHeal = canHeal && !!piece && canBeHealed(piece);
+          const healButton = canHeal && !markerHeal;
           const rankLabel = index % 8 === 0;
           const fileLabel = index >= 56;
           return (
@@ -347,7 +347,7 @@ export const Board = ({
                         ...piece,
                         trauma: piece.trauma,
                       })}${
-                        selfHeal
+                        markerHeal
                           ? '. Click to heal itself and hurt pieces next to it (uses your turn)'
                           : ''
                       }`}
@@ -355,18 +355,18 @@ export const Board = ({
                         ...piece,
                         trauma: piece.trauma,
                       })}
-                      disabled={!selfHeal}
+                      disabled={!markerHeal}
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => {
                         event.stopPropagation();
-                        onSelfHeal(piece);
+                        onBishopHeal(piece);
                       }}
                       className={cn(
                         'absolute -right-[10%] -top-[10%] z-10 h-[52%] w-[52%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
-                        selfHeal
+                        markerHeal
                           ? 'cursor-pointer rounded-full ring-2 ring-emerald-300 ring-offset-0 animate-pulse'
                           : 'pointer-events-none',
-                        !selfHeal &&
+                        !markerHeal &&
                           piece.trauma === 'devastated' &&
                           !piece.healed &&
                           piece.turnsLeft === 1 &&
@@ -391,7 +391,7 @@ export const Board = ({
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => {
                         event.stopPropagation();
-                        onSelfHeal(piece);
+                        onBishopHeal(piece);
                       }}
                       className={cn(
                         'absolute -top-[10%] z-10 h-[52%] w-[52%] animate-pulse cursor-pointer rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',

@@ -43,7 +43,7 @@ export interface MoveAction {
 
 export type Action =
   | MoveAction
-  | { type: 'selfHeal'; pieceId: string }
+  | { type: 'bishopHeal'; pieceId: string }
   | { type: 'skipExtraMove' };
 
 export interface PieceRef {

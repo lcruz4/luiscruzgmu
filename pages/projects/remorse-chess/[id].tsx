@@ -156,8 +156,8 @@ const GamePage = () => {
                 onMove={(from, to, promotion) =>
                   mutation.mutate({ type: 'move', from, to, promotion })
                 }
-                onSelfHeal={(piece) =>
-                  mutation.mutate({ type: 'selfHeal', pieceId: piece.id })
+                onBishopHeal={(piece) =>
+                  mutation.mutate({ type: 'bishopHeal', pieceId: piece.id })
                 }
               />
             </div>

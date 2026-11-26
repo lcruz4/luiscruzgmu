@@ -15,7 +15,7 @@ describe('tutorial script', () => {
       if ('heal' in beat) {
         const bishop = state.pieces.find((p) => p.square === beat.heal);
         if (!bishop) throw new Error(`No piece on ${beat.heal}`);
-        action = { type: 'selfHeal', pieceId: bishop.id };
+        action = { type: 'bishopHeal', pieceId: bishop.id };
       } else {
         expect(legalMoves(state, beat.from)).toContain(beat.to);
         action = { type: 'move', from: beat.from, to: beat.to };

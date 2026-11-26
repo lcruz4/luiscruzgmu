@@ -352,7 +352,7 @@ const mateAfterMove = (state: GameState) => {
 };
 
 // A bishop spends its turn healing itself and the hurt pieces next to it
-const selfHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
+const bishopHeal = (state: GameState, pieceId: string, events: GameEvent[]) => {
   const piece = state.pieces.find((p) => p.id === pieceId);
   if (!piece || piece.color !== state.turn || piece.type !== 'b') {
     throw new RuleError('Only your own bishop can heal');
@@ -393,8 +393,8 @@ export const applyAction = (
   const events: GameEvent[] = [];
   if (action.type === 'move') {
     move(next, action, rollDie, events);
-  } else if (action.type === 'selfHeal') {
-    selfHeal(next, action.pieceId, events);
+  } else if (action.type === 'bishopHeal') {
+    bishopHeal(next, action.pieceId, events);
   } else {
     skipExtraMove(next, events);
   }

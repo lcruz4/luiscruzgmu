@@ -284,7 +284,7 @@ export const useCancelGame = () => {
 
 export type GameCommand =
   | MoveAction
-  | { type: 'selfHeal'; pieceId: string }
+  | { type: 'bishopHeal'; pieceId: string }
   | { type: 'skipExtraMove' }
   | { type: 'resign' }
   | { type: 'join'; inviteToken?: string }
