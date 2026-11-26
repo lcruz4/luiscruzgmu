@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   CATEGORY_NAMES,
   DEFAULT_TIME_CONTROL,
@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { buttonMd, goldButton } from './buttons';
 
@@ -127,8 +128,14 @@ export const useTimeControlSetting = () => {
   return [timeControl, set] as const;
 };
 
-// Every time control in one row of chips: scrolls sideways on phones, wraps
-// on wider screens. Shows your rating for the picked control's category.
+// The chips the lobby always shows; the rest are a tap on … away
+const FEATURED = ['2+1', '5+0', '10+0', '3d'];
+
+const chip =
+  'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border-2 bg-[#262421] px-2 py-1.5 text-[15px] font-semibold whitespace-nowrap text-[#e8e4dc] hover:bg-[#302d29]';
+
+// A few time controls as chips, plus … for every other one. Shows your
+// rating for the picked control's category.
 export const TimeControlChips = ({
   value,
   onChange,
@@ -138,16 +145,13 @@ export const TimeControlChips = ({
   onChange: (id: string) => void;
   ratings: Record<TimeCategory, number> | undefined;
 }) => {
-  const rowRef = useRef<HTMLDivElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const current = timeControlOf(value);
-
-  // A remembered pick may sit past the edge of the row
-  useEffect(() => {
-    const row = rowRef.current;
-    const chip = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (!row || !chip) return;
-    row.scrollLeft = chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2;
-  }, [value]);
+  const featured = TIME_CONTROLS.filter((control) =>
+    FEATURED.includes(control.id),
+  );
+  // A pick from … shows on the … chip itself
+  const other = current && !FEATURED.includes(current.id) ? current : null;
 
   return (
     <div className='mb-3.5'>
@@ -168,28 +172,61 @@ export const TimeControlChips = ({
           </span>
         )}
       </div>
-      <div
-        ref={rowRef}
-        className='relative -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0'
-      >
-        {TIME_CONTROLS.map((control) => (
+      <div className='flex gap-1.5'>
+        {featured.map((control) => (
           <button
             key={control.id}
             type='button'
             aria-pressed={control.id === value}
             onClick={() => onChange(control.id)}
             className={cn(
-              'flex flex-none cursor-pointer items-center gap-1.5 rounded-lg border-2 bg-[#262421] px-3 py-1.5 text-[15px] font-semibold whitespace-nowrap text-[#e8e4dc] hover:bg-[#302d29]',
+              chip,
               control.id === value ? 'border-[#8fd16a]' : 'border-transparent',
             )}
           >
             <CategoryIcon
               category={control.category}
-              className='block size-4'
+              className='block size-4 max-[400px]:hidden'
             />
             {control.label}
           </button>
         ))}
+        <Dialog open={moreOpen} onOpenChange={setMoreOpen}>
+          <DialogTrigger asChild>
+            <button
+              type='button'
+              aria-label={
+                other
+                  ? `${other.label}, more time controls`
+                  : 'More time controls'
+              }
+              title='More time controls'
+              className={cn(
+                chip,
+                'flex-none px-3',
+                other ? 'border-[#8fd16a]' : 'border-transparent',
+              )}
+            >
+              {other?.label}…
+            </button>
+          </DialogTrigger>
+          <DialogContent className='max-w-[calc(100%-32px)] gap-4 rounded-2xl border-[#3a3733] bg-[#262421] p-5 font-sans text-[#e8e6e1] sm:max-w-md sm:rounded-2xl [&>button]:text-[#a29e96]'>
+            <DialogTitle className='text-lg font-bold text-white'>
+              Time control
+            </DialogTitle>
+            <DialogDescription className='sr-only'>
+              Pick a time control for new games.
+            </DialogDescription>
+            <TimeControlGrid
+              value={value}
+              ratings={ratings}
+              onChange={(id) => {
+                onChange(id);
+                setMoreOpen(false);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

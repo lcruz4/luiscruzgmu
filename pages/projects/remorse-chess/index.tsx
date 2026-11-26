@@ -22,6 +22,7 @@ import {
   stretchedLink,
 } from '@/components/remorse-chess/PlayerLink';
 import { MiniBoard } from '@/components/remorse-chess/MiniBoard';
+import { Hint } from '@/components/remorse-chess/Hint';
 import { PlayerAvatar } from '@/components/remorse-chess/PlayerAvatar';
 import { RecordCard } from '@/components/remorse-chess/RecordCard';
 import { Rating } from '@/components/remorse-chess/Rating';
@@ -438,7 +439,8 @@ const GameRow = ({
   );
 };
 
-// A balance switch in the card's corner, for the modes that can be balanced
+// Title and actions only; what the mode does shows on hover. A balance
+// switch sits in the corner for the modes that can be balanced.
 const ModeCard = ({
   icon,
   title,
@@ -452,26 +454,32 @@ const ModeCard = ({
   balance?: { checked: boolean; onChange: (checked: boolean) => void };
   children: ReactNode;
 }) => (
-  <div className='flex flex-col gap-3 rounded-xl bg-[#262421] p-4'>
-    <div className='flex items-start gap-3'>
-      {icon}
-      <div className='min-w-0 flex-1'>
-        <h3 className='flex items-start gap-x-2 font-semibold text-white'>
-          <span className='flex-1'>{title}</span>
-          {balance && (
-            <label className='flex flex-none cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#a29e96]'>
-              <ScalesIcon className='block size-5' />
-              <span className='max-[340px]:sr-only'>Balanced</span>
-              <Toggle
-                checked={balance.checked}
-                onChange={balance.onChange}
-                label={`Balance the dice: ${title}`}
-              />
-            </label>
-          )}
-        </h3>
-        <p className={muted}>{text}</p>
-      </div>
+  <div className='flex flex-col gap-3 rounded-xl bg-[#262421] p-3.5'>
+    <div className='flex items-center gap-2'>
+      <Hint
+        text={text}
+        className='flex min-w-0 flex-1 cursor-help items-center gap-2.5 [&_svg]:size-9'
+      >
+        {icon}
+        <h3 className='font-semibold text-white'>{title}</h3>
+      </Hint>
+      {balance && (
+        <div className='flex flex-none items-center gap-1.5 text-xs font-semibold text-[#a29e96]'>
+          <Hint
+            text='Balanced games are unrated: you set each side’s trauma odds before the first move.'
+            align='right'
+            className='flex cursor-help items-center gap-1.5'
+          >
+            <ScalesIcon className='block size-5' />
+            <span className='max-[400px]:sr-only'>Balanced</span>
+          </Hint>
+          <Toggle
+            checked={balance.checked}
+            onChange={balance.onChange}
+            label={`Balance the dice: ${title}`}
+          />
+        </div>
+      )}
     </div>
     <div className='mt-auto flex'>{children}</div>
   </div>
@@ -889,10 +897,6 @@ const LobbyPage = ({ email }: { email: string }) => {
               </button>
             </ModeCard>
           </div>
-          <p className={cn(muted, 'mt-3')}>
-            Balanced games are unrated: you set each side&rsquo;s trauma odds
-            before the first move.
-          </p>
           <Link
             href='/projects/remorse-chess/tutorial'
             className='mt-3 inline-block text-[15px] font-semibold text-[#ffd27a] hover:underline'
