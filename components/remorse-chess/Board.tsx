@@ -186,7 +186,12 @@ export const Board = ({
   // Pointer-based drag so it works with touch as well as a mouse. A press
   // that barely moves stays a tap and falls through to handleClick.
   const boardRef = useRef<HTMLDivElement>(null);
-  const press = useRef<{ from: string; x: number; y: number } | null>(null);
+  const press = useRef<{
+    from: string;
+    x: number;
+    y: number;
+    heal: boolean;
+  } | null>(null);
   const justDragged = useRef(false);
   const [drag, setDrag] = useState<{
     from: string;
@@ -262,7 +267,14 @@ export const Board = ({
   const handlePointerDown = (event: PointerEvent, square: string) => {
     if (!isMine(bySquare.get(square))) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    press.current = { from: square, x: event.clientX, y: event.clientY };
+    press.current = {
+      from: square,
+      x: event.clientX,
+      y: event.clientY,
+      heal:
+        event.target instanceof Element &&
+        !!event.target.closest('[data-heal]'),
+    };
   };
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -276,11 +288,21 @@ export const Board = ({
   const handlePointerUp = (event: PointerEvent) => {
     const start = press.current;
     press.current = null;
-    if (!start || !drag) return;
+    if (!start) return;
+    const to = drag ? squareAt(event.clientX, event.clientY) : start.from;
+    // A press on the heal button heals, unless the bishop is dragged away
+    const piece = bySquare.get(start.from);
+    if (start.heal && to === start.from && piece) {
+      setDrag(null);
+      setSelected(null);
+      justDragged.current = true;
+      onBishopHeal(piece);
+      return;
+    }
+    if (!drag) return;
     setDrag(null);
     setSelected(null);
     justDragged.current = true;
-    const to = squareAt(event.clientX, event.clientY);
     if (to && to !== start.from) requestMove(start.from, to);
   };
 
@@ -435,26 +457,25 @@ export const Board = ({
                       />
                     </span>
                   )}
-                  {/* Only tappable once the bishop is selected, so a tap or
-                      drag on the bishop's corner doesn't spend the turn */}
                   {canHeal && (
                     <button
                       data-heal
                       type='button'
-                      tabIndex={selected === square ? 0 : -1}
                       title='Click to heal this bishop and the hurt pieces next to it (uses your turn)'
                       aria-label='Heal this bishop and the hurt pieces next to it'
-                      onPointerDown={(event) => event.stopPropagation()}
+                      // Pointer presses go through the bishop's drag
+                      // handlers; this is for the keyboard
                       onClick={(event) => {
                         event.stopPropagation();
+                        if (justDragged.current) {
+                          justDragged.current = false;
+                          return;
+                        }
                         setSelected(null);
                         onBishopHeal(piece);
                       }}
                       className={cn(
-                        'absolute -left-[10%] -top-[10%] z-10 flex h-[52%] w-[52%] items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
-                        selected === square
-                          ? 'animate-pulse cursor-pointer'
-                          : 'pointer-events-none',
+                        'absolute -left-[10%] -top-[10%] z-10 flex h-[52%] w-[52%] animate-pulse cursor-pointer items-center justify-center rounded-full ring-2 ring-emerald-300 ring-offset-0 drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]',
                       )}
                     >
                       {/* a marker's medallion is 45 of its 68-unit box,
