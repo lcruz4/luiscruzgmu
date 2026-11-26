@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { colorName, describeEvent, resultText } from '@/lib/remorse/describe';
 import { TimeControlTag } from './TimeControls';
-import { inviteUrl } from '@/lib/remorse/paths';
+import { canShare, shareInvite, shareOrCopyInvite } from '@/lib/remorse/paths';
 import { pieceSrc } from '@/lib/remorse/pieceSets';
 import { cn } from '@/lib/utils';
 import type { GameEvent, GameResponse } from '@/types/remorse';
@@ -186,22 +186,10 @@ export const GamePanel = ({
     : state.pieces.find((p) => p.id === state.extraMovePieceId);
   const opponentName = game.you.includes('w') ? game.blackName : game.whiteName;
 
-  // The share sheet where there is one, else the clipboard
-  const shareInvite = async (token: string) => {
-    const url = inviteUrl(game.id, token);
-    if (typeof navigator.share === 'function') {
-      await navigator
-        .share({ title: 'Remorse Chess', text: 'Play me?', url })
-        .catch(() => {});
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
+  const share = async (token: string) => {
+    if (!(await shareOrCopyInvite(game.id, token))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   // A new invite game opens the share sheet once. Browsers refuse it
@@ -214,19 +202,13 @@ export const GamePanel = ({
   useEffect(() => {
     if (!inviteToken || autoShared.current) return;
     autoShared.current = true;
-    if (typeof navigator.share !== 'function') return;
+    if (!canShare()) return;
     const key = `remorse-invite-shared-${game.id}`;
     try {
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, '1');
     } catch {}
-    navigator
-      .share({
-        title: 'Remorse Chess',
-        text: 'Play me?',
-        url: inviteUrl(game.id, inviteToken),
-      })
-      .catch(() => {});
+    shareInvite(game.id, inviteToken);
   }, [inviteToken, game.id]);
 
   const status = () => {
@@ -358,7 +340,7 @@ export const GamePanel = ({
             <button
               type='button'
               className={primary}
-              onClick={() => shareInvite(token)}
+              onClick={() => share(token)}
             >
               {copied ? 'Link copied' : 'Share invite link'}
             </button>
