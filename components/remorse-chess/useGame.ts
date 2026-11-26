@@ -34,10 +34,10 @@ const request = async <T>(
     headers: { 'Content-Type': 'application/json' },
   });
   if (response.status === 204 && current !== undefined) return current;
+  // A body cut short (e.g. iOS suspending the tab) must throw, not become {}
+  if (response.ok) return response.json();
   const body = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(body.error ?? `Request failed (${response.status})`);
-  return body;
+  throw new Error(body.error ?? `Request failed (${response.status})`);
 };
 
 export const GAMES_KEY = ['remorse-chess', 'games'];
