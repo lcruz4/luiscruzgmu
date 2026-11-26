@@ -280,7 +280,7 @@ const OddsDialog = ({
       ];
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='max-h-[calc(100dvh-24px)] max-w-[calc(100%-24px)] gap-3 overflow-y-auto rounded-2xl border-[#3a3733] bg-[#262421] p-4 font-sans text-[#e8e6e1] sm:max-w-[680px] sm:rounded-2xl sm:p-5 [&>button]:text-[#a29e96]'>
+      <DialogContent className='max-h-[calc(100dvh-24px)] max-w-[calc(100%-24px)] gap-3 overflow-y-auto rounded-2xl border-[#3a3733] bg-[#262421] p-4 font-sans text-[#e8e6e1] sm:max-w-[732px] sm:rounded-2xl sm:p-5 [&>button]:text-[#a29e96]'>
         <div className='flex items-center gap-3 pr-6'>
           <ScalesIcon className='block size-12 flex-none' />
           <div>
@@ -311,7 +311,7 @@ const OddsDialog = ({
         <div
           className={cn(
             'grid gap-3',
-            separate ? 'sm:grid-cols-2' : 'mx-auto w-full max-w-[340px]',
+            separate ? 'sm:grid-cols-2' : 'mx-auto w-full sm:w-[calc(50%-6px)]',
           )}
         >
           {racks.map(({ key, title }) => (
