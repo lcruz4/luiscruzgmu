@@ -163,7 +163,7 @@ const GamePage = () => {
                     ? game.you[0]
                     : null
                 }
-                dice={!(game.mode === 'online' && isLive(game.timeControl))}
+                dice={!isLive(game.timeControl)}
                 lastMove={lastMoveOf(game)}
                 onMove={(from, to, promotion) =>
                   mutation.mutate({ type: 'move', from, to, promotion })
