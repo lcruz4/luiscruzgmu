@@ -42,7 +42,7 @@ export const FATES: {
 
 export const HEAL_ITEMS = [
   'A bishop that moves next to guilt-ridden or devastated pieces of its own color heals them.',
-  'A hurt bishop can spend its turn healing itself.',
+  'A bishop can spend its turn healing itself and the hurt pieces next to it.',
   'A healed piece plays normally. If it captures again, its trauma comes back.',
 ];
 

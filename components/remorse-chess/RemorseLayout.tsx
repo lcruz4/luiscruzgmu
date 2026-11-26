@@ -73,7 +73,7 @@ export const RemorseLayout = ({
         rel='apple-touch-icon'
         href='/images/pwa/remorse-chess-apple-touch.png'
       />
-      <meta name='apple-mobile-web-app-title' content='Remorse' />
+      <meta name='apple-mobile-web-app-title' content='Remorse Chess' />
       <meta name='theme-color' content='#161512' />
       {/* Installed on iOS the page runs under the status bar, so the
           header pads itself clear of it */}

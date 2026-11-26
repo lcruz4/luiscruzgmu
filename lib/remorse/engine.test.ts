@@ -351,10 +351,53 @@ describe('healing', () => {
     expect(next.turn).toBe('b');
   });
 
-  it("won't self-heal a psychopath, an enemy, or a non-bishop", () => {
+  it('lets an unhurt bishop heal the hurt pieces next to it', () => {
+    const state = game([
+      piece('wb-c', 'c1'),
+      piece('wn-b', 'b1', { trauma: 'guilt' }),
+      piece('wp-d', 'd2', {
+        trauma: 'devastated',
+        turnsLeft: 2,
+        devastatedOnTurn: 0,
+      }),
+      piece('wp-a', 'a3', { trauma: 'guilt' }),
+      piece('bp-b', 'b2', { trauma: 'guilt' }),
+    ]);
+    const { state: next, events } = applyAction(
+      state,
+      { type: 'selfHeal', pieceId: 'wb-c' },
+      noRoll,
+    );
+    expect(events.filter((e) => e.type === 'heal')).toHaveLength(2);
+    expect(find(next, 'wn-b')?.healed).toBe(true);
+    expect(find(next, 'wp-d')?.healed).toBe(true);
+    expect(find(next, 'wp-a')?.healed).toBe(false);
+    expect(find(next, 'bp-b')?.healed).toBe(false);
+    expect(find(next, 'wb-c')?.healed).toBe(false);
+    expect(next.turn).toBe('b');
+  });
+
+  it('heals a hurt bishop and its neighbors together', () => {
+    const state = game([
+      piece('wb-c', 'c1', { trauma: 'guilt' }),
+      piece('wn-b', 'b1', { trauma: 'guilt' }),
+    ]);
+    const { state: next, events } = applyAction(
+      state,
+      { type: 'selfHeal', pieceId: 'wb-c' },
+      noRoll,
+    );
+    expect(events.filter((e) => e.type === 'heal')).toMatchObject([
+      { piece: { id: 'wb-c' }, healer: { id: 'wb-c' } },
+      { piece: { id: 'wn-b' }, healer: { id: 'wb-c' } },
+    ]);
+    expect(find(next, 'wn-b')?.healed).toBe(true);
+  });
+
+  it("won't heal with nothing to heal, an enemy, or a non-bishop", () => {
     const state = game([
       piece('wb-c', 'c1', { trauma: 'psychopath', kills: 1 }),
-      piece('wn-b', 'b1', { trauma: 'guilt' }),
+      piece('wn-b', 'a3', { trauma: 'guilt' }),
       piece('bb-c', 'c8', { trauma: 'guilt' }),
     ]);
     for (const pieceId of ['wb-c', 'wn-b', 'bb-c']) {

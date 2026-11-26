@@ -230,12 +230,25 @@ export const legalMoves = (state: GameState, from: string) => {
   );
 };
 
-// A move or, out of check, a bishop healing itself
+// What a bishop's heal would mend: itself if hurt, then hurt pieces of its
+// color next to it. Empty when it isn't a bishop or there's nothing to heal.
+export const bishopHealTargets = (state: GameState, bishop: Piece) => {
+  if (bishop.type !== 'b') return [];
+  const around = state.pieces.filter(
+    (piece) =>
+      piece.color === bishop.color &&
+      isHurt(piece) &&
+      isAdjacent(piece.square, bishop.square),
+  );
+  return isHurt(bishop) ? [bishop, ...around] : around;
+};
+
+// A move or, out of check, a bishop heal
 export const hasLegalAction = (state: GameState, color: Color) => {
   const own = state.pieces.filter((piece) => piece.color === color);
   return (
     own.some((piece) => legalMoves(state, piece.square).length > 0) ||
     (!inCheck(state, color) &&
-      own.some((piece) => piece.type === 'b' && isHurt(piece)))
+      own.some((piece) => bishopHealTargets(state, piece).length > 0))
   );
 };

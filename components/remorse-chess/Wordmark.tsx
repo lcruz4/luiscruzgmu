@@ -19,8 +19,8 @@ const Letters = ({ text }: { text: string }) => (
   </span>
 );
 
-// "Remorse" in fraktur with the hooded guilt medallion as the o. `hero` adds
-// the CHESS tag underneath.
+// "Remorse" in fraktur with the hooded guilt medallion as the o, and the
+// CHESS tag: underneath for `hero`, beside it for `header`
 export const Wordmark = ({
   size,
   className,
@@ -34,7 +34,8 @@ export const Wordmark = ({
       role='img'
       aria-label='Remorse Chess'
       className={cn(
-        'inline-flex -rotate-2 flex-col items-center',
+        'inline-flex -rotate-2 items-center',
+        size === 'hero' ? 'flex-col' : 'gap-1.5',
         // after the size: tailwind-merge drops a leading set before it
         size === 'hero' ? 'text-[clamp(60px,9vw,84px)]' : 'text-[27px]',
         'leading-none',
@@ -52,17 +53,18 @@ export const Wordmark = ({
         />
         <Letters text='rse' />
       </span>
-      {size === 'hero' && (
-        <span
-          aria-hidden
-          className={cn(
-            lilita.className,
-            'relative mt-0.5 rotate-[1.5deg] rounded-lg border-[3px] border-[#120d0b] bg-[#4b3322] py-0.5 pr-2.5 pl-[calc(10px+.3em)] text-lg tracking-[.3em] text-[#e6c48e] shadow-[0_3px_0_#120d0b]',
-          )}
-        >
-          CHESS
-        </span>
-      )}
+      <span
+        aria-hidden
+        className={cn(
+          lilita.className,
+          'relative rotate-[1.5deg] border-[#120d0b] bg-[#4b3322] tracking-[.3em] text-[#e6c48e]',
+          size === 'hero'
+            ? 'mt-0.5 rounded-lg border-[3px] py-0.5 pr-2.5 pl-[calc(10px+.3em)] text-lg shadow-[0_3px_0_#120d0b]'
+            : 'mt-[.2em] rounded-md border-2 py-px pr-1 pl-[calc(4px+.3em)] text-[11px] shadow-[0_2px_0_#120d0b]',
+        )}
+      >
+        CHESS
+      </span>
     </span>
   );
 };
