@@ -1,13 +1,17 @@
 import { cn } from '@/lib/utils';
 import type { PlayerStats, Trauma } from '@/types/remorse';
 import { Marker } from './Marker';
+import { FAIR_ODDS, TRAUMAS, traumaOdds } from '@/lib/remorse/balance';
+import { TRAUMA_STYLE } from '@/lib/remorse/traumaStyle';
 
-const FATES: { trauma: Trauma; name: string; odds: number; bar: string }[] = [
-  { trauma: 'devastated', name: 'Devastated', odds: 1 / 6, bar: '#2c63c9' },
-  { trauma: 'guilt', name: 'Guilt-ridden', odds: 2 / 6, bar: '#c98a1c' },
-  { trauma: 'unaffected', name: 'Unaffected', odds: 2 / 6, bar: '#64717e' },
-  { trauma: 'psychopath', name: 'Psychopath', odds: 1 / 6, bar: '#c62828' },
-];
+const FAIR = traumaOdds(FAIR_ODDS);
+
+const FATES = TRAUMAS.map((trauma) => ({
+  trauma,
+  name: TRAUMA_STYLE[trauma].name,
+  odds: FAIR[trauma],
+  bar: TRAUMA_STYLE[trauma].color,
+}));
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 

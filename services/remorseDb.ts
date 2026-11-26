@@ -674,10 +674,15 @@ export const getGame = async (
     [id],
   );
   const you = seatsOf(game, email);
+  // A challenge's empty seat can only go to the challenged player
+  const seatRating = (seat: string | null, rating: number | null) =>
+    rating ?? (seat === null ? game.challenged_rating : null);
+  const whiteRating = seatRating(game.white_email, game.white_rating);
+  const blackRating = seatRating(game.black_email, game.black_rating);
   const balance =
     game.balance ??
-    (game.balanced && game.white_rating !== null && game.black_rating !== null
-      ? balanceFor(game.white_rating, game.black_rating)
+    (game.balanced && whiteRating !== null && blackRating !== null
+      ? balanceFor(whiteRating, blackRating)
       : null);
   return {
     id: game.id,
@@ -748,10 +753,12 @@ export const setBalanceOdds = async (
       `SELECT email, rating
        FROM players
        WHERE email = ANY($1)`,
-      [[game.white_email, game.black_email]],
+      [[game.white_email, game.black_email, game.challenged_email]],
     );
+    // A challenge's empty seat can only go to the challenged player
     const ratingOf = (seat: string | null) =>
-      rows.find((row) => row.email === seat)?.rating ?? INITIAL_RATING;
+      rows.find((row) => row.email === (seat ?? game.challenged_email))
+        ?.rating ?? INITIAL_RATING;
     const balance: BalanceOdds = {
       version: BALANCE_VERSION,
       custom: true,

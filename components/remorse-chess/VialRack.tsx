@@ -5,6 +5,7 @@ import {
   TRAUMAS,
   type TraumaPercents,
 } from '@/lib/remorse/balance';
+import { TRAUMA_STYLE } from '@/lib/remorse/traumaStyle';
 import { cn } from '@/lib/utils';
 import type { Trauma } from '@/types/remorse';
 
@@ -12,31 +13,6 @@ import type { Trauma } from '@/types/remorse';
 // Drag a vial or use its chevrons; the unlocked vials make room.
 
 const OUT = '#120d0b';
-
-const VIALS: Record<
-  Trauma,
-  { name: string; base: string; dark: string; light: string }
-> = {
-  devastated: {
-    name: 'Devastated',
-    base: '#2c63c9',
-    dark: '#163773',
-    light: '#7da6ee',
-  },
-  guilt: { name: 'Guilt', base: '#c98a1c', dark: '#74490a', light: '#ffd27a' },
-  unaffected: {
-    name: 'Unaffected',
-    base: '#64717e',
-    dark: '#323a43',
-    light: '#a3aeb9',
-  },
-  psychopath: {
-    name: 'Psychopath',
-    base: '#c62828',
-    dark: '#6a0f0f',
-    light: '#ef7070',
-  },
-};
 
 const W = 300;
 const H = 262;
@@ -153,10 +129,10 @@ const Wood = ({ id }: { id: string }) => (
     </linearGradient>
     {TRAUMAS.map((trauma) => (
       <linearGradient key={trauma} id={`${id}${trauma}`} x1='0' x2='1'>
-        <stop offset='0' stopColor={VIALS[trauma].dark} />
-        <stop offset='0.42' stopColor={VIALS[trauma].base} />
-        <stop offset='0.62' stopColor={VIALS[trauma].light} />
-        <stop offset='1' stopColor={VIALS[trauma].dark} />
+        <stop offset='0' stopColor={TRAUMA_STYLE[trauma].dark} />
+        <stop offset='0.42' stopColor={TRAUMA_STYLE[trauma].color} />
+        <stop offset='0.62' stopColor={TRAUMA_STYLE[trauma].light} />
+        <stop offset='1' stopColor={TRAUMA_STYLE[trauma].dark} />
       </linearGradient>
     ))}
   </defs>
@@ -355,7 +331,7 @@ const Vial = ({
   percent: number;
   locked: boolean;
 }) => {
-  const vial = VIALS[trauma];
+  const vial = TRAUMA_STYLE[trauma];
   const level = levelOf(percent);
   const clip = `${id}clip${trauma}`;
   return (
@@ -552,24 +528,40 @@ export const VialRack = ({
               textAnchor='middle'
               fontSize='10'
               fontWeight='600'
-              fill={VIALS[trauma].light}
+              fill={TRAUMA_STYLE[trauma].light}
             >
-              {VIALS[trauma].name}
+              {TRAUMA_STYLE[trauma].label}
             </text>
           </g>
         ))}
-        {TRAUMAS.map((trauma, i) =>
-          locked.includes(trauma) || !unlockedOthers(trauma) ? null : (
-            <rect
-              key={trauma}
-              x={XS[i] - HALF - 4}
-              y={TOP - 16}
-              width={HALF * 2 + 8}
-              height={BOTTOM - TOP + 16}
-              fill='transparent'
-              className='cursor-ns-resize'
-              style={{ touchAction: 'none' }}
+      </svg>
+      {TRAUMAS.map((trauma, i) => {
+        const isLocked = locked.includes(trauma);
+        const movable = !isLocked && unlockedOthers(trauma);
+        const name = TRAUMA_STYLE[trauma].label;
+        return (
+          <div key={trauma}>
+            {/* touch-none here, on HTML, so a drag on a phone moves the vial
+                instead of scrolling the dialog */}
+            <div
+              role='slider'
+              tabIndex={movable ? 0 : -1}
+              aria-label={name}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={shown[trauma]}
+              aria-disabled={!movable}
+              style={{
+                ...at(XS[i] - HALF - 6, TOP - 16),
+                width: `${((HALF * 2 + 12) / W) * 100}%`,
+                height: `${((BOTTOM - TOP + 16) / H) * 100}%`,
+              }}
+              className={cn(
+                'absolute touch-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#ffd27a]',
+                movable && 'cursor-ns-resize',
+              )}
               onPointerDown={(event) => {
+                if (!movable) return;
                 event.currentTarget.setPointerCapture(event.pointerId);
                 dragTo(trauma, event);
               }}
@@ -578,16 +570,19 @@ export const VialRack = ({
                   dragTo(trauma, event);
                 }
               }}
+              onKeyDown={(event) => {
+                if (!movable) return;
+                const step =
+                  event.key === 'ArrowUp'
+                    ? 1
+                    : event.key === 'ArrowDown'
+                    ? -1
+                    : 0;
+                if (!step) return;
+                event.preventDefault();
+                onAdjust(trauma, (current) => current + step);
+              }}
             />
-          ),
-        )}
-      </svg>
-      {TRAUMAS.map((trauma, i) => {
-        const isLocked = locked.includes(trauma);
-        const movable = !isLocked && unlockedOthers(trauma);
-        const name = VIALS[trauma].name;
-        return (
-          <div key={trauma}>
             <button
               type='button'
               aria-pressed={isLocked}
