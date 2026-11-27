@@ -18,6 +18,8 @@ export const register = async () => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { startClockSweep } = await import('./services/remorseClock');
     startClockSweep();
+    const { startDeployWatch } = await import('./services/remorseDeploy');
+    startDeployWatch();
   }
 };
 

@@ -40,6 +40,7 @@ import {
   useAcceptChallenge,
   useArchive,
   useCancelGame,
+  inlineError,
   useCreateGame,
   useMutuals,
   useNewFollowers,
@@ -231,13 +232,11 @@ const AnswerChallenge = ({ id }: { id: number }) => {
   const router = useRouter();
   const accept = useAcceptChallenge();
   const decline = useCancelGame();
-  const error = accept.error ?? decline.error;
+  const error = inlineError(accept.error ?? decline.error);
   return (
     <>
       {error && (
-        <span className='self-center text-xs text-red-300'>
-          {error.message}
-        </span>
+        <span className='self-center text-xs text-red-300'>{error}</span>
       )}
       <button
         type='button'
@@ -933,8 +932,10 @@ const LobbyPage = ({ email }: { email: string }) => {
           >
             New to Remorse? Play the tutorial →
           </Link>
-          {create.isError && (
-            <p className='mt-3 text-sm text-red-300'>{create.error.message}</p>
+          {inlineError(create.error) && (
+            <p className='mt-3 text-sm text-red-300'>
+              {inlineError(create.error)}
+            </p>
           )}
         </section>
 

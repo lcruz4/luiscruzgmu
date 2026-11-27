@@ -16,8 +16,10 @@ import { publishGameChange } from '@/services/remorseLive';
 import { notifyChallenge, notifyOpponent } from '@/services/remorsePush';
 import {
   DEFAULT_TIME_CONTROL,
+  isLive,
   isTimeControl,
 } from '@/lib/remorse/timeControls';
+import { assertNotDeploying } from '@/services/deployStatus';
 import type { Color } from '@/types/remorse';
 
 // Seats the player against the next one looking, or leaves them waiting.
@@ -65,11 +67,15 @@ const balancedField = (value: unknown) => {
   throw new HttpError(400, 'balanced must be true or false');
 };
 
-// Older clients send no time control
-const timeControlField = (value: unknown) => {
-  if (value === undefined) return DEFAULT_TIME_CONTROL;
-  if (isTimeControl(value)) return value;
-  throw new HttpError(400, 'timeControl must be one of TIME_CONTROLS');
+// Older clients send no time control. No new live game during a deploy, not
+// even one left waiting for an opponent.
+const timeControlField = async (value: unknown) => {
+  const timeControl = value === undefined ? DEFAULT_TIME_CONTROL : value;
+  if (!isTimeControl(timeControl)) {
+    throw new HttpError(400, 'timeControl must be one of TIME_CONTROLS');
+  }
+  if (isLive(timeControl)) await assertNotDeploying();
+  return timeControl;
 };
 
 // Body: { mode: 'online' | 'local' | 'random' }, { rematchOf: <finished game id> }
@@ -90,10 +96,10 @@ const postGame = async (req: NextApiRequest, email: string) => {
       email,
       idField(body.challenge, 'challenge'),
       balanced ?? false,
-      timeControlField(body.timeControl),
+      await timeControlField(body.timeControl),
     );
   }
-  const timeControl = timeControlField(body.timeControl);
+  const timeControl = await timeControlField(body.timeControl);
   if (body.mode === 'random') return playRandom(email, timeControl);
   if (body.mode !== 'online' && body.mode !== 'local') {
     throw new HttpError(400, "mode must be 'online', 'local' or 'random'");

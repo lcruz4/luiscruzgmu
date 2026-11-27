@@ -11,6 +11,7 @@ import type { PieceSetId } from '@/lib/remorse/pieceSets';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
 import type { TraumaPercents } from '@/lib/remorse/balance';
 import type { TimeCategory } from '@/lib/remorse/timeControls';
+import { DEPLOYING_CODE } from '@/lib/remorse/deploy';
 import type {
   Color,
   GameResponse,
@@ -23,6 +24,23 @@ import type {
 } from '@/types/remorse';
 
 const API = '/api/remorse-chess/games';
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
+// A live game refused because a deploy is running
+export const isDeployingError = (error: unknown) =>
+  error instanceof ApiError && error.code === DEPLOYING_CODE;
+
+// An error's text for inline display; the deploy dialog explains a deploy
+export const inlineError = (error: Error | null) =>
+  error && !isDeployingError(error) ? error.message : null;
 
 // `current`: what to return on a 204, the server saying it's still current
 const request = async <T>(
@@ -38,7 +56,10 @@ const request = async <T>(
   // A body cut short (e.g. iOS suspending the tab) must throw, not become {}
   if (response.ok) return response.json();
   const body = await response.json().catch(() => ({}));
-  throw new Error(body.error ?? `Request failed (${response.status})`);
+  throw new ApiError(
+    body.error ?? `Request failed (${response.status})`,
+    body.code,
+  );
 };
 
 export const GAMES_KEY = ['remorse-chess', 'games'];
@@ -149,6 +170,34 @@ export const useCreateGame = () =>
         body: JSON.stringify(body),
       }),
   });
+
+export type DeployStatus = { deploying: boolean; notifying: boolean };
+
+export const DEPLOY_KEY = ['remorse-chess', 'deploy'];
+
+// Polled while `open`, or while you wait to hear it's done
+export const useDeployStatus = (open: boolean) => {
+  const watching = (query: { state: { data?: DeployStatus } }) =>
+    open || Boolean(query.state.data?.notifying);
+  return useQuery({
+    queryKey: DEPLOY_KEY,
+    queryFn: () => request<DeployStatus>('/api/remorse-chess/deploy'),
+    enabled: watching,
+    staleTime: 0,
+    refetchInterval: (query) => (watching(query) ? 20_000 : false),
+    refetchIntervalInBackground: true,
+  });
+};
+
+// Asks for a push once the deploy is done
+export const useNotifyDeployDone = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      request<DeployStatus>('/api/remorse-chess/deploy', { method: 'POST' }),
+    onSuccess: (status) => queryClient.setQueryData(DEPLOY_KEY, status),
+  });
+};
 
 const playerKey = (id: number | undefined) => ['remorse-chess', 'player', id];
 const MUTUALS_KEY = ['remorse-chess', 'mutuals'];

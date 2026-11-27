@@ -48,6 +48,7 @@ import {
   timeControlOf,
 } from '@/lib/remorse/timeControls';
 import { HttpError } from './api';
+import { assertNotDeploying } from './deployStatus';
 
 export const remorsePool = new Pool({
   connectionString: process.env.REMORSE_DB_URL,
@@ -138,7 +139,10 @@ const challengeOf = (row: ChallengeColumns, email: string): Challenge | null =>
     : null;
 
 // A player row gives them an id for their page
-const ensurePlayer = async (client: PoolClient | Pool, email: string) => {
+export const ensurePlayer = async (
+  client: PoolClient | Pool,
+  email: string,
+) => {
   await client.query(
     `INSERT INTO players (email)
      VALUES ($1)
@@ -501,7 +505,8 @@ export const createGame = async (
   });
 
 // Both seats just filled: white's clock starts now, and its first move is due
-// within FIRST_MOVE_MS. A player who hasn't moved yet can abort.
+// within FIRST_MOVE_MS. A player who hasn't moved yet can abort. A live clock
+// can't start during a deploy; throwing rolls back the seat that filled.
 const startClock = async (client: PoolClient, id: number) => {
   const { rows } = await client.query<{ time_control: string | null }>(
     `SELECT time_control
@@ -511,6 +516,7 @@ const startClock = async (client: PoolClient, id: number) => {
   );
   const control = timeControlOf(rows[0]?.time_control ?? null);
   if (!control) return;
+  if (control.category !== 'daily') await assertNotDeploying();
   const now = new Date();
   const allowed =
     control.category === 'daily'

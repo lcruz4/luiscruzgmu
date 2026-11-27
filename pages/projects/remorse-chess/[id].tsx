@@ -15,6 +15,7 @@ import { RulesDialog } from '@/components/remorse-chess/RulesDialog';
 import { UsernamePrompt } from '@/components/remorse-chess/UsernamePrompt';
 import {
   useCancelGame,
+  inlineError,
   useCreateGame,
   useGame,
   useMarkTutorialSeen,
@@ -212,8 +213,8 @@ const GamePage = () => {
             game={game}
             hiddenFrom={hiddenFrom}
             error={
-              mutation.error?.message ??
-              rematch.error?.message ??
+              inlineError(mutation.error) ??
+              inlineError(rematch.error) ??
               cancel.error?.message ??
               null
             }

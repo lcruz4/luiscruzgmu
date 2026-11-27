@@ -18,6 +18,7 @@ import {
   RemorseLayout,
 } from '@/components/remorse-chess/RemorseLayout';
 import {
+  inlineError,
   useCreateGame,
   useFollow,
   usePlayer,
@@ -171,7 +172,7 @@ const Actions = ({ player }: { player: PlayerPage }) => {
         onOpenChange={setPicking}
         name={player.name}
         busy={challenge.isPending}
-        error={challenge.error?.message ?? null}
+        error={inlineError(challenge.error)}
         onChallenge={(timeControl) =>
           challenge.mutate(
             { challenge: player.id, timeControl },

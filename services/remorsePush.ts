@@ -193,3 +193,14 @@ export const notifyFirstMoveAbort = async (emails: string[], name: string) => {
     ),
   );
 };
+
+// A player who asked to hear when live games are back after a deploy
+export const notifyDeployDone = async (email: string) => {
+  if (!publicKey || !privateKey) return;
+  await sendToEmail(email, {
+    title: 'Live games are back',
+    body: 'The update is done. Start a live game whenever you’re ready.',
+    tag: 'remorse-deploy',
+    url: '/projects/remorse-chess',
+  });
+};
