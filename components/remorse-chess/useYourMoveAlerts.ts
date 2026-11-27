@@ -4,13 +4,13 @@ import { fetchGames, GAMES_KEY } from './useGame';
 
 type Alert = { id: number; text: string };
 
-const BELL_SRC = '/audio/remorse-bell.m4a';
+export const BELL_SRC = '/audio/remorse-bell.m4a';
 const SW_SRC = '/remorse-sw.js';
 const SW_SCOPE = '/projects/remorse-chess';
 
 // Push needs a service worker; on iOS only an app added to the Home Screen
 // gets PushManager
-const pushSupported = () =>
+export const pushSupported = () =>
   typeof window !== 'undefined' &&
   'Notification' in window &&
   'serviceWorker' in navigator &&
@@ -35,7 +35,7 @@ const base64ToBytes = (base64: string) => {
 
 // Registers the worker, subscribes (or reuses the subscription) and hands it
 // to the server, which may have dropped it or never seen it
-const subscribe = async () => {
+export const subscribe = async () => {
   const registration = await navigator.serviceWorker.register(SW_SRC, {
     scope: SW_SCOPE,
   });

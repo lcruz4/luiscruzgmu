@@ -8,6 +8,7 @@ import {
 } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import type { TutorialKey } from '@/lib/remorse/tutorial';
+import { DeployDialog } from './DeployDialog';
 import { PlayerAvatar } from './PlayerAvatar';
 import { RulesDialog } from './RulesDialog';
 import { useProfile } from './useGame';
@@ -153,5 +154,6 @@ export const RemorseLayout = ({
       {actions}
     </header>
     <main className='px-4 pb-8'>{children}</main>
+    <DeployDialog />
   </div>
 );

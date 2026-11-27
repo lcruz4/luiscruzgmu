@@ -1,11 +1,18 @@
+import { isLive } from '@/lib/remorse/timeControls';
 import { logger } from './logger';
 import { expireOverdueGames, type FirstMoveAbort, getGame } from './remorseDb';
 import { publishGameChange } from './remorseLive';
 import { notifyFirstMoveAbort, notifyTimeout } from './remorsePush';
 
 // A game nobody started: gone for anyone watching, and both players told
-export const announceAbort = ({ id, emails, name }: FirstMoveAbort) => {
+export const announceAbort = ({
+  id,
+  emails,
+  name,
+  timeControl,
+}: FirstMoveAbort) => {
   publishGameChange(id, 'deleted');
+  if (isLive(timeControl)) return;
   notifyFirstMoveAbort(emails, name).catch((error) =>
     logger.error('Remorse notify failed:', error),
   );

@@ -121,6 +121,22 @@ export const Board = ({
     }
   }, [premove, canMove, state, onMove]);
 
+  // A tap off the board also takes back a queued move
+  useEffect(() => {
+    if (!premove) return;
+    const cancel = (event: globalThis.PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        boardRef.current?.contains(event.target)
+      )
+        return;
+      setPremove(null);
+      setSelected(null);
+    };
+    document.addEventListener('pointerdown', cancel);
+    return () => document.removeEventListener('pointerdown', cancel);
+  }, [premove]);
+
   // A pawn reaching the last rank waits for the player to pick its new piece
   const [promotion, setPromotion] = useState<{
     from: string;
@@ -170,7 +186,12 @@ export const Board = ({
   // Pointer-based drag so it works with touch as well as a mouse. A press
   // that barely moves stays a tap and falls through to handleClick.
   const boardRef = useRef<HTMLDivElement>(null);
-  const press = useRef<{ from: string; x: number; y: number } | null>(null);
+  const press = useRef<{
+    from: string;
+    x: number;
+    y: number;
+    heal: boolean;
+  } | null>(null);
   const justDragged = useRef(false);
   const [drag, setDrag] = useState<{
     from: string;
@@ -246,7 +267,14 @@ export const Board = ({
   const handlePointerDown = (event: PointerEvent, square: string) => {
     if (!isMine(bySquare.get(square))) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    press.current = { from: square, x: event.clientX, y: event.clientY };
+    press.current = {
+      from: square,
+      x: event.clientX,
+      y: event.clientY,
+      heal:
+        event.target instanceof Element &&
+        !!event.target.closest('[data-heal]'),
+    };
   };
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -260,11 +288,21 @@ export const Board = ({
   const handlePointerUp = (event: PointerEvent) => {
     const start = press.current;
     press.current = null;
-    if (!start || !drag) return;
+    if (!start) return;
+    const to = drag ? squareAt(event.clientX, event.clientY) : start.from;
+    // A press on the heal button heals, unless the bishop is dragged away
+    const piece = bySquare.get(start.from);
+    if (start.heal && to === start.from && piece) {
+      setDrag(null);
+      setSelected(null);
+      justDragged.current = true;
+      onBishopHeal(piece);
+      return;
+    }
+    if (!drag) return;
     setDrag(null);
     setSelected(null);
     justDragged.current = true;
-    const to = squareAt(event.clientX, event.clientY);
     if (to && to !== start.from) requestMove(start.from, to);
   };
 
@@ -425,9 +463,15 @@ export const Board = ({
                       type='button'
                       title='Click to heal this bishop and the hurt pieces next to it (uses your turn)'
                       aria-label='Heal this bishop and the hurt pieces next to it'
-                      onPointerDown={(event) => event.stopPropagation()}
+                      // Pointer presses go through the bishop's drag
+                      // handlers; this is for the keyboard
                       onClick={(event) => {
                         event.stopPropagation();
+                        if (justDragged.current) {
+                          justDragged.current = false;
+                          return;
+                        }
+                        setSelected(null);
                         onBishopHeal(piece);
                       }}
                       className={cn(

@@ -30,7 +30,11 @@ import type {
 import { buttonSm, ghostButton, goldButton } from './buttons';
 import { ScalesIcon } from './ModeIcons';
 import { Rating } from './Rating';
-import { useAnswerBalanceSuggestion, useCreateGame } from './useGame';
+import {
+  inlineError,
+  useAnswerBalanceSuggestion,
+  useCreateGame,
+} from './useGame';
 import { VialRack } from './VialRack';
 
 export const BalancedTag = ({ className }: { className?: string }) => (
@@ -464,7 +468,9 @@ export const BalanceSuggestionDialog = ({
           doesn’t count toward ratings.
         </DialogDescription>
         <TimeControlGrid value={timeControl} onChange={setTimeControl} />
-        {error && <p className='text-sm text-red-300'>{error.message}</p>}
+        {inlineError(error) && (
+          <p className='text-sm text-red-300'>{inlineError(error)}</p>
+        )}
         <div className='flex justify-center gap-2'>
           <button
             type='button'

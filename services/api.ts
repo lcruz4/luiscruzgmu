@@ -6,6 +6,8 @@ export class HttpError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    // lets a client tell this error apart without matching its message
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -43,7 +45,9 @@ export const route =
       return res.status(200).json(result);
     } catch (error) {
       if (error instanceof HttpError) {
-        return res.status(error.status).json({ error: error.message });
+        return res
+          .status(error.status)
+          .json({ error: error.message, code: error.code });
       }
       if (
         error instanceof DatabaseError &&

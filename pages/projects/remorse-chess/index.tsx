@@ -40,6 +40,7 @@ import {
   useAcceptChallenge,
   useArchive,
   useCancelGame,
+  inlineError,
   useCreateGame,
   useMutuals,
   useNewFollowers,
@@ -50,7 +51,7 @@ import {
 } from '@/components/remorse-chess/useGame';
 import { useYourMoveAlerts } from '@/components/remorse-chess/useYourMoveAlerts';
 import { colorName, resultText } from '@/lib/remorse/describe';
-import { gamePath, inviteUrl } from '@/lib/remorse/paths';
+import { gamePath, shareOrCopyInvite } from '@/lib/remorse/paths';
 import { cn } from '@/lib/utils';
 import {
   buttonMd,
@@ -213,20 +214,16 @@ const Chip = ({ label, tone }: Status) => (
   </span>
 );
 
-const CopyInvite = ({ id, token }: { id: number; token: string }) => {
+const ShareInvite = ({ id, token }: { id: number; token: string }) => {
   const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteUrl(id, token));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
+  const share = async () => {
+    if (!(await shareOrCopyInvite(id, token))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button type='button' className={small} onClick={copy}>
-      {copied ? 'Link copied' : 'Copy invite link'}
+    <button type='button' className={small} onClick={share}>
+      {copied ? 'Link copied' : 'Share invite link'}
     </button>
   );
 };
@@ -235,13 +232,11 @@ const AnswerChallenge = ({ id }: { id: number }) => {
   const router = useRouter();
   const accept = useAcceptChallenge();
   const decline = useCancelGame();
-  const error = accept.error ?? decline.error;
+  const error = inlineError(accept.error ?? decline.error);
   return (
     <>
       {error && (
-        <span className='self-center text-xs text-red-300'>
-          {error.message}
-        </span>
+        <span className='self-center text-xs text-red-300'>{error}</span>
       )}
       <button
         type='button'
@@ -370,7 +365,7 @@ const GameRow = ({
           {waiting && !game.challenge?.you && (
             <>
               {game.inviteToken && (
-                <CopyInvite id={game.id} token={game.inviteToken} />
+                <ShareInvite id={game.id} token={game.inviteToken} />
               )}
               <CancelInvite
                 id={game.id}
@@ -937,8 +932,10 @@ const LobbyPage = ({ email }: { email: string }) => {
           >
             New to Remorse? Play the tutorial →
           </Link>
-          {create.isError && (
-            <p className='mt-3 text-sm text-red-300'>{create.error.message}</p>
+          {inlineError(create.error) && (
+            <p className='mt-3 text-sm text-red-300'>
+              {inlineError(create.error)}
+            </p>
           )}
         </section>
 

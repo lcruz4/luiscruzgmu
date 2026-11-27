@@ -1,7 +1,7 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { colorName, describeEvent, resultText } from '@/lib/remorse/describe';
 import { TimeControlTag } from './TimeControls';
-import { inviteUrl } from '@/lib/remorse/paths';
+import { canShare, shareInvite, shareOrCopyInvite } from '@/lib/remorse/paths';
 import { pieceSrc } from '@/lib/remorse/pieceSets';
 import { cn } from '@/lib/utils';
 import type { GameEvent, GameResponse } from '@/types/remorse';
@@ -186,15 +186,30 @@ export const GamePanel = ({
     : state.pieces.find((p) => p.id === state.extraMovePieceId);
   const opponentName = game.you.includes('w') ? game.blackName : game.whiteName;
 
-  const copyInvite = async (token: string) => {
-    try {
-      await navigator.clipboard.writeText(inviteUrl(game.id, token));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
+  const share = async (token: string) => {
+    if (!(await shareOrCopyInvite(game.id, token))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
+
+  // A new invite game opens the share sheet once. Browsers refuse it
+  // without a recent tap, so a later visit just leaves the button.
+  const inviteToken =
+    seatOpen && game.you.length > 0 && !game.challenge && !game.matchmaking
+      ? game.inviteToken
+      : null;
+  const autoShared = useRef(false);
+  useEffect(() => {
+    if (!inviteToken || autoShared.current) return;
+    autoShared.current = true;
+    if (!canShare()) return;
+    const key = `remorse-invite-shared-${game.id}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch {}
+    shareInvite(game.id, inviteToken);
+  }, [inviteToken, game.id]);
 
   const status = () => {
     if (revealing) {
@@ -319,15 +334,15 @@ export const GamePanel = ({
         <StatusCard
           tone='gold'
           title='Invite your opponent'
-          text='Send them this invite link. Only someone with it can join. Colors were drawn at random.'
+          text='Share this link with your opponent. Only someone with it can join. Colors were drawn at random.'
         >
           <div className='flex flex-wrap gap-2'>
             <button
               type='button'
               className={primary}
-              onClick={() => copyInvite(token)}
+              onClick={() => share(token)}
             >
-              {copied ? 'Link copied' : 'Copy invite link'}
+              {copied ? 'Link copied' : 'Share invite link'}
             </button>
             {cancelButton}
           </div>

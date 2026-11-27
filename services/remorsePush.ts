@@ -4,6 +4,7 @@ import {
   pushMessage,
   timeoutMessage,
 } from '@/lib/remorse/notify';
+import { isLive } from '@/lib/remorse/timeControls';
 import type { GameResponse } from '@/types/remorse';
 import { logger } from './logger';
 import { listGames, remorsePool } from './remorseDb';
@@ -117,7 +118,7 @@ export const notifyChallenge = async (
 };
 
 // After `actor` acted on an online game: tells the other player when it's now
-// their move or the game just ended
+// their move or the game just ended. Live games only push when they start.
 export const notifyOpponent = async (
   game: GameResponse,
   actor: string,
@@ -125,6 +126,7 @@ export const notifyOpponent = async (
 ) => {
   if (!publicKey || !privateKey || game.mode !== 'online') return;
   if (!game.whiteEmail || !game.blackEmail) return;
+  if (action !== 'join' && isLive(game.timeControl)) return;
   const actorIsWhite = game.whiteEmail === actor;
   const recipient = actorIsWhite ? game.blackEmail : game.whiteEmail;
   const actorName = (actorIsWhite ? game.whiteName : game.blackName) ?? 'them';
@@ -148,6 +150,7 @@ export const notifyOpponent = async (
 // Both players of an online game that just ended on time
 export const notifyTimeout = async (game: GameResponse) => {
   if (!publicKey || !privateKey || game.mode !== 'online') return;
+  if (isLive(game.timeControl)) return;
   const { winner } = game.state;
   if (!game.whiteEmail || !game.blackEmail || !winner || winner === 'draw') {
     return;
@@ -189,4 +192,15 @@ export const notifyFirstMoveAbort = async (emails: string[], name: string) => {
       }),
     ),
   );
+};
+
+// A player who asked to hear when live games are back after a deploy
+export const notifyDeployDone = async (email: string) => {
+  if (!publicKey || !privateKey) return;
+  await sendToEmail(email, {
+    title: 'Live games are back',
+    body: 'The update is done. Start a live game whenever you’re ready.',
+    tag: 'remorse-deploy',
+    url: '/projects/remorse-chess',
+  });
 };
