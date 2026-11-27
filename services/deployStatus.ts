@@ -3,10 +3,10 @@ import { HttpError } from './api';
 import { logger } from './logger';
 
 // True from the moment a deploy starts, including while it waits for live
-// games to finish. Empty DEPLOY_STATUS_URL turns the check off.
-const STATUS_URL =
-  process.env.DEPLOY_STATUS_URL ??
-  'https://lcruz.dev/flask/deploy/luiscruzgmu/status';
+// games to finish
+const STATUS_URL = process.env.FLASK_API_URL
+  ? `${process.env.FLASK_API_URL}/deploy/luiscruzgmu/status`
+  : null;
 const CACHE_MS = 5_000;
 
 let cached: { deploying: boolean; at: number } | null = null;
